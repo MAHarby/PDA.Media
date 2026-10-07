@@ -25,6 +25,23 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
 - **Compiled bindings:** every view declares `x:DataType="vm:..."`. Keep it on new views and `DataTemplate`s.
 - **Theme:** `FluentTheme` with `DensityStyle="Compact"` and the Inter font (`App.axaml`, `Program.cs`).
   Developer tools are enabled in Debug builds via `WithDeveloperTools()`.
+- **Styles and icons** (`Styles/`): keep styling out of the views.
+  - `IconResources.axaml` holds every icon as a `StreamGeometry` resource (`folder_open`, `trash_icon`, ...).
+    It is merged into `Application.Resources` in `App.axaml`, so any view can use `{StaticResource name}`.
+    Add new icons here rather than to a view's `Window.Resources`.
+  - `CommonStyles.axaml` holds styles used by more than one view (`StackPanel.ButtonContent` / `PathIcon.ButtonIcon`
+    for icon-and-text buttons, `Border.ProfileTag` / `TextBlock.ProfileTag` for category badges). It is included
+    once in `Application.Styles` in `App.axaml`. Put a style here instead of copying it into a second view file;
+    a view file can still override it (e.g. `Button.ListAction` shrinks its `ButtonIcon`), since closer styles win.
+  - Each view has its own style file named after it: `MainWindowStyles.axaml`, `EncoderProfilesViewStyles.axaml`
+    (profile manager window) and `EncoderProfileViewStyles.axaml` (its editor form). A view includes its file with
+    `<StyleInclude Source="../Styles/<Name>Styles.axaml"/>` in `Window.Styles` / `UserControl.Styles`.
+  - Styles are class-based (e.g. `Button.Toolbar`, `Border.EditorSection`, `Label.FieldLabel`) and grouped under
+    `<!-- Group. -->` + `<!-- ==== -->` comment headers. Give controls a `Classes` value and put appearance setters
+    in the style file; keep layout and behaviour (grid placement, definitions, bindings, commands) on the control.
+  - Styles in a window's file also apply inside its user controls. Scope descendant selectors tightly (e.g.
+    `^ StackPanel.ButtonContent > TextBlock`, not `^ TextBlock`), because a tooltip's content also counts as a
+    descendant of its control.
 - **Dependency injection:** `Microsoft.Extensions.DependencyInjection`. Registrations are in `ServiceConfiguration.cs`.
   The container is built in `Program.Main` and exposed as `App.Services`. `App` resolves `MainWindow`, which receives
   `MainViewModel` and an `EncoderProfilesViewModel` factory. When adding a service, view model or window, register
@@ -41,8 +58,10 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   - `AppSettingsService` stores `UserSettings` as JSON in `%APPDATA%/PDA.Media/settings.json`.
   - `EncoderProfileService` stores `List<EncodeProfile>` in `%APPDATA%/PDA.Media/profiles.json` and
     provides the built-in defaults (`GetDefaultProfiles`).
-- **Models:** `EncodeProfile` holds the FFmpeg settings (codec, preset, CRF, pixel format, audio, streams, subtitles)
-  and supports `Clone()`.
+- **Models** (`Models/`, namespace `PDA.Media.Utils.Models`): `EncodeProfile` holds the FFmpeg settings (codec, preset,
+  CRF, pixel format, audio, streams, subtitles) and supports `Clone()`. `MediaNode` is a source tree node (selecting a
+  folder cascades to its children); `DestinationItem` is a file queued in the destination list. Put new model
+  classes here, not at the bottom of view model files.
 
 ## Commands
 
@@ -58,7 +77,8 @@ dotnet run --project PDA.Media.Utils                 # needs a desktop/display (
 
 - Nullable reference types are enabled. Keep new code warning-free (the build currently has 0 warnings).
 - In tests that touch services, pass a temp file path to the service constructor. Never write to the real
-  `%APPDATA%` settings.
+  `%APPDATA%` settings. For view model tests use `TempServices` (`PDA.Media.Tests/TempServices.cs`) and pass its
+  services in; the parameterless `MainViewModel()` uses the real settings and profiles files.
 - Add MSTest tests in `PDA.Media.Tests` for new model, service or view-model logic.
 - Avalonia 12 is newer than much online material. Check https://docs.avaloniaui.net before using an API
   and don't assume Avalonia 11 or WPF behaviour.
@@ -67,5 +87,5 @@ dotnet run --project PDA.Media.Utils                 # needs a desktop/display (
 ## Cloud sessions (Claude Code on the web)
 
 `.claude/hooks/session-start.sh` installs the .NET 10 SDK into `~/.dotnet` and restores packages.
-`EnableWindowsTargeting=true` is set so the WPF project restores and builds on Linux. The UI can't be run
-or viewed there, so verify UI changes on Windows.
+`EnableWindowsTargeting=true` is set so the WPF project restores and builds on Linux. The Avalonia app can be
+started under `Xvfb` for screenshots (settings go to `~/.config/PDA.Media`), but check the final look on Windows.

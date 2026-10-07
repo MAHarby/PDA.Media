@@ -84,7 +84,8 @@ public sealed class Test1
             File.WriteAllText(Path.Combine(tempDir2, "Season 2", "Episode 1.mkv"), "dummy");
             File.WriteAllText(Path.Combine(tempDir2, "Season 2", "Episode 2.mkv"), "dummy");
 
-            var vm = new MainViewModel
+            using var storage = new TempServices();
+            var vm = new MainViewModel(storage.SettingsService, storage.ProfileService)
             {
                 SourcePath = tempDir1
             };
@@ -154,16 +155,17 @@ public sealed class Test1
             File.WriteAllText(Path.Combine(tempDir, "sample.mkv"), "dummy");
 
             var service = new AppSettingsService(tempFile);
+            using var storage = new TempServices();
 
             // First session: Create ViewModel and update paths
-            var vm1 = new MainViewModel(service)
+            var vm1 = new MainViewModel(service, storage.ProfileService)
             {
                 SourcePath = tempDir,
                 DestinationPath = @"E:\Target\Output"
             };
 
             // Second session: New ViewModel with same settings file
-            var vm2 = new MainViewModel(service);
+            var vm2 = new MainViewModel(service, storage.ProfileService);
 
             Assert.AreEqual(tempDir, vm2.SourcePath);
             Assert.AreEqual(@"E:\Target\Output", vm2.DestinationPath);
@@ -193,7 +195,8 @@ public sealed class Test1
             File.WriteAllText(Path.Combine(season2, "S02E01.mkv"), "dummy");
             File.WriteAllText(Path.Combine(tempDir, "standalone.mp4"), "dummy");
 
-            var vm = new MainViewModel
+            using var storage = new TempServices();
+            var vm = new MainViewModel(storage.SettingsService, storage.ProfileService)
             {
                 SourcePath = tempDir
             };

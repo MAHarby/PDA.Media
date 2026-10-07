@@ -10,6 +10,7 @@
 
     <Application.Styles>
         <FluentTheme DensityStyle="Compact" />
+        <StyleInclude Source="/Styles/CommonStyles.axaml"/>
     </Application.Styles>
 
     <Application.Resources>
