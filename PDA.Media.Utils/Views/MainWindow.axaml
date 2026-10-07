@@ -76,7 +76,92 @@
             <Setter Property="HorizontalAlignment" Value="Center"/>
         </Style>
 
+        
+        <!-- All Panels - Common. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.LeftPanel">
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Margin" Value="10,10,5,5"/>
+        </Style>
+        <Style Selector="Border.RightPanel">
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Margin" Value="5,10,10,5"/>
+        </Style>
+        <Style Selector="Label.PanelHeading">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="SelectableTextBlock.PanelHeading">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Margin" Value="5,0,0,0"/>
+            <Setter Property="Padding" Value="0,0,0,2"/>
+        </Style>
+        <Style Selector="Border.PanelHeadingTextBox">
+            <Setter Property="Height" Value="30"></Setter>
+            <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="Padding" Value="5,0"/>
+            <Setter Property="Margin" Value="10,5,10,5"/>
+        </Style>
+        
+        
+        <!-- Source Panel. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.SourcePanel">
+            <!-- <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/> -->
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Margin" Value="10,10,5,5"/>
+        </Style>
+
+        <Style Selector="TreeView.SourceFiles">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="5,10,5,10"/>
+            <Setter Property="Margin" Value="0,10,0,0"/>
+        </Style>
+
+        
+        <!-- Destination Panel. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.DestinationPanel">
+            <!-- <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/> -->
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Margin" Value="5,10,10,5"/>
+        </Style>
+
+        <Style Selector="ListBox.DestinationFiles">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="5,10,5,10"/>
+            <Setter Property="Margin" Value="0,10,0,0"/>
+        </Style>
+
+        
         <!-- Profile Panel -->
+        <!-- ====================================================================================================== -->
         <Style Selector="Border.ProfilePanel">
             <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
@@ -85,7 +170,17 @@
             <Setter Property="Padding" Value="8"/>
             <Setter Property="Margin" Value="0,6,0,0"/>
         </Style>
-        
+        <Style Selector="ComboBox.ProfileSelector">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+
+        <!-- FFMpeg Command Line. -->
+        <!-- ====================================================================================================== -->
         <Style Selector="Border.ProfileCommandLine">
             <Setter Property="Background" Value="#1E1E1E"/>
             <Setter Property="CornerRadius" Value="3"/>
@@ -99,7 +194,9 @@
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
 
+        
         <!-- Profile Detail Line One. -->
+        <!-- ====================================================================================================== -->
         <Style Selector="TextBlock.ProfileLineOne">
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumHighColor}"/>
@@ -121,7 +218,7 @@
         <Style Selector="ListBox.AuditLog">
             <Setter Property="Background" Value="#1E1E1E"/>
             <Setter Property="CornerRadius" Value="3"/>
-            <Setter Property="Margin" Value="0,6,0,0"/>
+            <Setter Property="Margin" Value="0,14,0,0"/>
         </Style>
         <Style Selector="ListBox.AuditLog ListBoxItem">
             <Setter Property="Padding" Value="6,1"/>
@@ -163,7 +260,7 @@
         
     </Window.Styles>
     
-    <Grid RowDefinitions="Auto,2*,*,30" ColumnDefinitions="*,*" ShowGridLines="False">
+    <Grid RowDefinitions="Auto,2*,*,30" ColumnDefinitions="*,*" ShowGridLines="True">
     
         <!-- Branding -->
         <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal">
@@ -199,20 +296,23 @@
         </Grid>
         
         <!-- Source Folder / Files -->
-        <Border Grid.Column="0" Grid.Row="1"  BorderBrush="DarkSlateGray" BorderThickness="0.5" CornerRadius="5" Margin="10,10,5,5" >
-            <Grid RowDefinitions="Auto,*" Margin="10">
-                
-                <!-- Source selection box. -->
-                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" >
-                    <Label Grid.Column="0" Content="Source:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                    <TextBlock Grid.Column="1" Text="{Binding SourcePath}" Margin="5"/>
+        <Border Grid.Column="0" Grid.Row="1" Classes="SourcePanel">
+            <Grid RowDefinitions="Auto,*">
+
+                <!-- Source file label, data and button. -->
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+                    <Label Grid.Column="0" Content="Source:" Classes="PanelHeading"/>
+                    <Border Grid.Column="1" Classes="PanelHeadingTextBox">
+                        <SelectableTextBlock Text="{Binding SourcePath}" Classes="PanelHeading"/>
+                    </Border>
                     <Button Grid.Column="2" Name="SelectSourceFolderButton" ToolTip.Tip="Select source folder" Classes="Toolbar" Click="SelectSourceFolderButton_OnClick">
                         <PathIcon Data="{StaticResource folder_open}" Classes="Toolbar"/>
                     </Button>
                 </Grid>
+
                 
-                <!-- Source file/folder list. -->
-                <TreeView Grid.Row="1" Name="sourceTreeView" ItemsSource="{Binding SourceMediaNodes}">
+                <!-- Source file/folder tree list. -->
+                <TreeView Grid.Row="1" Name="sourceTreeView" ItemsSource="{Binding SourceMediaNodes}" Classes="SourceFiles" >
                     <TreeView.ItemTemplate>
                         <TreeDataTemplate ItemsSource="{Binding SubNodes}">
                             <Grid ColumnDefinitions="Auto,*">
@@ -225,22 +325,25 @@
                 
             </Grid>
         </Border>
+
         
         <!-- Destination Items -->
-        <Border Grid.Column="1" Grid.Row="1"  BorderBrush="DarkSlateGray" BorderThickness="0.5" CornerRadius="5" Margin="5,10,10,5" >
-            <Grid RowDefinitions="Auto,*" Margin="10">
+        <Border Grid.Column="1" Grid.Row="1"  Classes="DestinationPanel" >
+            <Grid RowDefinitions="Auto,*">
                 
                 <!-- Destination selection box. -->
                 <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" >
-                    <Label Grid.Column="0" Content="Destination:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                    <TextBlock Grid.Column="1" Text="{Binding DestinationPath}" Margin="5"/>
+                    <Label Grid.Column="0" Content="Destination:" Classes="PanelHeading"/>
+                    <Border Grid.Column="1" Classes="PanelHeadingTextBox">
+                        <SelectableTextBlock Grid.Column="1" Text="{Binding DestinationPath}" Classes="PanelHeading"/>
+                    </Border>
                     <Button Grid.Column="2" Name="SelectDestinationFolderButton" ToolTip.Tip="Select destination folder" Classes="Toolbar" Click="SelectDestinationFolderButton_OnClick">
                         <PathIcon Data="{StaticResource folder_open}" Classes="Toolbar"/>
                     </Button>
                 </Grid>
                 
                 <!-- Source file/folder list. -->
-                <ListBox Grid.Row="1" Name="destinationListBox" 
+                <ListBox Grid.Row="1" Name="destinationListBox" Classes="DestinationFiles" 
                          ItemsSource="{Binding DestinationItems}" SelectedItem="{Binding SelectedDestinationItem}">
                     
                     <ListBox.ItemTemplate>
@@ -254,14 +357,16 @@
             </Grid>
         </Border>
 
+        
         <!-- FFMpeg Profile and Settings. -->
-        <Border Grid.Column="0" Grid.Row="2" BorderBrush="DarkSlateGray" BorderThickness="0.5" CornerRadius="5" Margin="10,5,5,10" >
-            <Grid RowDefinitions="Auto,*" Margin="10">
+        <!-- ============================================================================================================================ -->
+        <Border Grid.Column="0" Grid.Row="2" Classes="LeftPanel" >
+            <Grid RowDefinitions="Auto,*" Margin="7">
                 
-                <!-- FFMpeg profile selection box. -->
+                <!-- FFMpeg profile selector. -->
                 <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" >
-                    <Label Grid.Column="0" Content="FFMpeg Profile:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                    <ComboBox Grid.Column="1" ItemsSource="{Binding EncoderProfiles}" SelectedItem="{Binding SelectedEncoderProfile, Mode=TwoWay}" Margin="5" HorizontalAlignment="Stretch"/>
+                    <Label Grid.Column="0" Content="FFMpeg Profile:" Classes="PanelHeading"/>
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding EncoderProfiles}" SelectedItem="{Binding SelectedEncoderProfile, Mode=TwoWay}" Classes="ProfileSelector"/>
                     <Button Grid.Column="2" Name="AddFFMpegProfileButton" ToolTip.Tip="Manage FFMpeg encoding profiles" Classes="Toolbar" Click="ManageProfilesButton_OnClick">
                         <PathIcon Data="{StaticResource sliders_icon}" Classes="Toolbar"/>
                     </Button>
@@ -297,27 +402,25 @@
                         
                     </Grid>
                 </Border>
-               
             </Grid>
         </Border>
 
+        
         <!-- Audit Log. -->
-        <Border Grid.Column="1" Grid.Row="2" BorderBrush="DarkSlateGray" BorderThickness="0.5" CornerRadius="5" Margin="5,5,10,10" >
-            <Grid RowDefinitions="Auto,*" Margin="10">
+        <!-- ============================================================================================================================ -->
+        <Border Grid.Column="1" Grid.Row="2" Classes="RightPanel" >
+            <Grid RowDefinitions="Auto,*" Margin="7">
 
                 <!-- Audit log header and actions. -->
                 <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto">
-                    <Label Grid.Column="0" Content="Audit Log:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                    <Button Grid.Column="2" Name="ClearLogButton" Classes="Toolbar" ToolTip.Tip="Clear the audit log panel (the log file is kept)"
-                            Command="{Binding ClearAuditLogCommand}">
+                    <Label Grid.Column="0" Content="Audit Log" Classes="PanelHeading"/>
+                    <Button Grid.Column="2" Name="ClearLogButton" Classes="Toolbar" ToolTip.Tip="Clear the audit log panel (the log file is kept)" Command="{Binding ClearAuditLogCommand}">
                         <PathIcon Data="{StaticResource trash_icon}" Classes="Toolbar"/>
                     </Button>
-                    <Button Grid.Column="3" Name="OpenLogButton" Classes="Toolbar" ToolTip.Tip="Open the full log file" Margin="5,0,0,0"
-                            Click="OpenLogButton_OnClick">
+                    <Button Grid.Column="3" Name="OpenLogButton" Classes="Toolbar" ToolTip.Tip="Open the full log file" Margin="5,0,0,0" Click="OpenLogButton_OnClick">
                         <PathIcon Data="{StaticResource file_lines_icon}" Classes="Toolbar"/>
                     </Button>
-                    <Button Grid.Column="4" Name="SaveLogButton" Classes="Toolbar" ToolTip.Tip="Save a copy of the log to the Downloads folder" Margin="5,0,0,0"
-                            Click="SaveLogButton_OnClick">
+                    <Button Grid.Column="4" Name="SaveLogButton" Classes="Toolbar" ToolTip.Tip="Save a copy of the log to the Downloads folder" Margin="5,0,0,0" Click="SaveLogButton_OnClick">
                         <PathIcon Data="{StaticResource download_icon}" Classes="Toolbar"/>
                     </Button>
                 </Grid>
@@ -334,10 +437,6 @@
 
             </Grid>
         </Border>
-
     </Grid>
-    
-    
-    
 
 </Window>
