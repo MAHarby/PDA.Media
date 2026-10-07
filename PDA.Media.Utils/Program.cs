@@ -18,15 +18,12 @@ sealed class Program
         Log.Logger = LoggingSetup.CreateLogger(auditLogSink, out string logFilePath);
         var log = Log.ForContext<Program>();
 
-        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
-            log.Fatal(e.ExceptionObject as Exception, "Unhandled exception");
-        TaskScheduler.UnobservedTaskException += (_, e) =>
-            log.Error(e.Exception, "Unobserved task exception");
+        AppDomain.CurrentDomain.UnhandledException += (_, e) => log.Fatal(e.ExceptionObject as Exception, "Unhandled exception");
+        TaskScheduler.UnobservedTaskException += (_, e) => log.Error(e.Exception, "Unobserved task exception");
 
         try
         {
-            log.Information("PDA.Media.Utils starting (version {Version}, {OS}, .NET {Runtime})",
-                typeof(Program).Assembly.GetName().Version, Environment.OSVersion, Environment.Version);
+            log.Information("PDA.Media.Utils starting (version {Version}, {OS}, .NET {Runtime})", typeof(Program).Assembly.GetName().Version, Environment.OSVersion, Environment.Version);
             log.Information("Logging to {LogFilePath}", logFilePath);
 
             using var services = ServiceConfiguration.BuildServiceProvider(auditLogSink, logFilePath);
@@ -48,8 +45,7 @@ sealed class Program
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
-    public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<App>()
+    public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<App>()
             .UsePlatformDetect()
 #if DEBUG
             .WithDeveloperTools()
