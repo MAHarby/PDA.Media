@@ -125,7 +125,7 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1" Classes="FooterActions">
-                <Button Content="Close" Click="CloseButton_OnClick" Classes="FooterAction"/>
+                <Button Content="Close" Click="CloseButton_OnClick" Classes="DialogAction"/>
             </StackPanel>
         </Grid>
 

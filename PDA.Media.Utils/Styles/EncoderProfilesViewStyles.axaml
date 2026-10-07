@@ -6,12 +6,6 @@
         </Border>
     </Design.PreviewWith>
 
-        <!-- Window Layout. -->
-        <!-- ====================================================================================================== -->
-        <Style Selector="Grid.WindowContent">
-            <Setter Property="Margin" Value="16"/>
-        </Style>
-
 
         <!-- Header Panel. -->
         <!-- ====================================================================================================== -->
@@ -132,9 +126,6 @@
         <Style Selector="StackPanel.FooterActions">
             <Setter Property="Orientation" Value="Horizontal"/>
             <Setter Property="Spacing" Value="8"/>
-        </Style>
-        <Style Selector="Button.FooterAction">
-            <Setter Property="Padding" Value="20,7"/>
         </Style>
 
 </Styles>

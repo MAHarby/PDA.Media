@@ -22,7 +22,7 @@
 
             <StackPanel Grid.Column="1" Classes="EditorActions">
                 <Button Content="Revert" Command="{Binding RevertChangesCommand}" ToolTip.Tip="Revert unsaved changes" Classes="EditorAction"/>
-                <Button Command="{Binding SaveProfileCommand}" ToolTip.Tip="Save changes to this profile" Classes="PrimaryAction">
+                <Button Command="{Binding SaveProfileCommand}" ToolTip.Tip="Save changes to this profile" Classes="PrimaryAction accent">
                     <StackPanel Classes="ButtonContent">
                         <PathIcon Data="{StaticResource save_icon}" Classes="ButtonIcon"/>
                         <TextBlock Text="Save Profile"/>
@@ -37,7 +37,7 @@
 
                 <!-- Section 1: General Profile Info -->
                 <Border Classes="EditorSection">
-                    <StackPanel Classes="GeneralInfoContent">
+                    <StackPanel Classes="SectionContent">
                         <TextBlock Text="General Information" Classes="SectionTitle"/>
 
                         <Grid ColumnDefinitions="*,180,120,180" RowDefinitions="Auto,Auto">
@@ -112,7 +112,7 @@
                         <!-- CRF Slider with Value Indicator -->
                         <Border Classes="CrfPanel">
                             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                                <StackPanel Grid.Row="0" Grid.Column="0" Classes="CrfLabelRow">
+                                <StackPanel Grid.Row="0" Grid.Column="0" Classes="FieldLabelRow">
                                     <Label Content="Constant Rate Factor (CRF):" Classes="FieldLabel"/>
                                     <TextBlock Text="Lower values = higher quality (18-28 standard for x265)" Classes="CrfHint"/>
                                 </StackPanel>
@@ -171,7 +171,7 @@
 
                 <!-- Real-time Generated FFMpeg Command Preview -->
                 <Border Classes="EditorSection">
-                    <StackPanel Classes="CommandPreviewContent">
+                    <StackPanel Classes="SectionContent">
                         <TextBlock Text="FFMpeg Command Preview" Classes="SectionTitle Small"/>
                         <Border Classes="CommandPreview">
                             <SelectableTextBlock Text="{Binding EditingProfile.GeneratedFFMpegArguments}" Classes="CommandPreview"/>

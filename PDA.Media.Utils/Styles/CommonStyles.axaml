@@ -8,6 +8,20 @@
 
         <!-- Shared by every view; included once in App.axaml. View style files can override these. -->
 
+        <!-- Window Layout. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Grid.WindowContent">
+            <Setter Property="Margin" Value="16"/>
+        </Style>
+
+
+        <!-- Dialog Buttons (Close, Refresh, ... in a window's footer). -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Button.DialogAction">
+            <Setter Property="Padding" Value="20,7"/>
+        </Style>
+
+
         <!-- Icon Buttons (icon + text content). -->
         <!-- ====================================================================================================== -->
         <Style Selector="StackPanel.ButtonContent">
