@@ -19,7 +19,29 @@
     </Design.DataContext>
 
     <Window.Styles>
-        <Style Selector="Border.Main">
+
+        <!-- Window Layout. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Grid.WindowContent">
+            <Setter Property="Margin" Value="16"/>
+        </Style>
+
+
+        <!-- Icon Buttons (icon + text content). -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="StackPanel.ButtonContent">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="6"/>
+        </Style>
+        <Style Selector="PathIcon.ButtonIcon">
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Height" Value="12"/>
+        </Style>
+
+
+        <!-- Header Panel. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.HeaderPanel">
             <Setter Property="Background" Value="{DynamicResource SystemChromeMediumLowColor}"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Padding" Value="16,12"/>
@@ -27,22 +49,148 @@
             <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
+        <Style Selector="StackPanel.HeaderText">
+            <Setter Property="Orientation" Value="Vertical"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.HeaderTitle">
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseHighColor}"/>
+        </Style>
+        <Style Selector="TextBlock.HeaderSubtitle">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+        </Style>
+        <Style Selector="StackPanel.HeaderActions">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="8"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.HeaderAction">
+            <Setter Property="Padding" Value="10,6"/>
+        </Style>
+
+
+        <!-- Profile List Panel (left). -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.ProfileListPanel">
+            <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10"/>
+        </Style>
+        <Style Selector="TextBox.ProfileSearch">
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        <Style Selector="Grid.ListActions">
+            <Setter Property="ColumnSpacing" Value="4"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        <Style Selector="Button.ListAction">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+
+            <Style Selector="^ StackPanel.ButtonContent">
+                <Setter Property="Spacing" Value="4"/>
+            </Style>
+            <Style Selector="^ PathIcon.ButtonIcon">
+                <Setter Property="Width" Value="11"/>
+                <Setter Property="Height" Value="11"/>
+            </Style>
+        </Style>
+        <Style Selector="TextBlock.ProfileCount">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+            <Setter Property="Margin" Value="4,8,0,0"/>
+        </Style>
+
+
+        <!-- Profile List Items. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.ProfileListItem">
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Margin" Value="0,2"/>
+        </Style>
+        <Style Selector="TextBlock.ProfileListName">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseHighColor}"/>
+        </Style>
+        <Style Selector="TextBlock.ProfileListSpecs">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumHighColor}"/>
+            <Setter Property="Margin" Value="0,3,0,0"/>
+        </Style>
+        <Style Selector="TextBlock.ProfileListDescription">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="Margin" Value="0,2,0,0"/>
+        </Style>
+        <!-- Same as the ProfileTag styles in MainWindowStyles.axaml. -->
+        <Style Selector="Border.ProfileTag">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Padding" Value="4,1"/>
+            <Setter Property="Margin" Value="4,0,0,0"/>
+        </Style>
+        <Style Selector="TextBlock.ProfileTag">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+
+        <!-- Profile Editor Panel (right). -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.ProfileEditorPanel">
+            <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="16"/>
+        </Style>
+
+
+        <!-- Footer Bar. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Grid.FooterBar">
+            <Setter Property="Margin" Value="0,14,0,0"/>
+        </Style>
+        <Style Selector="StackPanel.FooterInfo">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.FooterText">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+        </Style>
+        <Style Selector="StackPanel.FooterActions">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="8"/>
+        </Style>
+        <Style Selector="Button.FooterAction">
+            <Setter Property="Padding" Value="20,7"/>
+        </Style>
+
     </Window.Styles>
-    
-    <Grid RowDefinitions="Auto,*,Auto" Margin="16">
-        
+
+    <Grid RowDefinitions="Auto,*,Auto" Classes="WindowContent">
+
         <!-- Header -->
-        <Border Grid.Row="0" Classes="Main">
+        <Border Grid.Row="0" Classes="HeaderPanel">
             <Grid ColumnDefinitions="Auto,*,Auto">
-                <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center">
-                    <TextBlock Text="FFMpegCore Transcoding Profiles" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource SystemBaseHighColor}"/>
-                    <TextBlock Text="Configure and tune video/audio presets for MKV movies and TV shows" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}"/>
+                <StackPanel Grid.Column="0" Classes="HeaderText">
+                    <TextBlock Text="FFMpegCore Transcoding Profiles" Classes="HeaderTitle"/>
+                    <TextBlock Text="Configure and tune video/audio presets for MKV movies and TV shows" Classes="HeaderSubtitle"/>
                 </StackPanel>
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <Button Command="{Binding ResetDefaultsCommand}" ToolTip.Tip="Reset all profiles to built-in defaults" Padding="10,6">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <PathIcon Data="{StaticResource reset_icon}" Width="12" Height="12"/>
+                <StackPanel Grid.Column="2" Classes="HeaderActions">
+                    <Button Command="{Binding ResetDefaultsCommand}" ToolTip.Tip="Reset all profiles to built-in defaults" Classes="HeaderAction">
+                        <StackPanel Classes="ButtonContent">
+                            <PathIcon Data="{StaticResource reset_icon}" Classes="ButtonIcon"/>
                             <TextBlock Text="Reset Defaults"/>
                         </StackPanel>
                     </Button>
@@ -52,62 +200,54 @@
 
         <!-- Main Content Area: Master (Left) - Details (Right) -->
         <Grid Grid.Row="1" ColumnDefinitions="320,12,*">
-            
+
             <!-- Left Pane: Profile List -->
-            <Border Grid.Column="0"
-                    Background="{DynamicResource SystemChromeLowColor}"
-                    CornerRadius="8"
-                    BorderBrush="{DynamicResource SystemChromeHighColor}"
-                    BorderThickness="1"
-                    Padding="10">
+            <Border Grid.Column="0" Classes="ProfileListPanel">
                 <Grid RowDefinitions="Auto,Auto,*,Auto">
-                    
+
                     <!-- Search Input -->
-                    <TextBox Grid.Row="0"
-                             PlaceholderText="Search profiles..."
-                             Text="{Binding SearchText, Mode=TwoWay}"
-                             Margin="0,0,0,8"/>
+                    <TextBox Grid.Row="0" PlaceholderText="Search profiles..." Text="{Binding SearchText, Mode=TwoWay}" Classes="ProfileSearch"/>
 
                     <!-- List Action Toolbar -->
-                    <Grid Grid.Row="1" ColumnDefinitions="*,*,*" Margin="0,0,0,8">
-                        <Button Grid.Column="0" Command="{Binding AddProfileCommand}" ToolTip.Tip="Add New Profile" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,0,2,0">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <PathIcon Data="{StaticResource plus_icon}" Width="11" Height="11"/>
+                    <Grid Grid.Row="1" ColumnDefinitions="*,*,*" Classes="ListActions">
+                        <Button Grid.Column="0" Command="{Binding AddProfileCommand}" ToolTip.Tip="Add New Profile" Classes="ListAction">
+                            <StackPanel Classes="ButtonContent">
+                                <PathIcon Data="{StaticResource plus_icon}" Classes="ButtonIcon"/>
                                 <TextBlock Text="Add"/>
                             </StackPanel>
                         </Button>
-                        <Button Grid.Column="1" Command="{Binding DuplicateProfileCommand}" ToolTip.Tip="Duplicate Selected Profile" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="2,0,2,0" IsEnabled="{Binding SelectedProfile, Converter={x:Static ObjectConverters.IsNotNull}}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <PathIcon Data="{StaticResource copy_icon}" Width="11" Height="11"/>
+                        <Button Grid.Column="1" Command="{Binding DuplicateProfileCommand}" ToolTip.Tip="Duplicate Selected Profile" Classes="ListAction"
+                                IsEnabled="{Binding SelectedProfile, Converter={x:Static ObjectConverters.IsNotNull}}">
+                            <StackPanel Classes="ButtonContent">
+                                <PathIcon Data="{StaticResource copy_icon}" Classes="ButtonIcon"/>
                                 <TextBlock Text="Clone"/>
                             </StackPanel>
                         </Button>
-                        <Button Grid.Column="2" Command="{Binding DeleteProfileCommand}" ToolTip.Tip="Delete Selected Profile" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="2,0,0,0" IsEnabled="{Binding SelectedProfile, Converter={x:Static ObjectConverters.IsNotNull}}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <PathIcon Data="{StaticResource trash_icon}" Width="11" Height="11"/>
+                        <Button Grid.Column="2" Command="{Binding DeleteProfileCommand}" ToolTip.Tip="Delete Selected Profile" Classes="ListAction"
+                                IsEnabled="{Binding SelectedProfile, Converter={x:Static ObjectConverters.IsNotNull}}">
+                            <StackPanel Classes="ButtonContent">
+                                <PathIcon Data="{StaticResource trash_icon}" Classes="ButtonIcon"/>
                                 <TextBlock Text="Delete"/>
                             </StackPanel>
                         </Button>
                     </Grid>
 
                     <!-- Profiles ListBox -->
-                    <ListBox Grid.Row="2"
-                             ItemsSource="{Binding FilteredProfiles}"
-                             SelectedItem="{Binding SelectedProfile, Mode=TwoWay}">
+                    <ListBox Grid.Row="2" ItemsSource="{Binding FilteredProfiles}" SelectedItem="{Binding SelectedProfile, Mode=TwoWay}">
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="models:EncodeProfile">
-                                <Border Padding="8,6" Margin="0,2">
+                                <Border Classes="ProfileListItem">
                                     <Grid RowDefinitions="Auto,Auto,Auto">
-                                        <!-- Profile Name + Predefined Badge -->
+                                        <!-- Profile Name + Category Badge -->
                                         <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                                            <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource SystemBaseHighColor}"/>
-                                            <Border Grid.Column="1" Background="{DynamicResource SystemAccentColor}" CornerRadius="3" Padding="4,1" Margin="4,0,0,0">
-                                                <TextBlock Text="{Binding TargetCategory}" FontSize="10" Foreground="White" FontWeight="SemiBold"/>
+                                            <TextBlock Grid.Column="0" Text="{Binding Name}" Classes="ProfileListName"/>
+                                            <Border Grid.Column="1" Classes="ProfileTag">
+                                                <TextBlock Text="{Binding TargetCategory}" Classes="ProfileTag"/>
                                             </Border>
                                         </Grid>
 
                                         <!-- Summary Specs -->
-                                        <TextBlock Grid.Row="1" FontSize="11" Foreground="{DynamicResource SystemBaseMediumHighColor}" Margin="0,3,0,0">
+                                        <TextBlock Grid.Row="1" Classes="ProfileListSpecs">
                                             <Run Text="{Binding VideoCodec}"/>
                                             <Run Text=" | CRF: "/><Run Text="{Binding Crf}"/>
                                             <Run Text=" | Min: "/><Run Text="{Binding MinimumSourceFileSizeFormatted}"/>
@@ -115,7 +255,7 @@
                                         </TextBlock>
 
                                         <!-- Short Description -->
-                                        <TextBlock Grid.Row="2" Text="{Binding Description}" FontSize="10" Foreground="{DynamicResource SystemBaseMediumColor}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                        <TextBlock Grid.Row="2" Text="{Binding Description}" Classes="ProfileListDescription"/>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
@@ -123,33 +263,24 @@
                     </ListBox>
 
                     <!-- Profile Count -->
-                    <TextBlock Grid.Row="3"
-                               Text="{Binding FilteredProfiles.Count, StringFormat='Total profiles: {0}'}"
-                               FontSize="11"
-                               Foreground="{DynamicResource SystemBaseMediumColor}"
-                               Margin="4,8,0,0"/>
+                    <TextBlock Grid.Row="3" Text="{Binding FilteredProfiles.Count, StringFormat='Total profiles: {0}'}" Classes="ProfileCount"/>
                 </Grid>
             </Border>
 
             <!-- Right Pane: Profile Editor Form (EncoderProfileView UserControl) -->
-            <Border Grid.Column="2"
-                    Background="{DynamicResource SystemChromeLowColor}"
-                    CornerRadius="8"
-                    BorderBrush="{DynamicResource SystemChromeHighColor}"
-                    BorderThickness="1"
-                    Padding="16">
+            <Border Grid.Column="2" Classes="ProfileEditorPanel">
                 <views:EncoderProfileView />
             </Border>
         </Grid>
 
         <!-- Bottom Action Bar -->
-        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,14,0,0">
-            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="Settings stored in app profile directory." FontSize="11" Foreground="{DynamicResource SystemBaseMediumColor}"/>
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Classes="FooterBar">
+            <StackPanel Grid.Column="0" Classes="FooterInfo">
+                <TextBlock Text="Settings stored in app profile directory." Classes="FooterText"/>
             </StackPanel>
 
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                <Button Content="Close" Click="CloseButton_OnClick" Padding="20,7"/>
+            <StackPanel Grid.Column="1" Classes="FooterActions">
+                <Button Content="Close" Click="CloseButton_OnClick" Classes="FooterAction"/>
             </StackPanel>
         </Grid>
 
