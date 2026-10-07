@@ -29,10 +29,15 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   - `IconResources.axaml` holds every icon as a `StreamGeometry` resource (`folder_open`, `trash_icon`, ...).
     It is merged into `Application.Resources` in `App.axaml`, so any view can use `{StaticResource name}`.
     Add new icons here rather than to a view's `Window.Resources`.
-  - `MainWindowStyles.axaml` holds the main window's styles, included with
-    `<StyleInclude Source="../Styles/MainWindowStyles.axaml"/>`. Styles are class-based (e.g. `Button.Toolbar`,
-    `Border.SourcePanel`, `Label.PanelHeading`, `ListBox.AuditLog`); give controls a `Classes` value and put the
-    setters in the style file, not inline on the control.
+  - Each view has its own style file named after it: `MainWindowStyles.axaml`, `EncoderProfilesViewStyles.axaml`
+    (profile manager window) and `EncoderProfileViewStyles.axaml` (its editor form). A view includes its file with
+    `<StyleInclude Source="../Styles/<Name>Styles.axaml"/>` in `Window.Styles` / `UserControl.Styles`.
+  - Styles are class-based (e.g. `Button.Toolbar`, `Border.EditorSection`, `Label.FieldLabel`) and grouped under
+    `<!-- Group. -->` + `<!-- ==== -->` comment headers. Give controls a `Classes` value and put appearance setters
+    in the style file; keep layout and behaviour (grid placement, definitions, bindings, commands) on the control.
+  - Styles in a window's file also apply inside its user controls. Scope descendant selectors tightly (e.g.
+    `^ StackPanel.ButtonContent > TextBlock`, not `^ TextBlock`), because a tooltip's content also counts as a
+    descendant of its control.
 - **Dependency injection:** `Microsoft.Extensions.DependencyInjection`. Registrations are in `ServiceConfiguration.cs`.
   The container is built in `Program.Main` and exposed as `App.Services`. `App` resolves `MainWindow`, which receives
   `MainViewModel` and an `EncoderProfilesViewModel` factory. When adding a service, view model or window, register
