@@ -73,6 +73,15 @@
         </Style>
 
         <!-- Profile Panel -->
+        <Style Selector="Border.ProfilePanel">
+            <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Margin" Value="0,6,0,0"/>
+        </Style>
+        
         <Style Selector="Border.ProfileCommandLine">
             <Setter Property="Background" Value="#1E1E1E"/>
             <Setter Property="CornerRadius" Value="3"/>
@@ -110,8 +119,11 @@
             <Setter Property="Spacing" Value="8"/>
             <Setter Property="Margin" Value="0,4,0,0"/>
         </Style>
-        
-        
+        <Style Selector="TextBlock.ProfileLine2">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseHighColor}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
         
         <!--     <TextBlock Text="{Binding CurrentEncodeProfile.VideoCodec, StringFormat='Codec: {0}', FallbackValue=''}" FontSize="11" Foreground="{DynamicResource SystemBaseHighColor}" FontWeight="SemiBold"/> -->
         <!--     <TextBlock Text="{Binding CurrentEncodeProfile.Preset, StringFormat='Preset: {0}', FallbackValue=''}" FontSize="11" Foreground="{DynamicResource SystemBaseMediumColor}"/> -->
@@ -228,7 +240,7 @@
                 </Grid>
                 
                 <!-- Profile details preview -->
-                <Border Grid.Row="1" Background="{DynamicResource SystemChromeLowColor}" CornerRadius="4" Padding="8" Margin="0,6,0,0" BorderBrush="{DynamicResource SystemChromeHighColor}" BorderThickness="0.5">
+                <Border Grid.Row="1" Classes="ProfilePanel">
                     <Grid RowDefinitions="Auto,Auto,Auto" IsVisible="{Binding CurrentEncodeProfile, Converter={x:Static ObjectConverters.IsNotNull}}">
 
                         <!-- Profile Details - First Line. -->
@@ -240,7 +252,8 @@
                         </Grid>
 
                         <!-- Profile Details - Second Line. -->
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                        <!-- TODO: Really need to clean these styles up but it's all over so will leave for later. -->
+                        <StackPanel Grid.Row="1" Classes="ProfileLineTwo">
                             <TextBlock Text="{Binding CurrentEncodeProfile.VideoCodec, StringFormat='Codec: {0}', FallbackValue=''}" FontSize="11" Foreground="{DynamicResource SystemBaseHighColor}" FontWeight="SemiBold"/>
                             <TextBlock Text="{Binding CurrentEncodeProfile.Preset, StringFormat='Preset: {0}', FallbackValue=''}" FontSize="11" Foreground="{DynamicResource SystemBaseMediumColor}"/>
                             <TextBlock Text="{Binding CurrentEncodeProfile.Crf, StringFormat='CRF: {0}', FallbackValue=''}" FontSize="11" Foreground="{DynamicResource SystemAccentColor}" FontWeight="Bold"/>
