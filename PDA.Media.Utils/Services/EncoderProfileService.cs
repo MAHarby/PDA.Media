@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using PDA.Media.Utils.Models;
 
 namespace PDA.Media.Utils.Services;
@@ -19,9 +21,16 @@ public class EncoderProfileService
     public static readonly string DefaultProfilesFilePath = Path.Combine(DefaultProfilesDirectory, "profiles.json");
 
     private readonly string _filePath;
+    private readonly ILogger<EncoderProfileService> _logger;
 
     public EncoderProfileService(string? customFilePath = null)
+        : this(NullLogger<EncoderProfileService>.Instance, customFilePath)
     {
+    }
+
+    public EncoderProfileService(ILogger<EncoderProfileService> logger, string? customFilePath = null)
+    {
+        _logger = logger;
         _filePath = customFilePath ?? DefaultProfilesFilePath;
     }
 
@@ -29,6 +38,14 @@ public class EncoderProfileService
     /// Loads the stored encoding profiles from disk, or generates and saves defaults if the file does not exist.
     /// </summary>
     public List<EncodeProfile> LoadProfiles()
+    {
+        var profiles = ReadProfiles();
+        _logger.LogInformation("Loaded {ProfileCount} encoding profiles from {ProfilesFile}", profiles.Count, _filePath);
+        return profiles;
+    }
+
+    // Shared by the public operations; they log their own outcome so internal reloads don't add noise.
+    private List<EncodeProfile> ReadProfiles()
     {
         try
         {
@@ -47,12 +64,14 @@ public class EncoderProfileService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading profiles from '{_filePath}': {ex.Message}");
+            _logger.LogError(ex, "Error loading profiles from {ProfilesFile}", _filePath);
         }
 
         // Return defaults and write them out for next time
         var defaults = GetDefaultProfiles();
-        SaveProfiles(defaults);
+        _logger.LogWarning("No saved encoding profiles found in {ProfilesFile}; writing {ProfileCount} default profiles",
+            _filePath, defaults.Count);
+        WriteProfiles(defaults);
         return defaults;
     }
 
@@ -60,6 +79,15 @@ public class EncoderProfileService
     /// Saves the collection of encoding profiles to disk as formatted JSON.
     /// </summary>
     public void SaveProfiles(IEnumerable<EncodeProfile> profiles)
+    {
+        var profileList = profiles.ToList();
+        if (WriteProfiles(profileList))
+        {
+            _logger.LogInformation("Saved {ProfileCount} encoding profiles to {ProfilesFile}", profileList.Count, _filePath);
+        }
+    }
+
+    private bool WriteProfiles(IEnumerable<EncodeProfile> profiles)
     {
         try
         {
@@ -72,10 +100,12 @@ public class EncoderProfileService
             var options = new JsonSerializerOptions { WriteIndented = true };
             string json = JsonSerializer.Serialize(profiles, options);
             File.WriteAllText(_filePath, json);
+            return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error saving profiles to '{_filePath}': {ex.Message}");
+            _logger.LogError(ex, "Error saving profiles to {ProfilesFile}", _filePath);
+            return false;
         }
     }
 
@@ -85,7 +115,7 @@ public class EncoderProfileService
     public EncodeProfile? GetProfileByName(string name)
     {
         if (string.IsNullOrWhiteSpace(name)) return null;
-        var profiles = LoadProfiles();
+        var profiles = ReadProfiles();
         return profiles.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
     }
 
@@ -96,7 +126,7 @@ public class EncoderProfileService
     {
         if (profile == null) throw new ArgumentNullException(nameof(profile));
 
-        var profiles = LoadProfiles();
+        var profiles = ReadProfiles();
         int existingIndex = profiles.FindIndex(p => p.Id == profile.Id || string.Equals(p.Name, profile.Name, StringComparison.OrdinalIgnoreCase));
 
         if (existingIndex >= 0)
@@ -108,7 +138,10 @@ public class EncoderProfileService
             profiles.Add(profile);
         }
 
-        SaveProfiles(profiles);
+        if (WriteProfiles(profiles))
+        {
+            _logger.LogInformation("{Action} encoding profile {ProfileName}", existingIndex >= 0 ? "Updated" : "Added", profile.Name);
+        }
     }
 
     /// <summary>
@@ -118,15 +151,17 @@ public class EncoderProfileService
     {
         if (string.IsNullOrWhiteSpace(nameOrId)) return false;
 
-        var profiles = LoadProfiles();
+        var profiles = ReadProfiles();
         int removedCount = profiles.RemoveAll(p => p.Id == nameOrId || string.Equals(p.Name, nameOrId, StringComparison.OrdinalIgnoreCase));
 
         if (removedCount > 0)
         {
-            SaveProfiles(profiles);
+            WriteProfiles(profiles);
+            _logger.LogInformation("Deleted encoding profile {ProfileNameOrId}", nameOrId);
             return true;
         }
 
+        _logger.LogWarning("Encoding profile {ProfileNameOrId} not found; nothing deleted", nameOrId);
         return false;
     }
 
@@ -136,7 +171,8 @@ public class EncoderProfileService
     public List<EncodeProfile> ResetToDefaults()
     {
         var defaults = GetDefaultProfiles();
-        SaveProfiles(defaults);
+        WriteProfiles(defaults);
+        _logger.LogInformation("Reset encoding profiles to {ProfileCount} defaults", defaults.Count);
         return defaults;
     }
 
