@@ -8,12 +8,13 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+
 using PDA.Media.Utils.Logging;
 using PDA.Media.Utils.Models;
 using PDA.Media.Utils.Services;
-using FFMpegCore;
-using FFMpegCore.Enums;
-using FFMpegCore.Helpers;
+// using FFMpegCore;
+// using FFMpegCore.Enums;
+// using FFMpegCore.Helpers;
 
 namespace PDA.Media.Utils.ViewModels;
 
@@ -362,42 +363,5 @@ public partial class MainViewModel : ViewModelBase
     }
 }
 
-public partial class MediaNode : ObservableObject
-{
-    public string Name { get; }
-    public string FullPath { get; }
-    public ObservableCollection<MediaNode>? SubNodes { get; }
-
-    private bool _selected;
-    public bool Selected
-    {
-        get => _selected;
-        set
-        {
-            if (SetProperty(ref _selected, value))
-            {
-                // Cascade selection to child nodes
-                if (SubNodes != null)
-                {
-                    foreach (var childNode in SubNodes)
-                    {
-                        childNode.Selected = value;
-                    }
-                }
-            }
-        }
-    }
-    
-    public MediaNode(string name, string fullPath) { Name = name; FullPath = fullPath; }
-    public MediaNode(string name, string fullPath, ObservableCollection<MediaNode>? subNodes) { Name = name; FullPath = fullPath; SubNodes = subNodes; }
-}
-public partial class DestinationItem : ObservableObject
-{
-    public string Name { get; }
-    public string FullPath { get; }
-    public bool Selected { get; set; } = true;
-    
-    public DestinationItem(string name, string fullPath) { Name = name; FullPath = fullPath; }
-}
 
 

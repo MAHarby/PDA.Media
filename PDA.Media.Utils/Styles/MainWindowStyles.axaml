@@ -1,0 +1,224 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Design.PreviewWith>
+        <Border Padding="20">
+            <!-- Add Controls for Previewer Here -->
+        </Border>
+    </Design.PreviewWith>
+
+        <!-- Brand Styles. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="TextBlock.Brand">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseHighColor}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="10,5,5,5"/>
+        </Style>
+        
+        <Style Selector="PathIcon.Brand">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColorDark1}"/>
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="Width" Value="25"/>
+            <Setter Property="Margin" Value="10,5,5,5"/>
+            <Setter Property="Data" Value="{StaticResource building_shop_regular}"/>
+        </Style>
+
+        <!-- Toolbar Styles. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Button.Toolbar">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemAltHighColor}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            
+            <Style Selector="^:pointerover">
+                <Setter Property="Background" Value="{DynamicResource SystemAccentColorLight3}"/>
+            </Style>
+            
+        </Style>
+        <Style Selector="PathIcon.Toolbar">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemAltHighColor}"/>
+            <Setter Property="Height" Value="15"/>
+            <Setter Property="Width" Value="15"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+
+        
+        <!-- All Panels - Common. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.LeftPanel">
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Margin" Value="10,10,5,5"/>
+        </Style>
+        <Style Selector="Border.RightPanel">
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Margin" Value="5,10,10,5"/>
+        </Style>
+        <Style Selector="Label.PanelHeading">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="SelectableTextBlock.PanelHeading">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Margin" Value="5,0,0,0"/>
+            <Setter Property="Padding" Value="0,0,0,2"/>
+        </Style>
+        <Style Selector="Border.PanelHeadingTextBox">
+            <Setter Property="Height" Value="30"></Setter>
+            <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="Padding" Value="5,0"/>
+            <Setter Property="Margin" Value="10,5,10,5"/>
+        </Style>
+        
+        
+        <!-- Source Panel. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.SourcePanel">
+            <!-- <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/> -->
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Margin" Value="10,10,5,5"/>
+        </Style>
+
+        <Style Selector="TreeView.SourceFiles">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="5,10,5,10"/>
+            <Setter Property="Margin" Value="0,10,0,0"/>
+        </Style>
+
+        
+        <!-- Destination Panel. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.DestinationPanel">
+            <!-- <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/> -->
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Margin" Value="5,10,10,5"/>
+        </Style>
+
+        <Style Selector="ListBox.DestinationFiles">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="5,10,5,10"/>
+            <Setter Property="Margin" Value="0,10,0,0"/>
+        </Style>
+
+        
+        <!-- Profile Panel -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.ProfilePanel">
+            <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Margin" Value="0,6,0,0"/>
+        </Style>
+        <Style Selector="ComboBox.ProfileSelector">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+
+        <!-- FFMpeg Command Line. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.ProfileCommandLine">
+            <Setter Property="Background" Value="#1E1E1E"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="Margin" Value="0,6,0,0"/>
+        </Style>
+        <Style Selector="SelectableTextBlock.ProfileCommandLine">
+            <Setter Property="FontFamily" Value="Consolas,Menlo,monospace"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#A9DC76"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        
+        <!-- Profile Detail Line One. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="TextBlock.ProfileLineOne">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumHighColor}"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style Selector="Border.ProfileTag">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Padding" Value="4,1"/>
+            <Setter Property="Margin" Value="4,0,0,0"></Setter>
+        </Style>
+        <Style Selector="TextBlock.ProfileTag">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <!-- Audit Log. -->
+        <Style Selector="ListBox.AuditLog">
+            <Setter Property="Background" Value="#1E1E1E"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Margin" Value="0,14,0,0"/>
+        </Style>
+        <Style Selector="ListBox.AuditLog ListBoxItem">
+            <Setter Property="Padding" Value="6,1"/>
+            <Setter Property="MinHeight" Value="0"/>
+        </Style>
+        <Style Selector="TextBlock.AuditLogEntry">
+            <Setter Property="FontFamily" Value="Consolas,Menlo,monospace"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Foreground" Value="#D4D4D4"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="TextBlock.AuditLogEntry.Warning">
+            <Setter Property="Foreground" Value="#E5C07B"/>
+        </Style>
+        <Style Selector="TextBlock.AuditLogEntry.Error">
+            <Setter Property="Foreground" Value="#F44747"/>
+        </Style>
+
+        <!-- Profile Detail Line Two. -->
+        <Style Selector="StackPanel.ProfileLineTwo">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="8"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+        <Style Selector="TextBlock.ProfileLine2">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseHighColor}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        
+</Styles>

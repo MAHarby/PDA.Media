@@ -3,7 +3,6 @@
              x:Class="PDA.Media.Utils.App"
              xmlns:local="using:PDA.Media.Utils"
              RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
     <Application.DataTemplates>
         <local:ViewLocator />
@@ -12,5 +11,13 @@
     <Application.Styles>
         <FluentTheme DensityStyle="Compact" />
     </Application.Styles>
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="/Styles/IconResources.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
              
 </Application>

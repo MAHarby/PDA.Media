@@ -4,7 +4,10 @@
     <option name="projectPerEditor">
       <map>
         <entry key="PDA.Media.Utils/App.axaml" value="PDA.Media.Utils/PDA.Media.Utils.csproj" />
+        <entry key="PDA.Media.Utils/Styles/IconResources.axaml" value="PDA.Media.Tests/PDA.Media.Tests.csproj" />
+        <entry key="PDA.Media.Utils/Styles/MainWindowStyles.axaml" value="PDA.Media.Tests/PDA.Media.Tests.csproj" />
         <entry key="PDA.Media.Utils/Views/ColoursView.axaml" value="PDA.Media.Utils/PDA.Media.Utils.csproj" />
+        <entry key="PDA.Media.Utils/Views/EncoderProfilesView.axaml" value="PDA.Media.Tests/PDA.Media.Tests.csproj" />
         <entry key="PDA.Media.Utils/Views/MainWindow.axaml" value="PDA.Media.Utils/PDA.Media.Utils.csproj" />
       </map>
     </option>
