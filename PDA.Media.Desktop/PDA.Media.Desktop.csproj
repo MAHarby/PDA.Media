@@ -1,0 +1,66 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net10.0-windows</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <UseWPF>true</UseWPF>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Folder Include="Controls\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Page Update="Views\MainWindow.xaml">
+        <Generator>MSBuild:Compile</Generator>
+        <XamlRuntime>Wpf</XamlRuntime>
+        <SubType>Designer</SubType>
+      </Page>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Assets\Images\pda-media.svg" />
+      <Resource Include="Assets\Images\pda-media.svg" />
+      <None Remove="Assets\Images\pda-media-32x32.png" />
+      <Resource Include="Assets\Images\pda-media-32x32.png" />
+      <None Remove="Assets\Images\pda-media-200x200.png" />
+      <Resource Include="Assets\Images\pda-media-200x200.png" />
+      <None Remove="Assets\Images\headphones-blue-64x64.png" />
+      <Resource Include="Assets\Images\headphones-blue-64x64.png" />
+      <None Remove="Assets\Images\headphones-regular.png" />
+      <Resource Include="Assets\Images\headphones-regular.png" />
+      <None Remove="Assets\Images\headphones-white-64x64.png" />
+      <Resource Include="Assets\Images\headphones-white-64x64.png" />
+      <None Remove="Assets\Images\checked.png" />
+      <Resource Include="Assets\Images\checked.png" />
+      <None Remove="Assets\Images\unchecked.png" />
+      <Resource Include="Assets\Images\unchecked.png" />
+      <None Remove="Assets\Images\user-pen-solid-50.png" />
+      <Resource Include="Assets\Images\user-pen-solid-50.png" />
+      <None Remove="Assets\Images\user-pen-solid-50-passive.png" />
+      <Resource Include="Assets\Images\user-pen-solid-50-passive.png" />
+      <None Remove="Assets\Images\window-close-50.png" />
+      <Resource Include="Assets\Images\window-close-50.png" />
+      <None Remove="Assets\Images\window-close-50-passive.png" />
+      <Resource Include="Assets\Images\window-close-50-passive.png" />
+      <None Remove="Assets\Images\window-maximize-50.png" />
+      <Resource Include="Assets\Images\window-maximize-50.png" />
+      <None Remove="Assets\Images\window-maximize-50-passive.png" />
+      <Resource Include="Assets\Images\window-maximize-50-passive.png" />
+      <None Remove="Assets\Images\window-minimize-50.png" />
+      <Resource Include="Assets\Images\window-minimize-50.png" />
+      <None Remove="Assets\Images\window-minimize-50-passive.png" />
+      <Resource Include="Assets\Images\window-minimize-50-passive.png" />
+      <None Remove="Assets\Images\window-restore-50.png" />
+      <Resource Include="Assets\Images\window-restore-50.png" />
+      <None Remove="Assets\Images\window-restore-50-passive.png" />
+      <Resource Include="Assets\Images\window-restore-50-passive.png" />
+    </ItemGroup>
+
+</Project>

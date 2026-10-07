@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AvaloniaProject">
+    <option name="projectPerEditor">
+      <map>
+        <entry key="PDA.Media.Utils/App.axaml" value="PDA.Media.Utils/PDA.Media.Utils.csproj" />
+        <entry key="PDA.Media.Utils/Views/ColoursView.axaml" value="PDA.Media.Utils/PDA.Media.Utils.csproj" />
+        <entry key="PDA.Media.Utils/Views/MainWindow.axaml" value="PDA.Media.Utils/PDA.Media.Utils.csproj" />
+      </map>
+    </option>
+  </component>
+</project>

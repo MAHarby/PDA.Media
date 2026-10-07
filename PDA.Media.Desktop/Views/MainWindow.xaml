@@ -1,0 +1,181 @@
+﻿<Window x:Class="PDA.Media.Desktop.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+
+        xmlns:local="clr-namespace:PDA.Media.Desktop"
+        xmlns:viewModels="clr-namespace:PDA.Media.Desktop.ViewModels"
+        xmlns:converters="clr-namespace:PDA.Media.Desktop.ValueConverters"
+
+        mc:Ignorable="d"
+        d:DesignHeight="800" d:DesignWidth="1200"
+        d:DataContext="{d:DesignInstance Type=viewModels:MainWindowViewModel, IsDesignTimeCreatable=True}"
+
+        Title="{Binding Title, FallbackValue='Main Window'}"
+        Height="800" Width="1200"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        AllowsTransparency="True" Background="Transparent"
+        FontFamily="{StaticResource Roboto}" FontSize="14"
+        MouseDown="MainWindow_OnMouseDown">
+
+    <Window.Resources>
+
+        <converters:EmptyStringConverter x:Key="EmptyStringConverter" />
+        <converters:ENumConverter x:Key="ENumConverter" />
+
+        <Style x:Key="MainBorder" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource PrimaryBackgroundGradient}" />
+            <Setter Property="CornerRadius" Value="20" />
+            <Setter Property="BorderThickness" Value="3" />
+            <Setter Property="BorderBrush" Value="{StaticResource  PrimaryBorderBrush}" />
+        </Style>
+        <Style x:Key="InnerBorder" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource  BackgroundLayer}" />
+            <Setter Property="CornerRadius" Value="20" />
+            <Setter Property="Margin" Value="200,60,200,60" />
+        </Style>
+
+        <Style x:Key="BrandImage" TargetType="Image">
+            <Setter Property="Height" Value="25" />
+            <Setter Property="Width" Value="25" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="10,0,10,0"></Setter>
+        </Style>
+        <Style x:Key="BrandTextBlock" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource Roboto}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="{StaticResource PrimaryTextColour}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+
+        <Style x:Key="SearchLabel" TargetType="Label">
+            <Setter Property="FontFamily" Value="{StaticResource Roboto}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="{StaticResource PrimaryTextColour}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="Margin" Value="10,0,10,0" />
+            <!-- <TextBox Name="SearchTextBox" Background="AliceBlue" Foreground="Black" FontFamily="Arial" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Left" Width="300" Height="25"/> -->
+        </Style>
+        <Style x:Key="SearchTextBox" TargetType="TextBox">
+            <Setter Property="FontFamily" Value="{StaticResource Roboto}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Background" Value="{StaticResource FocusedTextBoxColor}" />
+            <Setter Property="Foreground" Value="{StaticResource PrimaryTextColour}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="Width" Value="300" />
+            <Setter Property="Height" Value="25" />
+        </Style>
+
+        <Style x:Key="MediaTypeFilterLabel" TargetType="Label">
+            <Setter Property="FontFamily" Value="{StaticResource Roboto}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="{StaticResource PrimaryTextColour}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="Margin" Value="10,0,10,0" />
+        </Style>
+        <Style x:Key="MediaTypeFilterCombo" TargetType="ComboBox">
+            <Setter Property="FontFamily" Value="{StaticResource Roboto}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Background" Value="{StaticResource FocusedTextBoxColor}" />
+            <Setter Property="Foreground" Value="{StaticResource PrimaryTextColour}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="Width" Value="150" />
+            <Setter Property="Height" Value="25" />
+        </Style>
+
+        <!-- DataGrid and associated components styles. -->
+        <Style x:Key="MediaListDataGrid" TargetType="DataGrid">
+            <Setter Property="GridLinesVisibility" Value="Horizontal" />
+            <Setter Property="HorizontalGridLinesBrush" Value="LightGray"/>
+            <Setter Property="BorderBrush" Value="LightGray"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="RowBackground" Value="{StaticResource PrimaryBackgroundColour}" />
+            <Setter Property="Foreground" Value="{StaticResource PrimaryTextColour}" />
+        </Style>
+
+        <Style x:Key="MediaListDataGridHeader" TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="{StaticResource PrimaryBackgroundColour}" />
+            <Setter Property="Foreground" Value="{StaticResource PrimaryTextColour}" />
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Padding" Value="10" />
+        </Style>
+
+    </Window.Resources>
+
+    <Grid>
+
+        <Border Style="{StaticResource MainBorder}">
+
+            <Grid RowDefinitions="50,*,Auto" ColumnDefinitions="2*,5*" ShowGridLines="False">
+
+                <!-- Branding Panel. -->
+                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
+                    <Image Source="../Assets/Images/headphones-white-64x64.png" Style="{StaticResource BrandImage}" />
+                    <TextBlock Text="{Binding BrandLabel}" Style="{StaticResource BrandTextBlock}" />
+                </StackPanel>
+
+                <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,30,30,30">
+
+                    <!-- Window buttons. -->
+                    <Button Grid.Column="1" Name="WindowMinimizeButton" Style="{StaticResource WindowMinimizeButton}" Click="WindowMinimizeButton_OnClick" />
+                    <Button Grid.Column="2" Name="WindowMaximizeButton" Style="{StaticResource WindowMaximizeButton}" Click="WindowMaximizeButton_OnClick" />
+                    <Button Grid.Column="3" Name="WindowCloseButton" Style="{StaticResource WindowCloseButton}" Click="WindowCloseButton_OnClick" />
+
+                    <!-- Search and filter panel. -->
+                    <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
+
+                        <!-- // Search String. // -->
+                        <Label Content="Search: " Style="{StaticResource SearchLabel}" />
+                        <TextBox Name="SearchTextBox" Style="{StaticResource SearchTextBox}" />
+
+                        <!-- // Media Type filter. // -->
+                        <Label Content="Filter: " Style="{StaticResource MediaTypeFilterLabel}" />
+                        <ComboBox Name="MediaTypeFilterComboBox" Style="{StaticResource MediaTypeFilterCombo}" />
+
+                        <!-- // Remove Extras checkbox. // -->
+                        <CheckBox Name="RemoveExtrasCheckBox"
+                                  IsThreeState="False"
+                                  IsChecked="{Binding RemoveExtras}"
+                                  Content="Remove Extras"
+                                  Foreground="AliceBlue" VerticalAlignment="Center" Margin="10" />
+
+                    </StackPanel>
+                </Grid>
+
+                <!-- // Data grid listing all filtered Media Files. // -->
+
+                <DataGrid Grid.Row="1" Grid.Column="1" Name="MediaFilesDataGrid" 
+                          Style="{StaticResource MediaListDataGrid}" ColumnHeaderStyle="{StaticResource MediaListDataGridHeader}"
+                          Margin="10" IsReadOnly="True" AutoGenerateColumns="False"
+                          ItemsSource="{Binding MediaFiles, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedMediaFile}">
+
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Id" MinWidth="40" Width="40" Binding="{Binding Id}" />
+                        <DataGridTextColumn Header="Name" MinWidth="300" Width="*" Binding="{Binding Name}" />
+                        <DataGridTextColumn Header="Label" MinWidth="100" Width="*" Binding="{Binding RootPathLabel}" />
+                        <DataGridTextColumn Header="File Type" MinWidth="100" Width="*" Binding="{Binding FileType}" />
+                        <DataGridTextColumn Header="Full Path" MinWidth="500" Width="*" Binding="{Binding Path}" />
+                    </DataGrid.Columns>
+
+                </DataGrid>
+
+
+                <!-- Bottom button bar. -->
+                <StackPanel Grid.Column="1" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Name="ScanButton" Content="Scan" Width="70" Height="30" Margin="10,10,5,20" Command="{Binding ScrapeMediaFoldersCommand}" />
+                    <Button Name="ExitButton" Content="Exit" Width="70" Height="30" Margin="5,10,10,20" />
+                </StackPanel>
+            </Grid>
+
+        </Border>
+
+    </Grid>
+</Window>
