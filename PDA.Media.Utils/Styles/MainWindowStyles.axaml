@@ -173,17 +173,6 @@
             <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumHighColor}"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
-        <Style Selector="Border.ProfileTag">
-            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
-            <Setter Property="CornerRadius" Value="3"/>
-            <Setter Property="Padding" Value="4,1"/>
-            <Setter Property="Margin" Value="4,0,0,0"></Setter>
-        </Style>
-        <Style Selector="TextBlock.ProfileTag">
-            <Setter Property="FontSize" Value="10"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-        </Style>
 
         <!-- Audit Log. -->
         <Style Selector="ListBox.AuditLog">

@@ -29,6 +29,10 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   - `IconResources.axaml` holds every icon as a `StreamGeometry` resource (`folder_open`, `trash_icon`, ...).
     It is merged into `Application.Resources` in `App.axaml`, so any view can use `{StaticResource name}`.
     Add new icons here rather than to a view's `Window.Resources`.
+  - `CommonStyles.axaml` holds styles used by more than one view (`StackPanel.ButtonContent` / `PathIcon.ButtonIcon`
+    for icon-and-text buttons, `Border.ProfileTag` / `TextBlock.ProfileTag` for category badges). It is included
+    once in `Application.Styles` in `App.axaml`. Put a style here instead of copying it into a second view file;
+    a view file can still override it (e.g. `Button.ListAction` shrinks its `ButtonIcon`), since closer styles win.
   - Each view has its own style file named after it: `MainWindowStyles.axaml`, `EncoderProfilesViewStyles.axaml`
     (profile manager window) and `EncoderProfileViewStyles.axaml` (its editor form). A view includes its file with
     `<StyleInclude Source="../Styles/<Name>Styles.axaml"/>` in `Window.Styles` / `UserControl.Styles`.

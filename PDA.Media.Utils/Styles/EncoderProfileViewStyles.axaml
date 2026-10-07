@@ -6,18 +6,6 @@
         </Border>
     </Design.PreviewWith>
 
-        <!-- Icon Buttons (icon + text content). Same as EncoderProfilesViewStyles.axaml. -->
-        <!-- ====================================================================================================== -->
-        <Style Selector="StackPanel.ButtonContent">
-            <Setter Property="Orientation" Value="Horizontal"/>
-            <Setter Property="Spacing" Value="6"/>
-        </Style>
-        <Style Selector="PathIcon.ButtonIcon">
-            <Setter Property="Width" Value="12"/>
-            <Setter Property="Height" Value="12"/>
-        </Style>
-
-
         <!-- Editor Header. -->
         <!-- ====================================================================================================== -->
         <Style Selector="Grid.EditorHeader">

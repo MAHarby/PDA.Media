@@ -1,0 +1,37 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Design.PreviewWith>
+        <Border Padding="20">
+            <!-- Add Controls for Previewer Here -->
+        </Border>
+    </Design.PreviewWith>
+
+        <!-- Shared by every view; included once in App.axaml. View style files can override these. -->
+
+        <!-- Icon Buttons (icon + text content). -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="StackPanel.ButtonContent">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="6"/>
+        </Style>
+        <Style Selector="PathIcon.ButtonIcon">
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Height" Value="12"/>
+        </Style>
+
+
+        <!-- Profile Tag (category badge). -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.ProfileTag">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Padding" Value="4,1"/>
+            <Setter Property="Margin" Value="4,0,0,0"/>
+        </Style>
+        <Style Selector="TextBlock.ProfileTag">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+</Styles>
