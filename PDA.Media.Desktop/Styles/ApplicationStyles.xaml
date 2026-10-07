@@ -1,0 +1,28 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <!-- // Application Font. // -->
+    <FontFamily x:Key="Roboto">/Assets/Fonts/Roboto-Regular.ttf#Roboto</FontFamily>
+
+    <!-- // Application Colours. // -->
+    <SolidColorBrush x:Key="PrimaryBackgroundColour" Color="#FF10658C" />
+    <SolidColorBrush x:Key="PrimaryTextColour" Color="#FFF5ECEB"/>
+    <SolidColorBrush x:Key="BackgroundLayer" Color="#FFF5ECEB" Opacity="0.2" />
+    <SolidColorBrush x:Key="PrimaryBorderBrush" Color="#FF97CEDA" />
+    <SolidColorBrush x:Key="PrimaryWatermark" Color="#FFC2BBBA" />
+    <SolidColorBrush x:Key="FocusedTextBoxColor" Color="LightYellow" />
+    <SolidColorBrush x:Key="FocusedTextColour" Color="#FF333333" />
+    <SolidColorBrush x:Key="RoundButtonBackground" Color="#FF10658C" />
+
+    <LinearGradientBrush x:Key="PrimaryBackgroundGradient" StartPoint="0,0" EndPoint="0,5">
+        <GradientStop Color="#FF10658C" Offset="0.0" />
+        <GradientStop Color="#FFF5ECEB" Offset="0.5" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="PopupBackgroundGradient" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#FF2F84AC" Offset="0.0" />
+        <GradientStop Color="#FF97D5F2" Offset="1.2" />
+    </LinearGradientBrush>
+
+    
+</ResourceDictionary>

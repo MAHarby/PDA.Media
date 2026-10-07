@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="PDA.Media.BatchConverter/PDA.Media.BatchConverter.csproj" />
+  <Project Path="PDA.Media.Data/PDA.Media.Data.csproj" />
+  <Project Path="PDA.Media.Desktop/PDA.Media.Desktop.csproj" />
+  <Project Path="PDA.Media.Tests/PDA.Media.Tests.csproj" />
+  <Project Path="PDA.Media.Utils/PDA.Media.Utils.csproj" />
+</Solution>

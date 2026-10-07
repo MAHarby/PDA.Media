@@ -1,0 +1,94 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <!-- Window Minimize Button -->
+    <ImageBrush x:Key="ibWindowMinimize" ImageSource="/Assets/Images/window-minimize-50.png"/>
+    <ImageBrush x:Key="ibWindowMinimizePassive" ImageSource="/Assets/Images/window-minimize-50-passive.png"/>
+
+    <Style x:Key="WindowMinimizeButton" TargetType="Button">
+        <Setter Property="Height" Value="25"/>
+        <Setter Property="Width" Value="25"/>
+        <Setter Property="HorizontalAlignment" Value="Right"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="buttonBorder" BorderThickness="0" Background="{StaticResource ibWindowMinimize}"/>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="buttonBorder" Property="Background" Value="{StaticResource ibWindowMinimizePassive}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="buttonBorder" Property="Background" Value="{StaticResource ibWindowMinimizePassive}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Window Maximize Button -->
+    <ImageBrush x:Key="ibWindowMaximize" ImageSource="/Assets/Images/window-maximize-50.png"/>
+    <ImageBrush x:Key="ibWindowMaximizePassive" ImageSource="/Assets/Images/window-maximize-50-passive.png"/>
+    <ImageBrush x:Key="ibWindowRestore" ImageSource="/Assets/Images/window-restore-50.png"/>
+    <ImageBrush x:Key="ibWindowRestorePassive" ImageSource="/Assets/Images/window-restore-50-passive.png"/>
+    
+    <Style x:Key="WindowMaximizeButton" TargetType="Button">
+        <Setter Property="Height" Value="25"/>
+        <Setter Property="Width" Value="25"/>
+        <Setter Property="HorizontalAlignment" Value="Right"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="buttonBorder" BorderThickness="0" Background="{StaticResource ibWindowMaximize}"/>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="buttonBorder" Property="Background" Value="{StaticResource ibWindowMaximizePassive}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="buttonBorder" Property="Background" Value="{StaticResource ibWindowMaximizePassive}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Window Close Button -->
+    <ImageBrush x:Key="ibWindowClose" ImageSource="/Assets/Images/window-close-50.png"/>
+    <ImageBrush x:Key="ibWindowClosePassive" ImageSource="/Assets/Images/window-close-50-passive.png"/>
+
+    <Style x:Key="WindowCloseButton" TargetType="Button">
+        <Setter Property="Height" Value="25"/>
+        <Setter Property="Width" Value="25"/>
+        <Setter Property="HorizontalAlignment" Value="Right"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="buttonBorder" BorderThickness="0" Background="{StaticResource ibWindowClose}"/>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="buttonBorder" Property="Background" Value="{StaticResource ibWindowClosePassive}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="buttonBorder" Property="Background" Value="{StaticResource ibWindowClosePassive}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+    
+    
+    
+</ResourceDictionary>
