@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace PDA.Media.Utils.Services;
 
@@ -18,8 +20,16 @@ public class AppSettingsService
     public static readonly string DefaultSettingsFilePath = Path.Combine(DefaultSettingsDirectory, "settings.json");
 
     private readonly string _filePath;
+    private readonly ILogger<AppSettingsService> _logger;
+
     public AppSettingsService(string? customFilePath = null)
+        : this(NullLogger<AppSettingsService>.Instance, customFilePath)
     {
+    }
+
+    public AppSettingsService(ILogger<AppSettingsService> logger, string? customFilePath = null)
+    {
+        _logger = logger;
         _filePath = customFilePath ?? DefaultSettingsFilePath;
     }
 
@@ -33,13 +43,18 @@ public class AppSettingsService
                 var settings = JsonSerializer.Deserialize<UserSettings>(json);
                 if (settings != null)
                 {
+                    _logger.LogInformation("Loaded user settings from {SettingsFile}", _filePath);
                     return settings;
                 }
+            }
+            else
+            {
+                _logger.LogInformation("No settings file at {SettingsFile}; using default settings", _filePath);
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading settings from '{_filePath}': {ex.Message}");
+            _logger.LogError(ex, "Error loading settings from {SettingsFile}; using default settings", _filePath);
         }
 
         return new UserSettings();
@@ -58,10 +73,13 @@ public class AppSettingsService
             var options = new JsonSerializerOptions { WriteIndented = true };
             string json = JsonSerializer.Serialize(settings, options);
             File.WriteAllText(_filePath, json);
+            _logger.LogInformation(
+                "Saved user settings (General profile: {GeneralProfile}, Encoder profile: {EncoderProfile}, Source: {SourcePath}, Destination: {DestinationPath})",
+                settings.GeneralProfile, settings.EncoderProfile, settings.SourcePath, settings.DestinationPath);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error saving settings to '{_filePath}': {ex.Message}");
+            _logger.LogError(ex, "Error saving settings to {SettingsFile}", _filePath);
         }
     }
 }
