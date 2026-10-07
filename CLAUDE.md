@@ -34,7 +34,8 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   (`_logger.LogInformation("Saved {Count} profiles", n)`); don't reference Serilog outside `Logging/` and `Program`.
   The minimum level is Information. `LoggingSetup` writes to the console and to a new timestamped file per run in
   `%APPDATA%/PDA.Media/Logs` (keeps the latest 30). `AuditLogSink` feeds the Audit Log panel on the main window
-  (`MainViewModel.AuditLogEntries`).
+  (`MainViewModel.AuditLogEntries`), whose buttons clear the panel, open `LogViewerView`, and save a copy to
+  Downloads through `LogFileService`.
 - **Services** (`Services/`): singletons resolved from DI. They take an optional custom file path so tests can
   redirect storage.
   - `AppSettingsService` stores `UserSettings` as JSON in `%APPDATA%/PDA.Media/settings.json`.

@@ -14,7 +14,7 @@ namespace PDA.Media.Utils;
 /// </summary>
 public static class ServiceConfiguration
 {
-    public static ServiceProvider BuildServiceProvider(AuditLogSink auditLogSink)
+    public static ServiceProvider BuildServiceProvider(AuditLogSink auditLogSink, string logFilePath)
     {
         var services = new ServiceCollection();
 
@@ -31,6 +31,7 @@ public static class ServiceConfiguration
         // Services.
         services.AddSingleton(sp => new AppSettingsService(sp.GetRequiredService<ILogger<AppSettingsService>>()));
         services.AddSingleton(sp => new EncoderProfileService(sp.GetRequiredService<ILogger<EncoderProfileService>>()));
+        services.AddSingleton(sp => new LogFileService(logFilePath, sp.GetRequiredService<ILogger<LogFileService>>()));
 
         // View models.
         services.AddTransient<MainViewModel>();
@@ -39,6 +40,8 @@ public static class ServiceConfiguration
                 sp.GetRequiredService<EncoderProfileService>(),
                 sp.GetRequiredService<ILogger<EncoderProfilesViewModel>>(),
                 selectedProfileName));
+        services.AddTransient<LogViewerViewModel>();
+        services.AddTransient<Func<LogViewerViewModel>>(sp => sp.GetRequiredService<LogViewerViewModel>);
 
         // Views.
         services.AddTransient<MainWindow>();

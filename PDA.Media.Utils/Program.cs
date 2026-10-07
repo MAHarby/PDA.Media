@@ -29,7 +29,7 @@ sealed class Program
                 typeof(Program).Assembly.GetName().Version, Environment.OSVersion, Environment.Version);
             log.Information("Logging to {LogFilePath}", logFilePath);
 
-            using var services = ServiceConfiguration.BuildServiceProvider(auditLogSink);
+            using var services = ServiceConfiguration.BuildServiceProvider(auditLogSink, logFilePath);
             App.Services = services;
 
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);

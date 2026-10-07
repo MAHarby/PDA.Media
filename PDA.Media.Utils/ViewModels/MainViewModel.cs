@@ -27,6 +27,10 @@ public partial class MainViewModel : ViewModelBase
     private readonly AuditLogSink _auditLogSink;
     private readonly ILogger<MainViewModel> _logger;
     private bool _isInitializing;
+    // Set while a general profile applies its paths, so settings are saved once afterwards.
+    private bool _isApplyingGeneralProfile;
+    // Set while profiles reload; the ComboBox briefly clears its selection when its list is replaced.
+    private bool _isRefreshingProfiles;
 
     public EncoderProfileService EncoderProfileService => _encoderProfileService;
     public EncoderProfileService ProfileSettingsService => _encoderProfileService;
@@ -125,26 +129,47 @@ public partial class MainViewModel : ViewModelBase
     {
         string? previousSelection = SelectedEncoderProfile;
         _logger.LogInformation("Refreshing encoding profiles (current selection {EncoderProfile})", previousSelection ?? "(none)");
-        LoadProfilesFromService();
 
-        if (!string.IsNullOrEmpty(previousSelection) && EncoderProfiles.Contains(previousSelection))
+        _isRefreshingProfiles = true;
+        try
         {
-            SelectedEncoderProfile = previousSelection;
+            LoadProfilesFromService();
+
+            if (!string.IsNullOrEmpty(previousSelection) && EncoderProfiles.Contains(previousSelection))
+            {
+                SelectedEncoderProfile = previousSelection;
+            }
+            else if (EncoderProfiles.Count > 0)
+            {
+                SelectedEncoderProfile = EncoderProfiles[0];
+                _logger.LogWarning("Encoding profile {PreviousProfile} no longer exists; selected {EncoderProfile} instead",
+                    previousSelection ?? "(none)", SelectedEncoderProfile);
+            }
+            else
+            {
+                SelectedEncoderProfile = null;
+                CurrentEncodeProfile = null;
+                _logger.LogWarning("No encoding profiles are available");
+            }
         }
-        else if (EncoderProfiles.Count > 0)
+        finally
         {
-            SelectedEncoderProfile = EncoderProfiles[0];
-            _logger.LogWarning("Encoding profile {PreviousProfile} no longer exists; selected {EncoderProfile} instead",
-                previousSelection ?? "(none)", SelectedEncoderProfile);
+            _isRefreshingProfiles = false;
         }
-        else
+
+        if (!string.Equals(SelectedEncoderProfile, previousSelection, StringComparison.Ordinal))
         {
-            SelectedEncoderProfile = null;
-            CurrentEncodeProfile = null;
-            _logger.LogWarning("No encoding profiles are available");
+            SaveCurrentSettings();
         }
 
         LoadEncoderProfileSettings(SelectedEncoderProfile);
+    }
+
+    [RelayCommand]
+    private void ClearAuditLog()
+    {
+        _auditLogSink.Clear();
+        _logger.LogInformation("Audit log panel cleared (the log file is unchanged)");
     }
 
     [RelayCommand]
@@ -183,40 +208,39 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
+    // During construction the handlers only record values; the constructor scans the source folder
+    // and loads the encoder profile once at the end.
     partial void OnSelectedGeneralProfileChanged(string? value)
     {
         if (!_isInitializing)
         {
             _logger.LogInformation("General profile changed to {GeneralProfile}", value ?? "(none)");
-            SaveCurrentSettings();
         }
         LoadGeneralProfileSettings(value);
+        if (!_isInitializing) SaveCurrentSettings();
     }
     partial void OnSelectedEncoderProfileChanged(string? value)
     {
-        if (!_isInitializing)
-        {
-            _logger.LogInformation("Encoder profile changed to {EncoderProfile}", value ?? "(none)");
-            SaveCurrentSettings();
-        }
+        if (_isInitializing || _isRefreshingProfiles) return;
+
+        _logger.LogInformation("Encoder profile changed to {EncoderProfile}", value ?? "(none)");
+        SaveCurrentSettings();
         LoadEncoderProfileSettings(value);
     }
     partial void OnSourcePathChanged(string value)
     {
-        if (!_isInitializing)
-        {
-            _logger.LogInformation("Source path changed to {SourcePath}", value);
-            SaveCurrentSettings();
-        }
+        if (_isInitializing) return;
+
+        _logger.LogInformation("Source path changed to {SourcePath}", value);
+        if (!_isApplyingGeneralProfile) SaveCurrentSettings();
         LoadMediaItems();
     }
     partial void OnDestinationPathChanged(string value)
     {
-        if (!_isInitializing)
-        {
-            _logger.LogInformation("Destination path changed to {DestinationPath}", value);
-            SaveCurrentSettings();
-        }
+        if (_isInitializing) return;
+
+        _logger.LogInformation("Destination path changed to {DestinationPath}", value);
+        if (!_isApplyingGeneralProfile) SaveCurrentSettings();
     }
 
     private void SaveCurrentSettings()
@@ -232,25 +256,25 @@ public partial class MainViewModel : ViewModelBase
     private void LoadGeneralProfileSettings(string? value)
     {
         if (string.IsNullOrEmpty(value)) return;
-        
-        // Fall back to known defaults.
-        SourcePath = "";
-        DestinationPath = "";
-        
-        if (SelectedGeneralProfile == "TV Show")
-        {
-            SourcePath = @"\\pda-hp-z620\data\ARR-Stack\media\tv";
-            DestinationPath = @"\\Aubrey-NAS\Media\TV Series\ARRstack";
-            return;
-        }
 
-        if (SelectedGeneralProfile == "Movie")
+        // Fall back to known defaults. Each path is assigned once so the source folder is scanned once.
+        (string sourcePath, string destinationPath) = value switch
         {
-            SourcePath = @"\\pda-hp-z620\data\ARR-Stack\media\movies";
-            DestinationPath = @"\\Aubrey-NAS\Media\Movies\ARRstack";
-            return;
-        }
+            "TV Show" => (@"\\pda-hp-z620\data\ARR-Stack\media\tv", @"\\Aubrey-NAS\Media\TV Series\ARRstack"),
+            "Movie" => (@"\\pda-hp-z620\data\ARR-Stack\media\movies", @"\\Aubrey-NAS\Media\Movies\ARRstack"),
+            _ => ("", "")
+        };
 
+        _isApplyingGeneralProfile = true;
+        try
+        {
+            SourcePath = sourcePath;
+            DestinationPath = destinationPath;
+        }
+        finally
+        {
+            _isApplyingGeneralProfile = false;
+        }
     }
     private void LoadEncoderProfileSettings(string? value)
     {

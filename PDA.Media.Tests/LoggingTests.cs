@@ -128,6 +128,119 @@ public sealed class LoggingTests
         }
     }
 
+    [TestMethod]
+    public void TestLogFileService_ReadsOpenLogAndSavesTimestampedCopy()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "pda_logs_test_" + Guid.NewGuid().ToString("N"));
+        string downloads = Path.Combine(root, "Downloads");
+        try
+        {
+            var logger = LoggingSetup.CreateLogger(new AuditLogSink(), out string logFilePath, root);
+            try
+            {
+                logger.Information("Line written while the file is open");
+                var service = new LogFileService(logFilePath, new ListLogger<LogFileService>());
+
+                // Serilog still has the file open for writing here.
+                Assert.Contains("Line written while the file is open", service.ReadLog());
+
+                string copyPath = service.SaveCopy(downloads);
+                Assert.AreEqual(downloads, Path.GetDirectoryName(copyPath));
+                StringAssert.Matches(Path.GetFileName(copyPath), new System.Text.RegularExpressions.Regex(@"^PDA\.Media\.Utils_\d{8}_\d{6}\.log$"));
+                Assert.Contains("Line written while the file is open", File.ReadAllText(copyPath));
+            }
+            finally
+            {
+                (logger as IDisposable)?.Dispose();
+            }
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, true);
+        }
+    }
+
+    [TestMethod]
+    public void TestAuditLogSink_ClearRemovesEntries()
+    {
+        var sink = new AuditLogSink();
+        sink.Entries.Add(new AuditLogEntry(DateTimeOffset.Now, LogEventLevel.Information, "Test", "Message"));
+
+        sink.Clear();
+
+        Assert.IsEmpty(sink.Entries);
+    }
+
+    [TestMethod]
+    public void TestMainViewModel_StartupScansSourceAndLoadsProfileOnce()
+    {
+        using var temp = new TempServices();
+        Directory.CreateDirectory(Path.Combine(temp.SourceFolder, "Season 1"));
+        temp.SettingsService.SaveSettings(new UserSettings { GeneralProfile = "TV Show", SourcePath = temp.SourceFolder });
+
+        var logger = new ListLogger<MainViewModel>();
+        _ = new MainViewModel(temp.SettingsService, temp.ProfileService, new AuditLogSink(), logger);
+
+        Assert.AreEqual(1, logger.Entries.Count(e => e.Message.StartsWith("Scanning source folder")));
+        Assert.AreEqual(1, logger.Entries.Count(e => e.Message.StartsWith("Active encoding profile")));
+    }
+
+    [TestMethod]
+    public void TestMainViewModel_GeneralProfileChange_SavesAndScansOnce()
+    {
+        using var temp = new TempServices();
+        var logger = new ListLogger<MainViewModel>();
+        var settingsLogger = new ListLogger<AppSettingsService>();
+        var vm = new MainViewModel(new AppSettingsService(settingsLogger, temp.SettingsFile), temp.ProfileService, new AuditLogSink(), logger);
+        logger.Entries.Clear();
+        settingsLogger.Entries.Clear();
+
+        vm.SelectedGeneralProfile = "Movie";
+
+        Assert.AreEqual(1, settingsLogger.Entries.Count(e => e.Message.StartsWith("Saved user settings")), "Settings should be saved once");
+        Assert.AreEqual(0, logger.Entries.Count(e => e.Message.StartsWith("No source path set")), "Source should not be cleared first");
+        Assert.AreEqual(1, logger.Entries.Count(e => e.Message.StartsWith("Source path changed")));
+    }
+
+    [TestMethod]
+    public void TestMainViewModel_RefreshProfiles_UnchangedSelectionDoesNotSaveSettings()
+    {
+        using var temp = new TempServices();
+        var settingsLogger = new ListLogger<AppSettingsService>();
+        var vm = new MainViewModel(new AppSettingsService(settingsLogger, temp.SettingsFile), temp.ProfileService,
+            new AuditLogSink(), new ListLogger<MainViewModel>());
+        string? selected = vm.SelectedEncoderProfile;
+        settingsLogger.Entries.Clear();
+
+        vm.RefreshProfiles();
+
+        Assert.AreEqual(selected, vm.SelectedEncoderProfile);
+        Assert.IsNotNull(vm.CurrentEncodeProfile);
+        Assert.AreEqual(0, settingsLogger.Entries.Count(e => e.Message.StartsWith("Saved user settings")));
+    }
+
+    private sealed class TempServices : IDisposable
+    {
+        private readonly string _root = Path.Combine(Path.GetTempPath(), "pda_vm_test_" + Guid.NewGuid().ToString("N"));
+
+        public string SettingsFile => Path.Combine(_root, "settings.json");
+        public string SourceFolder => Path.Combine(_root, "source");
+        public AppSettingsService SettingsService { get; }
+        public EncoderProfileService ProfileService { get; }
+
+        public TempServices()
+        {
+            Directory.CreateDirectory(_root);
+            SettingsService = new AppSettingsService(SettingsFile);
+            ProfileService = new EncoderProfileService(Path.Combine(_root, "profiles.json"));
+        }
+
+        public void Dispose()
+        {
+            if (Directory.Exists(_root)) Directory.Delete(_root, true);
+        }
+    }
+
     private sealed class CapturingSink : ILogEventSink
     {
         public List<LogEvent> Events { get; } = new();

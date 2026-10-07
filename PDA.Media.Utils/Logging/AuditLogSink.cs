@@ -37,6 +37,9 @@ public sealed class AuditLogSink : ILogEventSink
         }
     }
 
+    /// <summary>Clears the panel's entries. The log file is not affected. Call on the UI thread.</summary>
+    public void Clear() => Entries.Clear();
+
     private void DrainPending()
     {
         Interlocked.Exchange(ref _drainScheduled, 0);

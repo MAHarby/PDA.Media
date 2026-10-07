@@ -9,6 +9,7 @@ using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using PDA.Media.Utils.Logging;
+using PDA.Media.Utils.Services;
 using PDA.Media.Utils.ViewModels;
 
 namespace PDA.Media.Utils.Views;
@@ -17,6 +18,8 @@ public partial class MainWindow : Window
 {
     private readonly ILogger<MainWindow> _logger = NullLogger<MainWindow>.Instance;
     private readonly Func<string?, EncoderProfilesViewModel>? _profilesViewModelFactory;
+    private readonly Func<LogViewerViewModel>? _logViewerViewModelFactory;
+    private readonly LogFileService? _logFileService;
     private ObservableCollection<AuditLogEntry>? _auditLogEntries;
 
     // Used by the XAML previewer.
@@ -26,10 +29,13 @@ public partial class MainWindow : Window
     }
 
     public MainWindow(MainViewModel viewModel, Func<string?, EncoderProfilesViewModel> profilesViewModelFactory,
+        Func<LogViewerViewModel> logViewerViewModelFactory, LogFileService logFileService,
         ILogger<MainWindow> logger) : this()
     {
         _logger = logger;
         _profilesViewModelFactory = profilesViewModelFactory;
+        _logViewerViewModelFactory = logViewerViewModelFactory;
+        _logFileService = logFileService;
         DataContext = viewModel;
     }
 
@@ -79,6 +85,38 @@ public partial class MainWindow : Window
         {
             AuditLogListBox.ScrollIntoView(_auditLogEntries.Count - 1);
         }
+    }
+
+    private void OpenLogButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (_logViewerViewModelFactory == null) return;
+
+        var logViewer = new LogViewerView { DataContext = _logViewerViewModelFactory() };
+        logViewer.Closed += (_, _) => _logger.LogInformation("Log viewer closed");
+        logViewer.Show();
+    }
+
+    private async void SaveLogButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (_logFileService == null) return;
+
+        try
+        {
+            string downloadsPath = await GetDownloadsFolderAsync();
+            _logFileService.SaveCopy(downloadsPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save a copy of the log to the Downloads folder");
+        }
+    }
+
+    // Uses the system's Downloads location (which may be redirected on Windows), falling back to ~/Downloads.
+    private async System.Threading.Tasks.Task<string> GetDownloadsFolderAsync()
+    {
+        var downloads = await StorageProvider.TryGetWellKnownFolderAsync(WellKnownFolder.Downloads);
+        return downloads?.TryGetLocalPath()
+               ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
     }
 
     private void LoadColourPalette_OnClick(object? sender, RoutedEventArgs e)
