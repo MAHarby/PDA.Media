@@ -8,24 +8,195 @@
              x:Class="PDA.Media.Utils.Views.EncoderProfileView"
              x:DataType="vm:EncoderProfilesViewModel">
 
-    <UserControl.Resources>
-        <StreamGeometry x:Key="save_icon">M433.1 129.1l-83.9-83.9C339.7 35.7 326.9 30.5 313.6 30.5L64 30.5C28.7 30.5 0 59.2 0 94.5l0 323c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-224c0-13.3-5.2-26.1-14.6-35.5zM128 80l160 0 0 80-160 0 0-80zm256 352L128 432l0-144 256 0 0 144z</StreamGeometry>
-    </UserControl.Resources>
+    <UserControl.Styles>
+
+        <!-- Icon Buttons (icon + text content). Same as EncoderProfilesView. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="StackPanel.ButtonContent">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="6"/>
+        </Style>
+        <Style Selector="PathIcon.ButtonIcon">
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Height" Value="12"/>
+        </Style>
+
+
+        <!-- Editor Header. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Grid.EditorHeader">
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
+        <Style Selector="StackPanel.EditorHeaderText">
+            <Setter Property="Orientation" Value="Vertical"/>
+        </Style>
+        <Style Selector="TextBlock.EditorTitle">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseHighColor}"/>
+        </Style>
+        <Style Selector="TextBlock.EditorSubtitle">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+        </Style>
+        <Style Selector="StackPanel.EditorActions">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="8"/>
+        </Style>
+        <Style Selector="Button.EditorAction">
+            <Setter Property="Padding" Value="12,6"/>
+        </Style>
+        <Style Selector="Button.PrimaryAction">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="14,6"/>
+
+            <!-- Set on the content so it stays white when the theme changes the button's foreground on hover.
+                 Scoped to ButtonContent: a plain "^ TextBlock" would also turn the tooltip text white. -->
+            <Style Selector="^ StackPanel.ButtonContent > PathIcon">
+                <Setter Property="Foreground" Value="White"/>
+            </Style>
+            <Style Selector="^ StackPanel.ButtonContent > TextBlock">
+                <Setter Property="Foreground" Value="White"/>
+            </Style>
+        </Style>
+
+
+        <!-- Form Sections. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="StackPanel.EditorSections">
+            <Setter Property="Spacing" Value="14"/>
+        </Style>
+        <Style Selector="Border.EditorSection">
+            <Setter Property="Background" Value="{DynamicResource SystemChromeMediumLowColor}"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+        </Style>
+        <Style Selector="StackPanel.SectionContent">
+            <Setter Property="Spacing" Value="10"/>
+        </Style>
+        <Style Selector="StackPanel.GeneralInfoContent">
+            <Setter Property="Spacing" Value="8"/>
+        </Style>
+        <Style Selector="StackPanel.CommandPreviewContent">
+            <Setter Property="Spacing" Value="6"/>
+        </Style>
+        <Style Selector="TextBlock.SectionTitle">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+        <Style Selector="TextBlock.SectionTitle.Small">
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+
+        <!-- Form Fields. -->
+        <!-- ====================================================================================================== -->
+        <!-- Fields sit in grid columns; the right margin is the gap to the next column. -->
+        <Style Selector="StackPanel.FormField">
+            <Setter Property="Margin" Value="0,0,10,0"/>
+        </Style>
+        <Style Selector="StackPanel.FormField.LastColumn">
+            <Setter Property="Margin" Value="0"/>
+        </Style>
+        <Style Selector="StackPanel.FullWidthField">
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+        <Style Selector="Grid.FieldRows">
+            <Setter Property="RowSpacing" Value="8"/>
+        </Style>
+        <Style Selector="Label.FieldLabel">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="StackPanel.FieldLabelRow">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="4"/>
+        </Style>
+        <Style Selector="TextBlock.FieldHint">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="ComboBox.FieldInput">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="StackPanel.OptionToggles">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="24"/>
+        </Style>
+
+
+        <!-- CRF Slider Panel. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.CrfPanel">
+            <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+        <Style Selector="StackPanel.CrfLabelRow">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="6"/>
+        </Style>
+        <Style Selector="TextBlock.CrfHint">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.CrfValue">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+
+        <!-- FFMpeg Command Preview. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.CommandPreview">
+            <Setter Property="Background" Value="#1E1E1E"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="10"/>
+        </Style>
+        <Style Selector="SelectableTextBlock.CommandPreview">
+            <Setter Property="FontFamily" Value="Consolas,Menlo,monospace"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#A9DC76"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+
+        <!-- Status Bar. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Grid.StatusBar">
+            <Setter Property="Margin" Value="0,10,0,0"/>
+        </Style>
+        <Style Selector="TextBlock.StatusMessage">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+    </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*,Auto">
         <!-- Top Form Header & Quick Save -->
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
-            <StackPanel Grid.Column="0" Orientation="Vertical">
-                <TextBlock Text="{Binding EditingProfile.Name, FallbackValue='Select a profile'}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource SystemBaseHighColor}"/>
-                <TextBlock Text="Modify transcoding parameters below and click Save Profile" FontSize="11" Foreground="{DynamicResource SystemBaseMediumColor}"/>
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Classes="EditorHeader">
+            <StackPanel Grid.Column="0" Classes="EditorHeaderText">
+                <TextBlock Text="{Binding EditingProfile.Name, FallbackValue='Select a profile'}" Classes="EditorTitle"/>
+                <TextBlock Text="Modify transcoding parameters below and click Save Profile" Classes="EditorSubtitle"/>
             </StackPanel>
 
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                <Button Content="Revert" Command="{Binding RevertChangesCommand}" ToolTip.Tip="Revert unsaved changes" Padding="12,6"/>
-                <Button Background="{DynamicResource SystemAccentColor}" Foreground="White" FontWeight="Bold" Command="{Binding SaveProfileCommand}" ToolTip.Tip="Save changes to this profile" Padding="14,6">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <PathIcon Data="{StaticResource save_icon}" Width="12" Height="12" Foreground="White"/>
-                        <TextBlock Text="Save Profile" Foreground="White"/>
+            <StackPanel Grid.Column="1" Classes="EditorActions">
+                <Button Content="Revert" Command="{Binding RevertChangesCommand}" ToolTip.Tip="Revert unsaved changes" Classes="EditorAction"/>
+                <Button Command="{Binding SaveProfileCommand}" ToolTip.Tip="Save changes to this profile" Classes="PrimaryAction">
+                    <StackPanel Classes="ButtonContent">
+                        <PathIcon Data="{StaticResource save_icon}" Classes="ButtonIcon"/>
+                        <TextBlock Text="Save Profile"/>
                     </StackPanel>
                 </Button>
             </StackPanel>
@@ -33,90 +204,90 @@
 
         <!-- Scrollable Form Fields -->
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="14" IsVisible="{Binding EditingProfile, Converter={x:Static ObjectConverters.IsNotNull}}">
-                
+            <StackPanel IsVisible="{Binding EditingProfile, Converter={x:Static ObjectConverters.IsNotNull}}" Classes="EditorSections">
+
                 <!-- Section 1: General Profile Info -->
-                <Border Background="{DynamicResource SystemChromeMediumLowColor}" CornerRadius="6" Padding="12" BorderBrush="{DynamicResource SystemChromeHighColor}" BorderThickness="0.5">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="General Information" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource SystemAccentColor}"/>
-                        
+                <Border Classes="EditorSection">
+                    <StackPanel Classes="GeneralInfoContent">
+                        <TextBlock Text="General Information" Classes="SectionTitle"/>
+
                         <Grid ColumnDefinitions="*,180,120,180" RowDefinitions="Auto,Auto">
-                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,0">
-                                <Label Content="Profile Name:" FontWeight="SemiBold"/>
+                            <StackPanel Grid.Row="0" Grid.Column="0" Classes="FormField">
+                                <Label Content="Profile Name:" Classes="FieldLabel"/>
                                 <TextBox Text="{Binding EditingProfile.Name, Mode=TwoWay}"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,10,0">
-                                <Label Content="Target Category:" FontWeight="SemiBold"/>
-                                <ComboBox ItemsSource="{Binding TargetCategories}" SelectedItem="{Binding EditingProfile.TargetCategory, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                            <StackPanel Grid.Row="0" Grid.Column="1" Classes="FormField">
+                                <Label Content="Target Category:" Classes="FieldLabel"/>
+                                <ComboBox ItemsSource="{Binding TargetCategories}" SelectedItem="{Binding EditingProfile.TargetCategory, Mode=TwoWay}" Classes="FieldInput"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,10,0">
-                                <Label Content="Container:" FontWeight="SemiBold"/>
-                                <ComboBox ItemsSource="{Binding ContainerFormats}" SelectedItem="{Binding EditingProfile.ContainerFormat, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                            <StackPanel Grid.Row="0" Grid.Column="2" Classes="FormField">
+                                <Label Content="Container:" Classes="FieldLabel"/>
+                                <ComboBox ItemsSource="{Binding ContainerFormats}" SelectedItem="{Binding EditingProfile.ContainerFormat, Mode=TwoWay}" Classes="FieldInput"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Row="0" Grid.Column="3">
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <Label Content="Min Source Size:" FontWeight="SemiBold"/>
-                                    <TextBlock Text="{Binding EditingProfile.MinimumSourceFileSizeFormatted, StringFormat='({0})'}" FontSize="11" Foreground="{DynamicResource SystemAccentColor}" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Row="0" Grid.Column="3" Classes="FormField LastColumn">
+                                <StackPanel Classes="FieldLabelRow">
+                                    <Label Content="Min Source Size:" Classes="FieldLabel"/>
+                                    <TextBlock Text="{Binding EditingProfile.MinimumSourceFileSizeFormatted, StringFormat='({0})'}" Classes="FieldHint"/>
                                 </StackPanel>
                                 <TextBox Text="{Binding EditingProfile.MinimumSourceFileSize, Mode=TwoWay}"/>
                             </StackPanel>
                         </Grid>
 
-                        <StackPanel Margin="0,4,0,0">
-                            <Label Content="Description:" FontWeight="SemiBold"/>
+                        <StackPanel Classes="FullWidthField">
+                            <Label Content="Description:" Classes="FieldLabel"/>
                             <TextBox Text="{Binding EditingProfile.Description, Mode=TwoWay}"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
 
                 <!-- Section 2: Video Settings -->
-                <Border Background="{DynamicResource SystemChromeMediumLowColor}" CornerRadius="6" Padding="12" BorderBrush="{DynamicResource SystemChromeHighColor}" BorderThickness="0.5">
-                    <StackPanel Spacing="10">
-                        <TextBlock Text="Video Settings (MKV Transcoding)" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource SystemAccentColor}"/>
-                        
-                        <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto">
-                            <StackPanel Grid.Column="0" Margin="0,0,10,8">
-                                <Label Content="Video Codec:" FontWeight="SemiBold"/>
-                                <ComboBox ItemsSource="{Binding VideoCodecs}" SelectedItem="{Binding EditingProfile.VideoCodec, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                <Border Classes="EditorSection">
+                    <StackPanel Classes="SectionContent">
+                        <TextBlock Text="Video Settings (MKV Transcoding)" Classes="SectionTitle"/>
+
+                        <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" Classes="FieldRows">
+                            <StackPanel Grid.Column="0" Classes="FormField">
+                                <Label Content="Video Codec:" Classes="FieldLabel"/>
+                                <ComboBox ItemsSource="{Binding VideoCodecs}" SelectedItem="{Binding EditingProfile.VideoCodec, Mode=TwoWay}" Classes="FieldInput"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="1" Margin="0,0,10,8">
-                                <Label Content="Encoder Preset / Speed:" FontWeight="SemiBold"/>
-                                <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding EditingProfile.Preset, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                            <StackPanel Grid.Column="1" Classes="FormField">
+                                <Label Content="Encoder Preset / Speed:" Classes="FieldLabel"/>
+                                <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding EditingProfile.Preset, Mode=TwoWay}" Classes="FieldInput"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="2" Margin="0,0,0,8">
-                                <Label Content="Pixel Format:" FontWeight="SemiBold"/>
-                                <ComboBox ItemsSource="{Binding PixelFormats}" SelectedItem="{Binding EditingProfile.PixelFormat, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                            <StackPanel Grid.Column="2" Classes="FormField LastColumn">
+                                <Label Content="Pixel Format:" Classes="FieldLabel"/>
+                                <ComboBox ItemsSource="{Binding PixelFormats}" SelectedItem="{Binding EditingProfile.PixelFormat, Mode=TwoWay}" Classes="FieldInput"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,0">
-                                <Label Content="Resolution / Scale:" FontWeight="SemiBold"/>
-                                <ComboBox ItemsSource="{Binding Resolutions}" SelectedItem="{Binding EditingProfile.Resolution, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                            <StackPanel Grid.Row="1" Grid.Column="0" Classes="FormField">
+                                <Label Content="Resolution / Scale:" Classes="FieldLabel"/>
+                                <ComboBox ItemsSource="{Binding Resolutions}" SelectedItem="{Binding EditingProfile.Resolution, Mode=TwoWay}" Classes="FieldInput"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,10,0">
-                                <Label Content="Frame Rate (FPS):" FontWeight="SemiBold"/>
-                                <ComboBox ItemsSource="{Binding FrameRates}" SelectedItem="{Binding EditingProfile.FrameRate, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                            <StackPanel Grid.Row="1" Grid.Column="1" Classes="FormField">
+                                <Label Content="Frame Rate (FPS):" Classes="FieldLabel"/>
+                                <ComboBox ItemsSource="{Binding FrameRates}" SelectedItem="{Binding EditingProfile.FrameRate, Mode=TwoWay}" Classes="FieldInput"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Row="1" Grid.Column="2">
-                                <Label Content="Hardware Acceleration:" FontWeight="SemiBold"/>
-                                <ComboBox ItemsSource="{Binding HardwareAccelerations}" SelectedItem="{Binding EditingProfile.HardwareAcceleration, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                            <StackPanel Grid.Row="1" Grid.Column="2" Classes="FormField LastColumn">
+                                <Label Content="Hardware Acceleration:" Classes="FieldLabel"/>
+                                <ComboBox ItemsSource="{Binding HardwareAccelerations}" SelectedItem="{Binding EditingProfile.HardwareAcceleration, Mode=TwoWay}" Classes="FieldInput"/>
                             </StackPanel>
                         </Grid>
 
                         <!-- CRF Slider with Value Indicator -->
-                        <Border Background="{DynamicResource SystemChromeLowColor}" CornerRadius="4" Padding="10,6" Margin="0,4,0,0">
+                        <Border Classes="CrfPanel">
                             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="6">
-                                    <Label Content="Constant Rate Factor (CRF):" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Lower values = higher quality (18-28 standard for x265)" FontSize="11" Foreground="{DynamicResource SystemBaseMediumColor}" VerticalAlignment="Center"/>
+                                <StackPanel Grid.Row="0" Grid.Column="0" Classes="CrfLabelRow">
+                                    <Label Content="Constant Rate Factor (CRF):" Classes="FieldLabel"/>
+                                    <TextBlock Text="Lower values = higher quality (18-28 standard for x265)" Classes="CrfHint"/>
                                 </StackPanel>
-                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding EditingProfile.Crf}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource SystemAccentColor}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding EditingProfile.Crf}" Classes="CrfValue"/>
                                 <Slider Grid.Row="1" Grid.ColumnSpan="2" Minimum="0" Maximum="51" Value="{Binding EditingProfile.Crf, Mode=TwoWay}" TickFrequency="1" IsSnapToTickEnabled="True"/>
                             </Grid>
                         </Border>
@@ -124,61 +295,57 @@
                 </Border>
 
                 <!-- Section 3: Audio Settings -->
-                <Border Background="{DynamicResource SystemChromeMediumLowColor}" CornerRadius="6" Padding="12" BorderBrush="{DynamicResource SystemChromeHighColor}" BorderThickness="0.5">
-                    <StackPanel Spacing="10">
-                        <TextBlock Text="Audio Settings" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource SystemAccentColor}"/>
-                        
+                <Border Classes="EditorSection">
+                    <StackPanel Classes="SectionContent">
+                        <TextBlock Text="Audio Settings" Classes="SectionTitle"/>
+
                         <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto">
-                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                <Label Content="Audio Codec:" FontWeight="SemiBold"/>
-                                <ComboBox ItemsSource="{Binding AudioCodecs}" SelectedItem="{Binding EditingProfile.AudioCodec, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                            <StackPanel Grid.Column="0" Classes="FormField">
+                                <Label Content="Audio Codec:" Classes="FieldLabel"/>
+                                <ComboBox ItemsSource="{Binding AudioCodecs}" SelectedItem="{Binding EditingProfile.AudioCodec, Mode=TwoWay}" Classes="FieldInput"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="1" Margin="0,0,10,0">
-                                <Label Content="Audio Bitrate:" FontWeight="SemiBold"/>
-                                <ComboBox ItemsSource="{Binding AudioBitrates}" SelectedItem="{Binding EditingProfile.AudioBitrate, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                            <StackPanel Grid.Column="1" Classes="FormField">
+                                <Label Content="Audio Bitrate:" Classes="FieldLabel"/>
+                                <ComboBox ItemsSource="{Binding AudioBitrates}" SelectedItem="{Binding EditingProfile.AudioBitrate, Mode=TwoWay}" Classes="FieldInput"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="2" Margin="0,0,10,0">
-                                <Label Content="Channels:" FontWeight="SemiBold"/>
-                                <ComboBox ItemsSource="{Binding AudioChannelsList}" SelectedItem="{Binding EditingProfile.AudioChannels, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                            <StackPanel Grid.Column="2" Classes="FormField">
+                                <Label Content="Channels:" Classes="FieldLabel"/>
+                                <ComboBox ItemsSource="{Binding AudioChannelsList}" SelectedItem="{Binding EditingProfile.AudioChannels, Mode=TwoWay}" Classes="FieldInput"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="3">
-                                <Label Content="Sample Rate:" FontWeight="SemiBold"/>
-                                <ComboBox ItemsSource="{Binding AudioSampleRates}" SelectedItem="{Binding EditingProfile.AudioSampleRate, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                            <StackPanel Grid.Column="3" Classes="FormField LastColumn">
+                                <Label Content="Sample Rate:" Classes="FieldLabel"/>
+                                <ComboBox ItemsSource="{Binding AudioSampleRates}" SelectedItem="{Binding EditingProfile.AudioSampleRate, Mode=TwoWay}" Classes="FieldInput"/>
                             </StackPanel>
                         </Grid>
                     </StackPanel>
                 </Border>
 
                 <!-- Section 4: Stream Options & Custom Arguments -->
-                <Border Background="{DynamicResource SystemChromeMediumLowColor}" CornerRadius="6" Padding="12" BorderBrush="{DynamicResource SystemChromeHighColor}" BorderThickness="0.5">
-                    <StackPanel Spacing="10">
-                        <TextBlock Text="Container &amp; Subtitle Options" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource SystemAccentColor}"/>
+                <Border Classes="EditorSection">
+                    <StackPanel Classes="SectionContent">
+                        <TextBlock Text="Container &amp; Subtitle Options" Classes="SectionTitle"/>
 
-                        <StackPanel Orientation="Horizontal" Spacing="24">
+                        <StackPanel Classes="OptionToggles">
                             <CheckBox Content="Preserve All Streams / Tracks (-map 0)" IsChecked="{Binding EditingProfile.KeepAllStreams, Mode=TwoWay}"/>
                             <CheckBox Content="Copy Subtitles (-c:s copy)" IsChecked="{Binding EditingProfile.CopySubtitles, Mode=TwoWay}"/>
                         </StackPanel>
 
-                        <StackPanel Margin="0,4,0,0">
-                            <Label Content="Custom FFMpeg Arguments (Appended to command):" FontWeight="SemiBold"/>
+                        <StackPanel Classes="FullWidthField">
+                            <Label Content="Custom FFMpeg Arguments (Appended to command):" Classes="FieldLabel"/>
                             <TextBox Text="{Binding EditingProfile.CustomArguments, Mode=TwoWay}" PlaceholderText="-tune animation -maxrate 8M -bufsize 16M"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
 
                 <!-- Real-time Generated FFMpeg Command Preview -->
-                <Border Background="{DynamicResource SystemChromeMediumLowColor}" CornerRadius="6" Padding="12" BorderBrush="{DynamicResource SystemChromeHighColor}" BorderThickness="0.5">
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="FFMpeg Command Preview" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource SystemAccentColor}"/>
-                        <Border Background="#1E1E1E" CornerRadius="4" Padding="10">
-                            <SelectableTextBlock Text="{Binding EditingProfile.GeneratedFFMpegArguments}"
-                                                 FontFamily="Consolas,Menlo,monospace"
-                                                 FontSize="12"
-                                                 Foreground="#A9DC76"
-                                                 TextWrapping="Wrap"/>
+                <Border Classes="EditorSection">
+                    <StackPanel Classes="CommandPreviewContent">
+                        <TextBlock Text="FFMpeg Command Preview" Classes="SectionTitle Small"/>
+                        <Border Classes="CommandPreview">
+                            <SelectableTextBlock Text="{Binding EditingProfile.GeneratedFFMpegArguments}" Classes="CommandPreview"/>
                         </Border>
                     </StackPanel>
                 </Border>
@@ -186,8 +353,8 @@
         </ScrollViewer>
 
         <!-- Status / Feedback Bar -->
-        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,10,0,0">
-            <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" FontSize="12" Foreground="{DynamicResource SystemAccentColor}" VerticalAlignment="Center"/>
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Classes="StatusBar">
+            <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" Classes="StatusMessage"/>
         </Grid>
     </Grid>
 </UserControl>
