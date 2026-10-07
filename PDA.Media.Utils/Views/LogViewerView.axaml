@@ -16,7 +16,7 @@
         <StyleInclude Source="../Styles/LogViewerViewStyles.axaml"/>
     </Window.Styles>
 
-    <Grid RowDefinitions="Auto,*,Auto" Classes="WindowContent">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Classes="WindowContent">
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Classes="LogHeader">
@@ -24,15 +24,34 @@
             <SelectableTextBlock Text="{Binding LogFilePath}" Classes="LogFilePath"/>
         </StackPanel>
 
+        <!-- Search: Enter = next, Shift+Enter = previous, Esc = clear, Ctrl+F focuses the box. -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto" Classes="LogSearch">
+            <TextBox Grid.Column="0" Name="SearchTextBox" Text="{Binding SearchText}" PlaceholderText="Search log... (Ctrl+F)"
+                     Classes="LogSearchBox">
+                <TextBox.KeyBindings>
+                    <KeyBinding Gesture="Enter" Command="{Binding FindNextCommand}"/>
+                    <KeyBinding Gesture="Shift+Enter" Command="{Binding FindPreviousCommand}"/>
+                    <KeyBinding Gesture="Escape" Command="{Binding ClearSearchCommand}"/>
+                </TextBox.KeyBindings>
+            </TextBox>
+            <TextBlock Grid.Column="1" Text="{Binding MatchSummary}" Classes="LogMatchSummary"/>
+            <Button Grid.Column="2" Command="{Binding FindPreviousCommand}" ToolTip.Tip="Previous match (Shift+Enter)" Classes="LogSearchAction">
+                <PathIcon Data="{StaticResource chevron_up_icon}" Classes="ButtonIcon"/>
+            </Button>
+            <Button Grid.Column="3" Command="{Binding FindNextCommand}" ToolTip.Tip="Next match (Enter)" Classes="LogSearchAction">
+                <PathIcon Data="{StaticResource chevron_down_icon}" Classes="ButtonIcon"/>
+            </Button>
+        </Grid>
+
         <!-- Log contents -->
-        <TextBox Grid.Row="1" Name="LogTextBox" Text="{Binding LogText}" IsReadOnly="True"
+        <TextBox Grid.Row="2" Name="LogTextBox" Text="{Binding LogText}" IsReadOnly="True"
                  AcceptsReturn="True" TextWrapping="NoWrap"
                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                  Classes="LogContent"/>
 
         <!-- Footer -->
-        <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" Classes="LogFooter">
+        <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto" Classes="LogFooter">
             <TextBlock Grid.Column="0" Text="{Binding StatusText}" Classes="LogStatus"/>
             <Button Grid.Column="1" Content="Refresh" Command="{Binding RefreshCommand}" Classes="DialogAction"/>
             <Button Grid.Column="2" Content="Close" Click="CloseButton_OnClick" Classes="DialogAction"/>

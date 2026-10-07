@@ -21,6 +21,25 @@
         </Style>
 
 
+        <!-- Log Search. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Grid.LogSearch">
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="ColumnSpacing" Value="6"/>
+        </Style>
+        <Style Selector="TextBlock.LogMatchSummary">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="MinWidth" Value="70"/>
+            <Setter Property="TextAlignment" Value="Right"/>
+        </Style>
+        <Style Selector="Button.LogSearchAction">
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+        </Style>
+
+
         <!-- Log Contents (console look, matching the Audit Log panel). -->
         <!-- ====================================================================================================== -->
         <Style Selector="TextBox.LogContent">
@@ -29,6 +48,17 @@
             <Setter Property="Background" Value="#1E1E1E"/>
             <Setter Property="Foreground" Value="#D4D4D4"/>
             <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="SelectionBrush" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="SelectionForegroundBrush" Value="White"/>
+
+            <!-- The Fluent theme switches text boxes to a light background on hover and focus, which left
+                 light grey text on white. Keep the console colours in every state. -->
+            <Style Selector="^:pointerover, ^:focus">
+                <Setter Property="Foreground" Value="#D4D4D4"/>
+                <Style Selector="^ /template/ Border#PART_BorderElement">
+                    <Setter Property="Background" Value="#1E1E1E"/>
+                </Style>
+            </Style>
         </Style>
 
 
