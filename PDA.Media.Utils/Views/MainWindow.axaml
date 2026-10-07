@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:PDA.Media.Utils.ViewModels"
+        xmlns:logging="using:PDA.Media.Utils.Logging"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="1600" d:DesignHeight="900"
@@ -102,6 +103,30 @@
             <Setter Property="FontSize" Value="10"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <!-- Audit Log. -->
+        <Style Selector="ListBox.AuditLog">
+            <Setter Property="Background" Value="#1E1E1E"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Margin" Value="0,6,0,0"/>
+        </Style>
+        <Style Selector="ListBox.AuditLog ListBoxItem">
+            <Setter Property="Padding" Value="6,1"/>
+            <Setter Property="MinHeight" Value="0"/>
+        </Style>
+        <Style Selector="TextBlock.AuditLogEntry">
+            <Setter Property="FontFamily" Value="Consolas,Menlo,monospace"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Foreground" Value="#D4D4D4"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="TextBlock.AuditLogEntry.Warning">
+            <Setter Property="Foreground" Value="#E5C07B"/>
+        </Style>
+        <Style Selector="TextBlock.AuditLogEntry.Error">
+            <Setter Property="Foreground" Value="#F44747"/>
         </Style>
 
         <!-- Profile Detail Line Two. -->
@@ -262,6 +287,21 @@
 
         <!-- Audit Log. -->
         <Border Grid.Column="1" Grid.Row="2" BorderBrush="DarkSlateGray" BorderThickness="0.5" CornerRadius="5" Margin="5,5,10,10" >
+            <Grid RowDefinitions="Auto,*" Margin="10">
+
+                <Label Grid.Row="0" Content="Audit Log:" VerticalAlignment="Center" FontWeight="SemiBold"/>
+
+                <!-- Live log entries (Information and above), newest at the bottom. -->
+                <ListBox Grid.Row="1" Name="AuditLogListBox" Classes="AuditLog" ItemsSource="{Binding AuditLogEntries}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="logging:AuditLogEntry">
+                            <TextBlock Text="{Binding DisplayText}" Classes="AuditLogEntry"
+                                       Classes.Warning="{Binding IsWarning}" Classes.Error="{Binding IsError}"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+            </Grid>
         </Border>
 
     </Grid>

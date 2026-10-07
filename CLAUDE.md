@@ -25,8 +25,18 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
 - **Compiled bindings:** every view declares `x:DataType="vm:..."`. Keep it on new views and `DataTemplate`s.
 - **Theme:** `FluentTheme` with `DensityStyle="Compact"` and the Inter font (`App.axaml`, `Program.cs`).
   Developer tools are enabled in Debug builds via `WithDeveloperTools()`.
-- **Services** (`Services/`): plain classes, constructed directly (no DI container). They take an optional
-  custom file path so tests can redirect storage.
+- **Dependency injection:** `Microsoft.Extensions.DependencyInjection`. Registrations are in `ServiceConfiguration.cs`.
+  The container is built in `Program.Main` and exposed as `App.Services`. `App` resolves `MainWindow`, which receives
+  `MainViewModel` and an `EncoderProfilesViewModel` factory. When adding a service, view model or window, register
+  it there. Keep the existing non-DI constructors (they default to `NullLogger`), because tests and the XAML
+  previewer use them.
+- **Logging:** Serilog behind `Microsoft.Extensions.Logging`. Inject `ILogger<T>` and use message templates
+  (`_logger.LogInformation("Saved {Count} profiles", n)`); don't reference Serilog outside `Logging/` and `Program`.
+  The minimum level is Information. `LoggingSetup` writes to the console and to a new timestamped file per run in
+  `%APPDATA%/PDA.Media/Logs` (keeps the latest 30). `AuditLogSink` feeds the Audit Log panel on the main window
+  (`MainViewModel.AuditLogEntries`).
+- **Services** (`Services/`): singletons resolved from DI. They take an optional custom file path so tests can
+  redirect storage.
   - `AppSettingsService` stores `UserSettings` as JSON in `%APPDATA%/PDA.Media/settings.json`.
   - `EncoderProfileService` stores `List<EncodeProfile>` in `%APPDATA%/PDA.Media/profiles.json` and
     provides the built-in defaults (`GetDefaultProfiles`).

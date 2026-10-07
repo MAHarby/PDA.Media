@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using PDA.Media.Utils.Models;
 using PDA.Media.Utils.Services;
 
@@ -12,6 +14,7 @@ namespace PDA.Media.Utils.ViewModels;
 public partial class EncoderProfilesViewModel : ViewModelBase
 {
     private readonly EncoderProfileService _profileService;
+    private readonly ILogger<EncoderProfilesViewModel> _logger;
 
     [ObservableProperty] private ObservableCollection<EncodeProfile> profiles = new();
     [ObservableProperty] private ObservableCollection<EncodeProfile> filteredProfiles = new();
@@ -148,8 +151,17 @@ public partial class EncoderProfilesViewModel : ViewModelBase
     }
 
     public EncoderProfilesViewModel(EncoderProfileService profileService, string? initialSelectedProfileName = null)
+        : this(profileService, NullLogger<EncoderProfilesViewModel>.Instance, initialSelectedProfileName)
+    {
+    }
+
+    public EncoderProfilesViewModel(EncoderProfileService profileService, ILogger<EncoderProfilesViewModel> logger,
+        string? initialSelectedProfileName = null)
     {
         _profileService = profileService;
+        _logger = logger;
+        _logger.LogInformation("Opening encoding profile manager (selected profile {EncoderProfile})",
+            initialSelectedProfileName ?? "(none)");
         LoadProfiles(initialSelectedProfileName);
     }
 
@@ -243,6 +255,7 @@ public partial class EncoderProfilesViewModel : ViewModelBase
         SelectedProfile = newProfile;
         SaveCurrentProfiles();
         StatusMessage = $"Added '{newProfile.Name}'.";
+        _logger.LogInformation("Added encoding profile {EncoderProfile}", newProfile.Name);
     }
 
     [RelayCommand]
@@ -266,6 +279,7 @@ public partial class EncoderProfilesViewModel : ViewModelBase
         SelectedProfile = duplicate;
         SaveCurrentProfiles();
         StatusMessage = $"Duplicated to '{duplicate.Name}'.";
+        _logger.LogInformation("Duplicated encoding profile {SourceProfile} to {EncoderProfile}", SelectedProfile.Name, duplicate.Name);
     }
 
     [RelayCommand]
@@ -292,6 +306,7 @@ public partial class EncoderProfilesViewModel : ViewModelBase
 
         SaveCurrentProfiles();
         StatusMessage = $"Deleted '{toDelete.Name}'.";
+        _logger.LogInformation("Deleted encoding profile {EncoderProfile}", toDelete.Name);
     }
 
     [RelayCommand]
@@ -302,6 +317,7 @@ public partial class EncoderProfilesViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(EditingProfile.Name))
         {
             StatusMessage = "Profile name cannot be empty.";
+            _logger.LogWarning("Profile not saved: the profile name is empty");
             return;
         }
 
@@ -310,13 +326,24 @@ public partial class EncoderProfilesViewModel : ViewModelBase
         if (duplicateName)
         {
             StatusMessage = $"A profile named '{EditingProfile.Name}' already exists.";
+            _logger.LogWarning("Profile not saved: a profile named {EncoderProfile} already exists", EditingProfile.Name);
             return;
         }
 
+        string originalName = SelectedProfile.Name;
         SelectedProfile.CopyFrom(EditingProfile);
         SaveCurrentProfiles();
         ApplyFilter();
         StatusMessage = $"Profile '{SelectedProfile.Name}' saved successfully.";
+        if (string.Equals(originalName, SelectedProfile.Name, StringComparison.Ordinal))
+        {
+            _logger.LogInformation("Saved changes to encoding profile {EncoderProfile}", SelectedProfile.Name);
+        }
+        else
+        {
+            _logger.LogInformation("Saved changes to encoding profile {EncoderProfile} (renamed from {PreviousName})",
+                SelectedProfile.Name, originalName);
+        }
     }
 
     [RelayCommand]
@@ -326,6 +353,7 @@ public partial class EncoderProfilesViewModel : ViewModelBase
         {
             EditingProfile = SelectedProfile.Clone();
             StatusMessage = "Reverted unsaved changes.";
+            _logger.LogInformation("Reverted unsaved changes to encoding profile {EncoderProfile}", SelectedProfile.Name);
         }
     }
 
@@ -343,6 +371,7 @@ public partial class EncoderProfilesViewModel : ViewModelBase
     [RelayCommand]
     private void Close()
     {
+        _logger.LogInformation("Closing encoding profile manager");
         RequestClose?.Invoke(this, EventArgs.Empty);
     }
 
