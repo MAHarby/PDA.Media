@@ -190,8 +190,8 @@
                 <ListBox Grid.Row="1" Name="AuditLogListBox" Classes="AuditLog" ItemsSource="{Binding AuditLogEntries}">
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="logging:AuditLogEntry">
-                            <TextBlock Text="{Binding DisplayText}" Classes="AuditLogEntry"
-                                       Classes.Warning="{Binding IsWarning}" Classes.Error="{Binding IsError}"/>
+                            <TextBlock Text="{Binding DisplayText}" 
+                                       Classes="AuditLogEntry" Classes.Warning="{Binding IsWarning}" Classes.Error="{Binding IsError}"/>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>

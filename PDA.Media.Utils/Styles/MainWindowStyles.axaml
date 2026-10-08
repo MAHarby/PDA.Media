@@ -189,7 +189,8 @@
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="FontWeight" Value="Normal"/>
             <Setter Property="Foreground" Value="#D4D4D4"/>
-            <Setter Property="TextWrapping" Value="Wrap"/>
+            <!-- <Setter Property="TextWrapping" Value="Wrap"/> -->
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
         <Style Selector="TextBlock.AuditLogEntry.Warning">
             <Setter Property="Foreground" Value="#E5C07B"/>
