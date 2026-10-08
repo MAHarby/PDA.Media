@@ -131,6 +131,13 @@
             <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
+        <Style Selector="Grid.DestinationSourceLine">
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+        <Style Selector="TextBlock.DestinationSize">
+            <Setter Property="Margin" Value="4,0,0,0"/>
+            <Setter Property="TextTrimming" Value="None"/>
+        </Style>
         <Style Selector="TextBlock.DestinationStatus">
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="Margin" Value="10,0,0,0"/>

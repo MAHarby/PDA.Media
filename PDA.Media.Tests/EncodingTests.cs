@@ -214,6 +214,19 @@ public sealed class EncodingTests
         Assert.AreEqual(expected, item.OutputRelativePath);
         Assert.AreEqual(Path.Combine(destination, expected), item.OutputPath);
         Assert.AreEqual(EncodeStatus.Queued, item.Status);
+        Assert.AreEqual(1, item.SourceSize, "The file holds one byte");
+        Assert.AreEqual("- 1 B", item.SourceSizeText);
+    }
+
+    [TestMethod]
+    [DataRow(13421772800L, "12.5 GB")]
+    [DataRow(1073741824L, "1.0 GB")]
+    [DataRow(891289600L, "850 MB")]
+    [DataRow(12345L, "12 KB")]
+    [DataRow(500L, "500 B")]
+    public void TestQueue_SourceSizeFormatting(long bytes, string expected)
+    {
+        Assert.AreEqual(expected, DestinationItem.FormatSize(bytes));
     }
 
     // Progress<T> posts to the thread pool, so reports could arrive after the test asserts.
