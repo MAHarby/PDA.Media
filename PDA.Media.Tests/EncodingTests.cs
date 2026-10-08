@@ -72,17 +72,82 @@ public sealed class EncodingTests
     // ==================================================================================================
 
     [TestMethod]
-    public async Task TestEncode_SkipsFilesBelowTheMinimumSize()
+    public async Task TestEncode_SmallFileNotAtDestinationIsCopied()
+    {
+        string source = Path.Combine(_root, "small.mkv");
+        byte[] content = Enumerable.Range(0, 3000).Select(i => (byte)i).ToArray();
+        await File.WriteAllBytesAsync(source, content);
+        string output = Path.Combine(_root, "out", "Movie (2020)", "Movie (2020).mkv");
+        double lastProgress = -1;
+
+        var result = await new MediaEncodingService().EncodeAsync(source, output, FastProfile(minimumSize: 1024 * 1024),
+            new SynchronousProgress(p => lastProgress = p));
+
+        Assert.AreEqual(EncodeStatus.Copied, result.Status, result.Message);
+        CollectionAssert.AreEqual(content, await File.ReadAllBytesAsync(output), "An exact copy");
+        Assert.IsFalse(File.Exists(output + ".partial"));
+        Assert.IsTrue(File.Exists(source), "The source is untouched");
+        Assert.AreEqual(100, lastProgress);
+    }
+
+    [TestMethod]
+    public async Task TestEncode_SmallFileAlreadyAtDestinationIsSkipped()
     {
         string source = Path.Combine(_root, "small.mkv");
         await File.WriteAllBytesAsync(source, new byte[1000]);
-        string output = Path.Combine(_root, "out", "small.mkv");
+        string output = Path.Combine(_root, "out.mkv");
+        await File.WriteAllTextAsync(output, "existing");
 
         var result = await new MediaEncodingService().EncodeAsync(source, output, FastProfile(minimumSize: 1024 * 1024));
 
         Assert.AreEqual(EncodeStatus.Skipped, result.Status);
-        Assert.Contains("below 1 MB", result.Message);
-        Assert.IsFalse(Directory.Exists(Path.GetDirectoryName(output)), "Nothing is written for a skipped file");
+        Assert.Contains("already at destination", result.Message);
+        Assert.AreEqual("existing", await File.ReadAllTextAsync(output), "The existing file is left alone");
+    }
+
+    [TestMethod]
+    public async Task TestEncode_CopyKeepsTheSourceExtension()
+    {
+        string source = Path.Combine(_root, "small.mp4");
+        await File.WriteAllBytesAsync(source, new byte[1000]);
+        string output = Path.Combine(_root, "out", "Movie (2020).mkv");
+
+        var result = await new MediaEncodingService().EncodeAsync(source, output, FastProfile(minimumSize: 1024 * 1024));
+
+        Assert.AreEqual(EncodeStatus.Copied, result.Status);
+        Assert.AreEqual(Path.Combine(_root, "out", "Movie (2020).mp4"), result.OutputFile);
+        Assert.IsTrue(File.Exists(result.OutputFile));
+        Assert.IsFalse(File.Exists(output), "Not renamed to .mkv, since it wasn't re-encoded");
+    }
+
+    [TestMethod]
+    public async Task TestEncode_SmallFileSkippedWhenAlreadyCopiedWithItsOwnExtension()
+    {
+        string source = Path.Combine(_root, "small.mp4");
+        await File.WriteAllBytesAsync(source, new byte[1000]);
+        string output = Path.Combine(_root, "Movie (2020).mkv");
+        await File.WriteAllTextAsync(Path.ChangeExtension(output, ".mp4"), "copied earlier");
+
+        var result = await new MediaEncodingService().EncodeAsync(source, output, FastProfile(minimumSize: 1024 * 1024));
+
+        Assert.AreEqual(EncodeStatus.Skipped, result.Status);
+    }
+
+    [TestMethod]
+    public async Task TestEncode_CancelledCopyLeavesNothingBehind()
+    {
+        string source = Path.Combine(_root, "small.mkv");
+        await File.WriteAllBytesAsync(source, new byte[1000]);
+        string output = Path.Combine(_root, "out", "small.mkv");
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+
+        var result = await new MediaEncodingService().EncodeAsync(source, output, FastProfile(minimumSize: 1024 * 1024),
+            null, cancellation.Token);
+
+        Assert.AreEqual(EncodeStatus.Cancelled, result.Status);
+        Assert.IsFalse(File.Exists(output));
+        Assert.IsFalse(File.Exists(output + ".partial"));
     }
 
     [TestMethod]

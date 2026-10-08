@@ -333,7 +333,7 @@ public partial class MainViewModel : ViewModelBase
         _logger.LogInformation("Starting batch: {FileCount} files with profile {ProfileName} to {DestinationPath}",
             items.Count, profile.Name, DestinationPath);
         var batchTimer = Stopwatch.StartNew();
-        int done = 0, skipped = 0, failed = 0;
+        int done = 0, copied = 0, skipped = 0, failed = 0;
 
         try
         {
@@ -369,12 +369,20 @@ public partial class MainViewModel : ViewModelBase
                 var result = await _encodingService.EncodeAsync(item.FullPath, item.OutputPath!, profile, progress, cancellationToken);
                 item.Status = result.Status;
                 item.StatusText = result.Message;
-                item.Progress = result.Status == EncodeStatus.Done ? 100 : item.Progress;
+                item.Progress = result.Status is EncodeStatus.Done or EncodeStatus.Copied ? 100 : item.Progress;
+
+                // A copied file keeps its own extension, so show the name it was actually given.
+                if (result.OutputFile != null && result.OutputFile != item.OutputPath)
+                {
+                    item.OutputRelativePath = Path.ChangeExtension(item.OutputRelativePath, Path.GetExtension(result.OutputFile));
+                    item.OutputPath = result.OutputFile;
+                }
                 OverallProgress = (index + 1.0) / items.Count * 100;
 
                 switch (result.Status)
                 {
                     case EncodeStatus.Done: done++; break;
+                    case EncodeStatus.Copied: copied++; break;
                     case EncodeStatus.Skipped: skipped++; break;
                     case EncodeStatus.Failed: failed++; break;
                 }
@@ -383,7 +391,7 @@ public partial class MainViewModel : ViewModelBase
         finally
         {
             IsEncoding = false;
-            string summary = $"{done} encoded, {skipped} skipped, {failed} failed in {batchTimer.Elapsed:h\\:mm\\:ss}";
+            string summary = $"{done} encoded, {copied} copied, {skipped} skipped, {failed} failed in {batchTimer.Elapsed:h\\:mm\\:ss}";
             StatusText = (cancellationToken.IsCancellationRequested ? "Cancelled: " : "Finished: ") + summary;
 
             if (cancellationToken.IsCancellationRequested)
