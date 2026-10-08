@@ -97,7 +97,7 @@ public sealed class EncodingTests
     // Encoding service with FFmpeg (inconclusive when FFmpeg isn't installed).
     // ==================================================================================================
 
-    private string CreateSampleVideo()
+    private string CreateSampleVideo(string extraArguments = "")
     {
         if (!new FFmpegService(Path.Combine(_root, "no-binaries-here")).Locate())
         {
@@ -106,7 +106,7 @@ public sealed class EncodingTests
 
         string source = Path.Combine(_root, "sample.mkv");
         using var process = Process.Start(new ProcessStartInfo("ffmpeg",
-            $"-loglevel error -y -f lavfi -i testsrc2=duration=2:size=320x240:rate=24 -f lavfi -i sine=duration=2 -c:v libx264 -preset ultrafast -c:a aac \"{source}\"")
+            $"-loglevel error -y -f lavfi -i testsrc2=duration=2:size=320x240:rate=24 -f lavfi -i sine=duration=2 -c:v libx264 -preset ultrafast -c:a aac {extraArguments} \"{source}\"")
         {
             UseShellExecute = false,
             CreateNoWindow = true
@@ -150,6 +150,42 @@ public sealed class EncodingTests
         Assert.AreEqual(EncodeStatus.Cancelled, result.Status);
         Assert.AreEqual("existing good file", await File.ReadAllTextAsync(output));
         Assert.IsFalse(File.Exists(output + ".partial"));
+    }
+
+    [TestMethod]
+    public async Task TestExpectedFrames_UsesMkvmergeFrameCountTag()
+    {
+        // mkvmerge stores the exact count; here it deliberately differs from 2s x 24fps = 48.
+        string source = CreateSampleVideo("-metadata:s:v:0 NUMBER_OF_FRAMES=40");
+
+        var analysis = await FFMpegCore.FFProbe.AnalyseAsync(source);
+
+        Assert.AreEqual(40, MediaEncodingService.ExpectedVideoFrames(analysis));
+    }
+
+    [TestMethod]
+    public async Task TestExpectedFrames_FallsBackToFrameRateTimesDuration()
+    {
+        string source = CreateSampleVideo();
+
+        var analysis = await FFMpegCore.FFProbe.AnalyseAsync(source);
+
+        Assert.AreEqual(48, MediaEncodingService.ExpectedVideoFrames(analysis), 1.5, "2 seconds at 24 fps");
+    }
+
+    [TestMethod]
+    public async Task TestEncode_ProgressOnlyMovesForwardAndEndsAt100()
+    {
+        string source = CreateSampleVideo();
+        var reports = new System.Collections.Generic.List<double>();
+
+        var result = await new MediaEncodingService().EncodeAsync(source, Path.Combine(_root, "progress.mkv"), FastProfile(),
+            new SynchronousProgress(reports.Add));
+
+        Assert.AreEqual(EncodeStatus.Done, result.Status, result.Message);
+        CollectionAssert.AreEqual(reports.OrderBy(r => r).ToList(), reports, "Progress never goes backwards");
+        Assert.AreEqual(100, reports[^1]);
+        Assert.IsTrue(reports.Take(reports.Count - 1).All(r => r < 100), "100% is only reported once FFmpeg has finished");
     }
 
     // Main window queue.
