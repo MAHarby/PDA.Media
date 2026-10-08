@@ -71,7 +71,9 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
     `PlexNamingTests`; add a DataRow there for any new naming case.
 - **Models** (`Models/`, namespace `PDA.Media.Utils.Models`): `EncodeProfile` holds the FFmpeg settings (codec, preset,
   CRF, pixel format, audio, streams, subtitles) and supports `Clone()`. Its `GeneratedInputArguments` (e.g. `-hwaccel`)
-  go before the input and `GeneratedOutputArguments` after it; `GeneratedFFMpegArguments` is the combined preview. `MediaNode` is a source tree node (selecting a
+  go before the input and `GeneratedOutputArguments` after it; `GeneratedFFMpegArguments` is the combined preview.
+  `CopySubtitles` (shown as "Include Subtitles") either copies subtitle tracks (`-c:s copy`) or leaves them out (`-sn`);
+  never let FFmpeg convert them, because image-based Blu-ray (PGS) subtitles can't be converted and the encode fails. `MediaNode` is a source tree node (selecting a
   folder cascades to its children); `DestinationItem` is a file queued in the destination list, with its Plex output path and encoding status. Put new model
   classes here, not at the bottom of view model files.
 

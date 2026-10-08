@@ -188,6 +188,44 @@ public sealed class EncodingTests
         Assert.IsTrue(reports.Take(reports.Count - 1).All(r => r < 100), "100% is only reported once FFmpeg has finished");
     }
 
+    [TestMethod]
+    [DataRow(true, "video,audio,subtitle", DisplayName = "Include subtitles: copied")]
+    [DataRow(false, "video,audio", DisplayName = "Exclude subtitles: left out, even with -map 0")]
+    public async Task TestEncode_SubtitlesAreCopiedOrLeftOut(bool includeSubtitles, string expectedStreams)
+    {
+        string source = CreateSampleVideo();
+        string subtitles = Path.Combine(_root, "sample.srt");
+        await File.WriteAllTextAsync(subtitles, "1\n00:00:00,500 --> 00:00:01,500\nHello\n\n");
+        string withSubtitles = Path.Combine(_root, "with-subtitles.mkv");
+        RunFFmpeg($"-i \"{source}\" -i \"{subtitles}\" -map 0 -map 1 -c copy -c:s srt \"{withSubtitles}\"");
+
+        var profile = FastProfile();
+        profile.KeepAllStreams = true;
+        profile.CopySubtitles = includeSubtitles;
+        string output = Path.Combine(_root, "subtitles-test.mkv");
+
+        var result = await new MediaEncodingService().EncodeAsync(withSubtitles, output, profile);
+
+        Assert.AreEqual(EncodeStatus.Done, result.Status, result.Message);
+        var analysis = await FFMpegCore.FFProbe.AnalyseAsync(output);
+        var kinds = new System.Collections.Generic.List<string>();
+        if (analysis.VideoStreams.Count > 0) kinds.Add("video");
+        if (analysis.AudioStreams.Count > 0) kinds.Add("audio");
+        if (analysis.SubtitleStreams.Count > 0) kinds.Add("subtitle");
+        Assert.AreEqual(expectedStreams, string.Join(",", kinds));
+    }
+
+    private static void RunFFmpeg(string arguments)
+    {
+        using var process = Process.Start(new ProcessStartInfo("ffmpeg", "-loglevel error -y " + arguments)
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true
+        })!;
+        process.WaitForExit(30000);
+        Assert.AreEqual(0, process.ExitCode, "ffmpeg " + arguments);
+    }
+
     // Main window queue.
     // ==================================================================================================
 
