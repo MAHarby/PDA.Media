@@ -38,7 +38,9 @@ public partial class EncodeProfile : ObservableObject
 
     // Stream & Container options
     [ObservableProperty] private bool keepAllStreams = true; // -map 0
-    [ObservableProperty] private bool copySubtitles = true; // -c:s copy
+    // Include subtitle tracks: true copies them unchanged (-c:s copy), false leaves them out (-sn).
+    // Named CopySubtitles so profiles saved before the meaning of "off" changed keep their value.
+    [ObservableProperty] private bool copySubtitles = true;
     [ObservableProperty] private string customArguments = string.Empty;
     [ObservableProperty] private bool isPredefined = false;
 
@@ -216,11 +218,9 @@ public partial class EncodeProfile : ObservableObject
                 }
             }
 
-            // Subtitle handling
-            if (CopySubtitles)
-            {
-                args.Add("-c:s copy");
-            }
+            // Subtitles are either copied unchanged or left out. Converting them isn't offered: with -map 0 FFmpeg
+            // would otherwise re-encode them, which fails for image-based Blu-ray (PGS) subtitles.
+            args.Add(CopySubtitles ? "-c:s copy" : "-sn");
 
             if (!string.IsNullOrWhiteSpace(CustomArguments))
             {

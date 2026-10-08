@@ -159,7 +159,8 @@
 
                         <StackPanel Classes="OptionToggles">
                             <CheckBox Content="Preserve All Streams / Tracks (-map 0)" IsChecked="{Binding EditingProfile.KeepAllStreams, Mode=TwoWay}"/>
-                            <CheckBox Content="Copy Subtitles (-c:s copy)" IsChecked="{Binding EditingProfile.CopySubtitles, Mode=TwoWay}"/>
+                            <CheckBox Content="Include Subtitles (-c:s copy; unticked: -sn)" IsChecked="{Binding EditingProfile.CopySubtitles, Mode=TwoWay}"
+                                      ToolTip.Tip="Ticked: subtitle tracks are copied unchanged. Unticked: all subtitle tracks are left out."/>
                         </StackPanel>
 
                         <StackPanel Classes="FullWidthField">

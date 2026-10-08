@@ -120,6 +120,7 @@ public sealed class EncodeProfileTests
         Assert.Contains("-ar 48000", args);
         Assert.Contains("-tune film", args);
         Assert.DoesNotContain("-c:s copy", args);
+        Assert.Contains("-sn", args, "Unticked subtitles are left out, not converted");
     }
 
     [TestMethod]
