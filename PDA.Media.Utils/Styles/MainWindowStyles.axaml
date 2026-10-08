@@ -210,5 +210,18 @@
             <Setter Property="Foreground" Value="{DynamicResource SystemBaseHighColor}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
+
+        <!-- Status Bar -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.StatusPanel">
+            <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Margin" Value="10,3,10,5"/>
+        </Style>
+        
         
 </Styles>

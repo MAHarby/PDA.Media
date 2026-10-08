@@ -21,7 +21,7 @@
         <StyleInclude Source="../Styles/MainWindowStyles.axaml"/>
     </Window.Styles>
     
-    <Grid RowDefinitions="Auto,2*,*,30" ColumnDefinitions="*,*" ShowGridLines="False">
+    <Grid RowDefinitions="Auto,2*,*,Auto" ColumnDefinitions="*,*" ShowGridLines="False">
     
         <!-- Branding -->
         <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal">
@@ -200,9 +200,9 @@
         </Border>
         
         <!-- Main Window Status Bar. -->
-        <StackPanel Name="mainWindowStatusBar" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal">
+        <Border Name="mainWindowStatusBar" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Classes="StatusPanel" >
             
-        </StackPanel>
+        </Border>
         
         
     </Grid>
