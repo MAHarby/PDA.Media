@@ -198,6 +198,13 @@
 
             </Grid>
         </Border>
+        
+        <!-- Main Window Status Bar. -->
+        <StackPanel Name="mainWindowStatusBar" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal">
+            
+        </StackPanel>
+        
+        
     </Grid>
 
 </Window>
