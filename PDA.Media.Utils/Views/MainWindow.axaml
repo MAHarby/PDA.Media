@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:PDA.Media.Utils.ViewModels"
         xmlns:logging="using:PDA.Media.Utils.Logging"
+        xmlns:models="using:PDA.Media.Utils.Models"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="1600" d:DesignHeight="900"
@@ -30,7 +31,7 @@
         </StackPanel>
         
         <!-- Window Menu -->
-        <Grid Grid.Column="1" Grid.Row="0" ColumnDefinitions="40,35,35,*,35,35,35">
+        <Grid Grid.Column="1" Grid.Row="0" ColumnDefinitions="40,35,35,40,35,35,*,35,35,35">
 
             <!-- Toolbar Buttons. -->
             <Button Grid.Column="0" Name="SendMediaItemsButton" Classes="Toolbar" ToolTip.Tip="Send source media items to destination" Margin="5,0,0,0"
@@ -44,14 +45,28 @@
                 <PathIcon Data="{StaticResource paint_roller}" Classes="Toolbar"/>
             </Button>
 
+            <!-- Encoding: start, cancel, and download FFmpeg (only shown while it's missing). -->
+            <Button Grid.Column="3" Name="EncodeButton" Classes="Toolbar" ToolTip.Tip="Encode the destination list with the selected profile" Margin="10,0,0,0"
+                    Command="{Binding EncodeCommand}">
+                <PathIcon Data="{StaticResource play_icon}" Classes="Toolbar"/>
+            </Button>
+            <Button Grid.Column="4" Name="CancelEncodeButton" Classes="Toolbar" ToolTip.Tip="Cancel encoding (the current file is discarded)" Margin="5,0,0,0"
+                    Command="{Binding EncodeCancelCommand}">
+                <PathIcon Data="{StaticResource stop_icon}" Classes="Toolbar"/>
+            </Button>
+            <Button Grid.Column="5" Name="DownloadFFmpegButton" Classes="Toolbar" ToolTip.Tip="Download FFmpeg and FFprobe into the app's bin folder" Margin="5,0,0,0"
+                    Command="{Binding DownloadFFmpegCommand}" IsVisible="{Binding !IsFFmpegAvailable}">
+                <PathIcon Data="{StaticResource download_icon}" Classes="Toolbar"/>
+            </Button>
+
             <!-- Window Buttons. -->
-            <Button Grid.Column="4" Name="WindowMinimizeButton" Classes="Toolbar" ToolTip.Tip="Minimize Window" Click="WindowMinimizeButton_OnClick">
+            <Button Grid.Column="7" Name="WindowMinimizeButton" Classes="Toolbar" ToolTip.Tip="Minimize Window" Click="WindowMinimizeButton_OnClick">
                 <PathIcon Data="{StaticResource window_minimize}" Classes="Toolbar"/>
             </Button>
-            <Button Grid.Column="5" Name="WindowMaximizeButton" Classes="Toolbar" ToolTip.Tip="Maximize/Restore Window" Click="WindowMaximizeButton_OnClick">
+            <Button Grid.Column="8" Name="WindowMaximizeButton" Classes="Toolbar" ToolTip.Tip="Maximize/Restore Window" Click="WindowMaximizeButton_OnClick">
                 <PathIcon Data="{StaticResource window_maximize}" Classes="Toolbar"/>
             </Button>
-            <Button Grid.Column="6" Name="WindowCloseButton" Classes="Toolbar" ToolTip.Tip="Close Window" Click="WindowCloseButton_OnClick">
+            <Button Grid.Column="9" Name="WindowCloseButton" Classes="Toolbar" ToolTip.Tip="Close Window" Click="WindowCloseButton_OnClick">
                 <PathIcon Data="{StaticResource window_close}" Classes="Toolbar"/>
             </Button>
         </Grid>
@@ -107,9 +122,18 @@
                 <ListBox Grid.Row="1" Name="destinationListBox" Classes="DestinationFiles" 
                          ItemsSource="{Binding DestinationItems}" SelectedItem="{Binding SelectedDestinationItem}">
                     
+                    <!-- Each item: Plex output name, source file, and encoding status. -->
                     <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding FullPath }"></TextBlock>
+                        <DataTemplate x:DataType="models:DestinationItem">
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding OutputRelativePath}" Classes="DestinationOutput"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding StatusText}" Classes="DestinationStatus"
+                                           Classes.Encoding="{Binding IsEncoding}" Classes.Done="{Binding IsDone}"
+                                           Classes.Skipped="{Binding IsSkipped}" Classes.Failed="{Binding IsFailed}"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding FullPath}" Classes="DestinationSource"/>
+                                <ProgressBar Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Value="{Binding Progress}" IsVisible="{Binding IsEncoding}"
+                                             Classes="DestinationProgress"/>
+                            </Grid>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                     
@@ -201,7 +225,10 @@
         
         <!-- Main Window Status Bar. -->
         <Border Name="mainWindowStatusBar" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Classes="StatusPanel" >
-            
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding StatusText}" Classes="StatusText"/>
+                <ProgressBar Grid.Column="1" Value="{Binding OverallProgress}" IsVisible="{Binding IsEncoding}" Classes="StatusProgress"/>
+            </Grid>
         </Border>
         
         

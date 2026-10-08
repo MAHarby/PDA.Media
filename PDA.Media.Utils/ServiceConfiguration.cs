@@ -32,6 +32,8 @@ public static class ServiceConfiguration
         services.AddSingleton(sp => new AppSettingsService(sp.GetRequiredService<ILogger<AppSettingsService>>()));
         services.AddSingleton(sp => new EncoderProfileService(sp.GetRequiredService<ILogger<EncoderProfileService>>()));
         services.AddSingleton(sp => new LogFileService(logFilePath, sp.GetRequiredService<ILogger<LogFileService>>()));
+        services.AddSingleton(sp => new FFmpegService(sp.GetRequiredService<ILogger<FFmpegService>>()));
+        services.AddSingleton(sp => new MediaEncodingService(sp.GetRequiredService<ILogger<MediaEncodingService>>()));
 
         // View models.
         services.AddTransient<MainViewModel>();
