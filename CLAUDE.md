@@ -64,8 +64,10 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   - `FFmpegService` finds `ffmpeg`/`ffprobe` in the app's `bin` folder (`<exe folder>/bin`), then on the PATH, and
     configures FFMpegCore. When they're missing, the toolbar's Download button uses `FFMpegCore.Extensions.Downloader`
     (ffbinaries.com, FFmpeg 6.1) to put them in that `bin` folder.
-  - `MediaEncodingService` encodes one file with a profile: skips files under `MinimumSourceFileSize`, never modifies
-    the source, writes `<output>.partial` and only replaces (overwrites) the real output on success.
+  - `MediaEncodingService` encodes one file with a profile. A file under `MinimumSourceFileSize` (too small or already
+    encoded) isn't encoded: it is copied unchanged, keeping its own extension, when it isn't at the destination yet
+    (status `Copied`), and skipped when it is. It never modifies the source, writes `<output>.partial` and only replaces
+    (overwrites) the real output on success.
   - `PlexNaming` (static, pure) turns a source path into a Plex output path: `Show (Year)/Season 01/Show (Year) - s01e02 -
     Title.mkv` or `Movie (Year)/Movie (Year).mkv`, cutting release tags (Bluray, 1080p, x265, ...). Covered by
     `PlexNamingTests`; add a DataRow there for any new naming case.

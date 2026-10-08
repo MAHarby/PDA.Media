@@ -7,6 +7,7 @@ public enum EncodeStatus
     Queued,
     Encoding,
     Done,
+    Copied,
     Skipped,
     Failed,
     Cancelled
@@ -47,7 +48,7 @@ public partial class DestinationItem : ObservableObject
     [ObservableProperty] public partial double Progress { get; set; }
 
     public bool IsEncoding => Status == EncodeStatus.Encoding;
-    public bool IsDone => Status == EncodeStatus.Done;
+    public bool IsDone => Status is EncodeStatus.Done or EncodeStatus.Copied;
     public bool IsSkipped => Status is EncodeStatus.Skipped or EncodeStatus.Cancelled;
     public bool IsFailed => Status == EncodeStatus.Failed;
 

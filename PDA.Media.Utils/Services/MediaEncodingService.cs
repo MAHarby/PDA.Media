@@ -13,7 +13,8 @@ using PDA.Media.Utils.Models;
 
 namespace PDA.Media.Utils.Services;
 
-public sealed record EncodeResult(EncodeStatus Status, string Message);
+/// <param name="OutputFile">The file written, when it differs from the requested output (a copy keeps the source's extension).</param>
+public sealed record EncodeResult(EncodeStatus Status, string Message, string? OutputFile = null);
 
 /// <summary>
 /// Encodes one source file with an <see cref="EncodeProfile"/>.
@@ -57,13 +58,27 @@ public partial class MediaEncodingService
             return new EncodeResult(EncodeStatus.Failed, "Source file not found");
         }
 
+        // Below the minimum size the file is too small to be worth encoding (or already encoded). It's copied across
+        // unchanged, under its Plex name, unless it's already at the destination.
         if ((ulong)source.Length < profile.MinimumSourceFileSize)
         {
             string size = EncodeProfile.FormatFileSize((ulong)source.Length);
+            // A copy isn't re-encoded, so it keeps the source's own extension (e.g. .mp4) rather than the profile's.
+            string copyFile = source.Extension.Length > 0 ? Path.ChangeExtension(outputFile, source.Extension) : outputFile;
+            string? existing = File.Exists(copyFile) ? copyFile : File.Exists(outputFile) ? outputFile : null;
+
+            if (existing != null)
+            {
+                _logger.LogInformation(
+                    "Skipped {SourceFile}: {FileSize} is below the profile's minimum of {MinimumSize} and {ExistingFile} already exists",
+                    sourceFile, size, profile.MinimumSourceFileSizeFormatted, existing);
+                return new EncodeResult(EncodeStatus.Skipped, "Skipped: below minimum, already at destination", existing);
+            }
+
             _logger.LogInformation(
-                "Skipped {SourceFile}: {FileSize} is below the profile's minimum of {MinimumSize} (too small or already encoded)",
+                "{SourceFile}: {FileSize} is below the profile's minimum of {MinimumSize}, so it is copied instead of encoded",
                 sourceFile, size, profile.MinimumSourceFileSizeFormatted);
-            return new EncodeResult(EncodeStatus.Skipped, $"Skipped: {size} is below {profile.MinimumSourceFileSizeFormatted}");
+            return await CopyAsync(source, copyFile, progress, cancellationToken);
         }
 
         string partialFile = outputFile + ".partial";
@@ -134,6 +149,54 @@ public partial class MediaEncodingService
             _logger.LogError(ex, "Failed to encode {SourceFile}", sourceFile);
             _logger.LogError("Last FFmpeg output for {SourceFile}: {FFmpegMessages}", Path.GetFileName(sourceFile), monitor.RecentLines(15));
             return new EncodeResult(EncodeStatus.Failed, "Failed: " + FirstLine(ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Copies <paramref name="source"/> to <paramref name="outputFile"/> through a ".partial" file, reporting progress.
+    /// </summary>
+    private async Task<EncodeResult> CopyAsync(FileInfo source, string outputFile, IProgress<double>? progress,
+        CancellationToken cancellationToken)
+    {
+        string partialFile = outputFile + ".partial";
+        var stopwatch = Stopwatch.StartNew();
+
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(outputFile)!);
+
+            const int bufferSize = 1024 * 1024;
+            await using (var input = new FileStream(source.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync: true))
+            await using (var output = new FileStream(partialFile, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, useAsync: true))
+            {
+                var buffer = new byte[bufferSize];
+                long copied = 0;
+                int read;
+                while ((read = await input.ReadAsync(buffer, cancellationToken)) > 0)
+                {
+                    await output.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                    copied += read;
+                    if (source.Length > 0) progress?.Report(Math.Min(99.9, 100.0 * copied / source.Length));
+                }
+            }
+
+            File.Move(partialFile, outputFile, overwrite: true);
+            _logger.LogInformation("Copied {SourceFile} to {OutputFile} in {Elapsed:hh\\:mm\\:ss}",
+                source.FullName, outputFile, stopwatch.Elapsed);
+            progress?.Report(100);
+            return new EncodeResult(EncodeStatus.Copied, "Copied (below minimum size)", outputFile);
+        }
+        catch (Exception ex) when (cancellationToken.IsCancellationRequested)
+        {
+            DeletePartial(partialFile);
+            _logger.LogWarning("Cancelled copying {SourceFile} ({ExceptionType})", source.FullName, ex.GetType().Name);
+            return new EncodeResult(EncodeStatus.Cancelled, "Cancelled");
+        }
+        catch (Exception ex)
+        {
+            DeletePartial(partialFile);
+            _logger.LogError(ex, "Failed to copy {SourceFile} to {OutputFile}", source.FullName, outputFile);
+            return new EncodeResult(EncodeStatus.Failed, "Copy failed: " + FirstLine(ex.Message));
         }
     }
 
