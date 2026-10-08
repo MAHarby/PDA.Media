@@ -98,6 +98,10 @@ dotnet run --project PDA.Media.Utils                 # needs a desktop/display (
   uses `FFmpegService` (above). Encoding tests that need FFmpeg report Inconclusive when it isn't on the PATH.
 - Encoding runs on the UI thread's async context; progress comes through `Progress<T>` created on the UI thread.
   Progress reports are queued, so ignore ones that arrive after a file has finished.
+- Encoding progress is encoded video frames / expected frames (mkvmerge's `NUMBER_OF_FRAMES` tag, else frame rate x
+  duration), parsed from FFmpeg's `frame=` status lines. Don't use FFmpeg's `time=`: with `-map 0`, copied audio and
+  subtitle streams run far ahead of the video being encoded, so `time=` jumps to near the end early (seen with
+  FFmpeg 9 on a Blu-ray rip: 93% reported when the video was 30% done).
 
 ## Cloud sessions (Claude Code on the web)
 

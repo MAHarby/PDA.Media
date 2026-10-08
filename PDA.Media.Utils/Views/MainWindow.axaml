@@ -130,7 +130,11 @@
                                 <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding StatusText}" Classes="DestinationStatus"
                                            Classes.Encoding="{Binding IsEncoding}" Classes.Done="{Binding IsDone}"
                                            Classes.Skipped="{Binding IsSkipped}" Classes.Failed="{Binding IsFailed}"/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding FullPath}" Classes="DestinationSource"/>
+                                <!-- Left-aligned so the size follows the path, which is trimmed when space runs out. -->
+                                <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto" Classes="DestinationSourceLine">
+                                    <TextBlock Grid.Column="0" Text="{Binding FullPath}" Classes="DestinationSource"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SourceSizeText}" Classes="DestinationSource DestinationSize"/>
+                                </Grid>
                                 <ProgressBar Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Value="{Binding Progress}" IsVisible="{Binding IsEncoding}"
                                              Classes="DestinationProgress"/>
                             </Grid>

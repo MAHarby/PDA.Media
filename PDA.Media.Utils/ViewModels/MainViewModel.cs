@@ -238,7 +238,7 @@ public partial class MainViewModel : ViewModelBase
         }
         else if (node.Selected)
         {
-            DestinationItems.Add(new DestinationItem(node.Name, node.FullPath, SourcePath));
+            DestinationItems.Add(new DestinationItem(node.Name, node.FullPath, SourcePath, GetFileSize(node.FullPath)));
         }
     }
 
@@ -287,6 +287,19 @@ public partial class MainViewModel : ViewModelBase
     }
 
     private bool CanChangeQueue() => !IsEncoding;
+
+    private long GetFileSize(string path)
+    {
+        try
+        {
+            return new FileInfo(path).Length;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogWarning(ex, "Could not read the size of {SourceFile}", path);
+            return 0;
+        }
+    }
 
     /// <summary>
     /// Works out each queued file's Plex output name (relative to the destination) and full output path.

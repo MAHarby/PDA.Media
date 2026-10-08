@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using FFMpegCore;
@@ -20,7 +21,7 @@ public sealed record EncodeResult(EncodeStatus Status, string Message);
 /// output file (overwriting any existing one) once FFmpeg finishes successfully, so a failed or cancelled
 /// encode never destroys an existing good file, and Plex never picks up a half-written one.
 /// </summary>
-public class MediaEncodingService
+public partial class MediaEncodingService
 {
     // FFmpeg format names for the profile's container, needed because the ".partial" extension hides it.
     private static readonly Dictionary<string, string> FormatNames = new(StringComparer.OrdinalIgnoreCase)
@@ -75,6 +76,19 @@ public class MediaEncodingService
             var analysis = await FFProbe.AnalyseAsync(sourceFile, cancellationToken: cancellationToken);
             LogSourceSummary(sourceFile, analysis);
 
+            // FFmpeg's "time=" follows whichever output stream is furthest along. Copied audio and subtitle streams
+            // can run far ahead of the video being encoded, so progress is measured in video frames when possible.
+            double expectedFrames = ExpectedVideoFrames(analysis);
+            if (expectedFrames > 0)
+            {
+                monitor.TrackFrames(expectedFrames, percent => progress?.Report(percent));
+                _logger.LogInformation("Progress is measured in video frames: about {ExpectedFrames:N0}", expectedFrames);
+            }
+            else
+            {
+                _logger.LogInformation("Video frame count unknown; progress follows FFmpeg's reported time");
+            }
+
             var job = FFMpegArguments
                 .FromFileInput(sourceFile, verifyExists: true, options =>
                 {
@@ -85,6 +99,7 @@ public class MediaEncodingService
                     .ForceFormat(FormatNames.GetValueOrDefault(profile.ContainerFormat, profile.ContainerFormat)))
                 .NotifyOnProgress(percent =>
                 {
+                    if (monitor.TracksFrames) return;
                     monitor.OnProgress(percent);
                     progress?.Report(Math.Clamp(percent, 0, 100));
                 }, analysis.Duration)
@@ -139,6 +154,25 @@ public class MediaEncodingService
             Path.GetFileName(sourceFile), analysis.Duration, video, audio, subtitles);
     }
 
+    // Total video frames: mkvmerge's exact NUMBER_OF_FRAMES tag when present, otherwise frame rate x duration;
+    // 0 when neither is known.
+    public static double ExpectedVideoFrames(IMediaAnalysis analysis)
+    {
+        var video = analysis.PrimaryVideoStream;
+        if (video == null) return 0;
+
+        // The tag may carry a language suffix, e.g. "NUMBER_OF_FRAMES-eng".
+        var frameTag = video.Tags?.FirstOrDefault(tag => tag.Key.StartsWith("NUMBER_OF_FRAMES", StringComparison.OrdinalIgnoreCase));
+        if (frameTag?.Value is { } tagValue && long.TryParse(tagValue, out long taggedFrames) && taggedFrames > 0)
+        {
+            return taggedFrames;
+        }
+
+        double fps = video.AvgFrameRate > 0 ? video.AvgFrameRate : video.FrameRate;
+        var duration = video.Duration > TimeSpan.Zero ? video.Duration : analysis.Duration;
+        return fps > 0 && duration > TimeSpan.Zero ? fps * duration.TotalSeconds : 0;
+    }
+
     private void DeletePartial(string partialFile)
     {
         try
@@ -155,9 +189,9 @@ public class MediaEncodingService
     /// Watches FFmpeg's stderr: logs its warnings, errors and stream mapping, keeps recent lines for diagnostics,
     /// and logs a warning when progress stands still while FFmpeg keeps running.
     /// </summary>
-    private sealed class FFmpegOutputMonitor : IDisposable
+    private sealed partial class FFmpegOutputMonitor : IDisposable
     {
-        private const int MaxLoggedMessages = 20;
+        private const int MaxLoggedProblems = 20;
         private const int RecentLineCount = 40;
         private static readonly TimeSpan RepeatStallWarningEvery = TimeSpan.FromMinutes(10);
         private static readonly string[] ProblemWords =
@@ -170,7 +204,23 @@ public class MediaEncodingService
         private readonly object _lock = new();
         private readonly Queue<string> _recentLines = new();
         private string _lastStatus = "(none yet)";
-        private int _loggedMessages;
+        private int _loggedProblems;
+        private readonly List<string> _mappings = new();
+        private bool _mappingLogged;
+        private double _expectedFrames;
+        private Action<double>? _reportFramePercent;
+
+        [GeneratedRegex(@"^frame=\s*(\d+)")]
+        private static partial Regex FrameCount { get; }
+
+        public bool TracksFrames => _expectedFrames > 0;
+
+        /// <summary>Reports progress as encoded frames / <paramref name="expectedFrames"/> from FFmpeg's status lines.</summary>
+        public void TrackFrames(double expectedFrames, Action<double> report)
+        {
+            _expectedFrames = expectedFrames;
+            _reportFramePercent = report;
+        }
         private double _lastPercent = -1;
         private DateTime _lastProgressAt = DateTime.UtcNow;
         private DateTime _lastStallWarningAt = DateTime.MinValue;
@@ -189,10 +239,20 @@ public class MediaEncodingService
             line = line.Trim();
             if (line.Length == 0) return;
 
-            // Status lines ("frame= 1234 fps= 25 ... time=00:41:02.12 ... speed=1.2x") are only kept for diagnostics.
+            // Status lines: "frame= 1234 fps= 25 ... time=00:41:02.12 ... speed=1.2x".
             if (line.StartsWith("frame=", StringComparison.Ordinal) || line.StartsWith("size=", StringComparison.Ordinal))
             {
                 lock (_lock) _lastStatus = line;
+                LogMappingOnce();
+
+                var frames = FrameCount.Match(line);
+                if (_expectedFrames > 0 && frames.Success)
+                {
+                    // Held just below 100% until FFmpeg has actually finished.
+                    double percent = Math.Min(double.Parse(frames.Groups[1].Value) / _expectedFrames * 100, 99.9);
+                    OnProgress(percent);
+                    _reportFramePercent?.Invoke(percent);
+                }
                 return;
             }
 
@@ -202,20 +262,40 @@ public class MediaEncodingService
                 while (_recentLines.Count > RecentLineCount) _recentLines.Dequeue();
             }
 
-            bool isMapping = line.StartsWith("Stream #", StringComparison.Ordinal) && line.Contains("->", StringComparison.Ordinal);
-            bool isProblem = ProblemWords.Any(word => line.Contains(word, StringComparison.OrdinalIgnoreCase));
-            if (!isMapping && !isProblem) return;
+            if (line.StartsWith("Stream #", StringComparison.Ordinal) && line.Contains("->", StringComparison.Ordinal))
+            {
+                lock (_lock) _mappings.Add(line["Stream ".Length..]);
+                return;
+            }
 
-            int count = Interlocked.Increment(ref _loggedMessages);
-            if (count <= MaxLoggedMessages)
+            if (!ProblemWords.Any(word => line.Contains(word, StringComparison.OrdinalIgnoreCase))) return;
+
+            int count = Interlocked.Increment(ref _loggedProblems);
+            if (count <= MaxLoggedProblems)
             {
-                if (isProblem) _logger.LogWarning("FFmpeg ({SourceFile}): {FFmpegMessage}", _sourceName, line);
-                else _logger.LogInformation("FFmpeg mapping: {FFmpegMessage}", line);
+                _logger.LogWarning("FFmpeg ({SourceFile}): {FFmpegMessage}", _sourceName, line);
             }
-            else if (count == MaxLoggedMessages + 1)
+            else if (count == MaxLoggedProblems + 1)
             {
-                _logger.LogWarning("Further FFmpeg messages for {SourceFile} are not logged", _sourceName);
+                _logger.LogWarning("Further FFmpeg warnings for {SourceFile} are not logged", _sourceName);
             }
+        }
+
+        // One line for the whole stream mapping: re-encoded streams in full, copied streams counted,
+        // e.g. "#0:0 -> #0:0 (hevc (native) -> hevc (libx265)); 26 streams copied".
+        private void LogMappingOnce()
+        {
+            string summary;
+            lock (_lock)
+            {
+                if (_mappingLogged || _mappings.Count == 0) return;
+                _mappingLogged = true;
+                var converted = _mappings.Where(m => !m.EndsWith("(copy)", StringComparison.Ordinal)).ToList();
+                int copied = _mappings.Count - converted.Count;
+                summary = string.Join("; ", converted) + (copied > 0 ? $"{(converted.Count > 0 ? "; " : "")}{copied} streams copied" : "");
+            }
+
+            _logger.LogInformation("FFmpeg stream mapping: {FFmpegMapping}", summary);
         }
 
         /// <summary>The last <paramref name="count"/> non-status lines FFmpeg wrote, joined with " | ".</summary>
