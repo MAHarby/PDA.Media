@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using FFMpegCore.Enums;
@@ -114,19 +115,30 @@ public partial class EncodeProfile : ObservableObject
     }
 
     /// <summary>
-    /// Builds the equivalent FFMpeg command-line argument string for preview and encoding.
+    /// Builds the equivalent FFMpeg command-line argument string for preview (input options, then output options).
     /// </summary>
     [JsonIgnore]
-    public string GeneratedFFMpegArguments
+    public string GeneratedFFMpegArguments =>
+        string.Join(" ", new[] { GeneratedInputArguments, GeneratedOutputArguments }.Where(a => a.Length > 0));
+
+    /// <summary>
+    /// FFMpeg options that must come before the input file (hardware-accelerated decoding).
+    /// </summary>
+    [JsonIgnore]
+    public string GeneratedInputArguments =>
+        HardwareAcceleration != "None" && !string.IsNullOrWhiteSpace(HardwareAcceleration)
+            ? $"-hwaccel {HardwareAcceleration.ToLowerInvariant()}"
+            : string.Empty;
+
+    /// <summary>
+    /// FFMpeg options applied to the output file: stream mapping, codecs and their settings.
+    /// </summary>
+    [JsonIgnore]
+    public string GeneratedOutputArguments
     {
         get
         {
             var args = new System.Collections.Generic.List<string>();
-
-            if (HardwareAcceleration != "None" && !string.IsNullOrWhiteSpace(HardwareAcceleration))
-            {
-                args.Add($"-hwaccel {HardwareAcceleration.ToLowerInvariant()}");
-            }
 
             if (KeepAllStreams)
             {

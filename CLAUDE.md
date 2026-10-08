@@ -61,9 +61,18 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   - `AppSettingsService` stores `UserSettings` as JSON in `%APPDATA%/PDA.Media/settings.json`.
   - `EncoderProfileService` stores `List<EncodeProfile>` in `%APPDATA%/PDA.Media/profiles.json` and
     provides the built-in defaults (`GetDefaultProfiles`).
+  - `FFmpegService` finds `ffmpeg`/`ffprobe` in the app's `bin` folder (`<exe folder>/bin`), then on the PATH, and
+    configures FFMpegCore. When they're missing, the toolbar's Download button uses `FFMpegCore.Extensions.Downloader`
+    (ffbinaries.com, FFmpeg 6.1) to put them in that `bin` folder.
+  - `MediaEncodingService` encodes one file with a profile: skips files under `MinimumSourceFileSize`, never modifies
+    the source, writes `<output>.partial` and only replaces (overwrites) the real output on success.
+  - `PlexNaming` (static, pure) turns a source path into a Plex output path: `Show (Year)/Season 01/Show (Year) - s01e02 -
+    Title.mkv` or `Movie (Year)/Movie (Year).mkv`, cutting release tags (Bluray, 1080p, x265, ...). Covered by
+    `PlexNamingTests`; add a DataRow there for any new naming case.
 - **Models** (`Models/`, namespace `PDA.Media.Utils.Models`): `EncodeProfile` holds the FFmpeg settings (codec, preset,
-  CRF, pixel format, audio, streams, subtitles) and supports `Clone()`. `MediaNode` is a source tree node (selecting a
-  folder cascades to its children); `DestinationItem` is a file queued in the destination list. Put new model
+  CRF, pixel format, audio, streams, subtitles) and supports `Clone()`. Its `GeneratedInputArguments` (e.g. `-hwaccel`)
+  go before the input and `GeneratedOutputArguments` after it; `GeneratedFFMpegArguments` is the combined preview. `MediaNode` is a source tree node (selecting a
+  folder cascades to its children); `DestinationItem` is a file queued in the destination list, with its Plex output path and encoding status. Put new model
   classes here, not at the bottom of view model files.
 
 ## Commands
@@ -85,10 +94,15 @@ dotnet run --project PDA.Media.Utils                 # needs a desktop/display (
 - Add MSTest tests in `PDA.Media.Tests` for new model, service or view-model logic.
 - Avalonia 12 is newer than much online material. Check https://docs.avaloniaui.net before using an API
   and don't assume Avalonia 11 or WPF behaviour.
-- FFmpeg binaries aren't in the repo. `BatchConverter` expects them in `./bin`.
+- FFmpeg binaries aren't in the repo (`bin/` is git-ignored). `BatchConverter` expects them in `./bin`; the Avalonia app
+  uses `FFmpegService` (above). Encoding tests that need FFmpeg report Inconclusive when it isn't on the PATH.
+- Encoding runs on the UI thread's async context; progress comes through `Progress<T>` created on the UI thread.
+  Progress reports are queued, so ignore ones that arrive after a file has finished.
 
 ## Cloud sessions (Claude Code on the web)
 
 `.claude/hooks/session-start.sh` installs the .NET 10 SDK into `~/.dotnet` and restores packages.
 `EnableWindowsTargeting=true` is set so the WPF project restores and builds on Linux. The Avalonia app can be
 started under `Xvfb` for screenshots (settings go to `~/.config/PDA.Media`), but check the final look on Windows.
+FFmpeg can be installed with `apt-get install ffmpeg` for encoding tests; ffbinaries.com (the downloader's source) is
+blocked by this environment's network policy.

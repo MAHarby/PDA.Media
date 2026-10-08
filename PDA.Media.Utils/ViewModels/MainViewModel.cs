@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -26,6 +28,8 @@ public partial class MainViewModel : ViewModelBase
     private readonly AppSettingsService _settingsService;
     private readonly EncoderProfileService _encoderProfileService;
     private readonly AuditLogSink _auditLogSink;
+    private readonly FFmpegService _ffmpegService;
+    private readonly MediaEncodingService _encodingService;
     private readonly ILogger<MainViewModel> _logger;
     private bool _isInitializing;
     // Set while a general profile applies its paths, so settings are saved once afterwards.
@@ -51,6 +55,21 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty] public partial ObservableCollection<DestinationItem> DestinationItems { get; set; } = new();
     [ObservableProperty] public partial DestinationItem? SelectedDestinationItem { get; set; } = null;
 
+    // Encoding.
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(EncodeCommand), nameof(LoadDestinationItemsCommand))]
+    public partial bool IsEncoding { get; set; }
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(EncodeCommand), nameof(DownloadFFmpegCommand))]
+    public partial bool IsFFmpegAvailable { get; set; }
+
+    /// <summary>Text for the status bar: what's happening now, or the last batch's summary.</summary>
+    [ObservableProperty] public partial string StatusText { get; set; } = "Ready";
+
+    /// <summary>Progress of the whole batch, 0 to 100.</summary>
+    [ObservableProperty] public partial double OverallProgress { get; set; }
+
     public ObservableCollection<MediaNode> SourceMediaNodes { get; } = new();
     public MediaNode? SelectedMediaNode = null;
 
@@ -72,10 +91,19 @@ public partial class MainViewModel : ViewModelBase
 
     public MainViewModel(AppSettingsService settingsService, EncoderProfileService encoderProfileService,
         AuditLogSink auditLogSink, ILogger<MainViewModel> logger)
+        : this(settingsService, encoderProfileService, auditLogSink, new FFmpegService(), new MediaEncodingService(), logger)
+    {
+    }
+
+    public MainViewModel(AppSettingsService settingsService, EncoderProfileService encoderProfileService,
+        AuditLogSink auditLogSink, FFmpegService ffmpegService, MediaEncodingService encodingService,
+        ILogger<MainViewModel> logger)
     {
         _settingsService = settingsService;
         _encoderProfileService = encoderProfileService;
         _auditLogSink = auditLogSink;
+        _ffmpegService = ffmpegService;
+        _encodingService = encodingService;
         _logger = logger;
         _isInitializing = true;
         _logger.LogInformation("Initialising main window view model");
@@ -106,6 +134,9 @@ public partial class MainViewModel : ViewModelBase
         _isInitializing = false;
         LoadMediaItems();
         LoadEncoderProfileSettings(SelectedEncoderProfile);
+
+        IsFFmpegAvailable = _ffmpegService.Locate();
+        if (!IsFFmpegAvailable) StatusText = "FFmpeg not found: use the download button in the toolbar";
     }
 
     /// <summary>
@@ -173,7 +204,7 @@ public partial class MainViewModel : ViewModelBase
         _logger.LogInformation("Audit log panel cleared (the log file is unchanged)");
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanChangeQueue))]
     private void LoadDestinationItems()
     {
         DestinationItems.Clear();
@@ -184,6 +215,8 @@ public partial class MainViewModel : ViewModelBase
         }
         
         SelectedDestinationItem = DestinationItems.FirstOrDefault();
+        UpdateOutputPaths();
+        EncodeCommand.NotifyCanExecuteChanged();
 
         if (DestinationItems.Count == 0)
         {
@@ -205,7 +238,7 @@ public partial class MainViewModel : ViewModelBase
         }
         else if (node.Selected)
         {
-            DestinationItems.Add(new DestinationItem(node.Name, node.FullPath));
+            DestinationItems.Add(new DestinationItem(node.Name, node.FullPath, SourcePath));
         }
     }
 
@@ -242,6 +275,150 @@ public partial class MainViewModel : ViewModelBase
 
         _logger.LogInformation("Destination path changed to {DestinationPath}", value);
         if (!_isApplyingGeneralProfile) SaveCurrentSettings();
+        UpdateOutputPaths();
+        EncodeCommand.NotifyCanExecuteChanged();
+    }
+
+    // The output extension comes from the profile's container format.
+    partial void OnCurrentEncodeProfileChanged(EncodeProfile? value)
+    {
+        UpdateOutputPaths();
+        EncodeCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool CanChangeQueue() => !IsEncoding;
+
+    /// <summary>
+    /// Works out each queued file's Plex output name (relative to the destination) and full output path.
+    /// </summary>
+    private void UpdateOutputPaths()
+    {
+        string container = CurrentEncodeProfile?.ContainerFormat ?? "mkv";
+        foreach (var item in DestinationItems)
+        {
+            string sourceRoot = item.SourceRoot.Length > 0 ? item.SourceRoot : SourcePath;
+            item.OutputRelativePath = PlexNaming.GetOutputName(sourceRoot, item.FullPath, container).RelativePath;
+            item.OutputPath = string.IsNullOrWhiteSpace(DestinationPath)
+                ? null
+                : Path.Combine(DestinationPath, item.OutputRelativePath);
+        }
+    }
+
+    private bool CanEncode() =>
+        !IsEncoding && IsFFmpegAvailable && DestinationItems.Count > 0 && CurrentEncodeProfile != null &&
+        !string.IsNullOrWhiteSpace(DestinationPath);
+
+    /// <summary>
+    /// Encodes every queued file in turn with the current profile. EncodeCancelCommand stops the batch.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanEncode), IncludeCancelCommand = true)]
+    private async Task EncodeAsync(CancellationToken cancellationToken)
+    {
+        // Snapshot the settings so changes made while encoding don't affect this batch.
+        var profile = CurrentEncodeProfile!.Clone();
+        var items = DestinationItems.ToList();
+        UpdateOutputPaths();
+
+        IsEncoding = true;
+        OverallProgress = 0;
+        foreach (var item in items)
+        {
+            item.Status = EncodeStatus.Queued;
+            item.StatusText = "Queued";
+            item.Progress = 0;
+        }
+
+        _logger.LogInformation("Starting batch: {FileCount} files with profile {ProfileName} to {DestinationPath}",
+            items.Count, profile.Name, DestinationPath);
+        var batchTimer = Stopwatch.StartNew();
+        int done = 0, skipped = 0, failed = 0;
+
+        try
+        {
+            for (int index = 0; index < items.Count; index++)
+            {
+                var item = items[index];
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    item.Status = EncodeStatus.Cancelled;
+                    item.StatusText = "Cancelled";
+                    continue;
+                }
+
+                item.Status = EncodeStatus.Encoding;
+                item.StatusText = "Starting";
+                string position = $"{index + 1} of {items.Count}";
+                string outputName = Path.GetFileName(item.OutputRelativePath);
+                StatusText = $"Encoding {position}: {outputName}";
+
+                var fileTimer = Stopwatch.StartNew();
+                int fileIndex = index;
+                // Created on the UI thread, so FFmpeg's progress callbacks are marshalled back to it. They are
+                // queued, so late ones can arrive after the file (or batch) has finished; those are ignored.
+                var progress = new Progress<double>(percent =>
+                {
+                    if (item.Status != EncodeStatus.Encoding) return;
+                    item.Progress = percent;
+                    item.StatusText = $"{percent:0}%";
+                    OverallProgress = (fileIndex + percent / 100) / items.Count * 100;
+                    StatusText = $"Encoding {position}: {outputName} - {percent:0}%{TimeLeft(fileTimer.Elapsed, percent)}";
+                });
+
+                var result = await _encodingService.EncodeAsync(item.FullPath, item.OutputPath!, profile, progress, cancellationToken);
+                item.Status = result.Status;
+                item.StatusText = result.Message;
+                item.Progress = result.Status == EncodeStatus.Done ? 100 : item.Progress;
+                OverallProgress = (index + 1.0) / items.Count * 100;
+
+                switch (result.Status)
+                {
+                    case EncodeStatus.Done: done++; break;
+                    case EncodeStatus.Skipped: skipped++; break;
+                    case EncodeStatus.Failed: failed++; break;
+                }
+            }
+        }
+        finally
+        {
+            IsEncoding = false;
+            string summary = $"{done} encoded, {skipped} skipped, {failed} failed in {batchTimer.Elapsed:h\\:mm\\:ss}";
+            StatusText = (cancellationToken.IsCancellationRequested ? "Cancelled: " : "Finished: ") + summary;
+
+            if (cancellationToken.IsCancellationRequested)
+                _logger.LogWarning("Batch cancelled: {Summary}", summary);
+            else if (failed > 0)
+                _logger.LogWarning("Batch finished with failures: {Summary}", summary);
+            else
+                _logger.LogInformation("Batch finished: {Summary}", summary);
+        }
+    }
+
+    // " - 12m left", estimated from the current file's progress so far.
+    private static string TimeLeft(TimeSpan elapsed, double percent)
+    {
+        if (percent < 1 || elapsed < TimeSpan.FromSeconds(5)) return string.Empty;
+        var left = TimeSpan.FromSeconds(elapsed.TotalSeconds * (100 - percent) / percent);
+        return left.TotalHours >= 1 ? $" - {(int)left.TotalHours}h {left.Minutes}m left"
+            : left.TotalMinutes >= 1 ? $" - {left.Minutes}m left"
+            : $" - {left.Seconds}s left";
+    }
+
+    private bool CanDownloadFFmpeg() => !IsFFmpegAvailable;
+
+    [RelayCommand(CanExecute = nameof(CanDownloadFFmpeg))]
+    private async Task DownloadFFmpegAsync()
+    {
+        StatusText = "Downloading FFmpeg...";
+        try
+        {
+            IsFFmpegAvailable = await _ffmpegService.DownloadAsync();
+            StatusText = IsFFmpegAvailable ? "FFmpeg downloaded and ready" : "FFmpeg download finished but the files weren't found";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to download FFmpeg");
+            StatusText = "FFmpeg download failed: see the Audit Log";
+        }
     }
 
     private void SaveCurrentSettings()

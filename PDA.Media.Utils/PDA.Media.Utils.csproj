@@ -21,6 +21,7 @@
         </PackageReference>
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2"/>
         <PackageReference Include="FFMpegCore" Version="5.5.0" />
+        <PackageReference Include="FFMpegCore.Extensions.Downloader" Version="5.0.0" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.12" />
         <PackageReference Include="Serilog" Version="4.4.0" />
