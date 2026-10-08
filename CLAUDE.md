@@ -74,7 +74,8 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   go before the input and `GeneratedOutputArguments` after it; `GeneratedFFMpegArguments` is the combined preview.
   `CopySubtitles` (shown as "Include Subtitles") either copies subtitle tracks (`-c:s copy`) or leaves them out (`-sn`);
   never let FFmpeg convert them, because image-based Blu-ray (PGS) subtitles can't be converted and the encode fails. `MediaNode` is a source tree node (selecting a
-  folder cascades to its children); `DestinationItem` is a file queued in the destination list, with its Plex output path and encoding status. Put new model
+  folder cascades to its children; folders total their `FileCount` and `Size`, read from the folder listing so no
+  extra network calls are made); `FileSize.Format` gives the "12.5 GB" / "850 MB" text used in both lists; `DestinationItem` is a file queued in the destination list, with its Plex output path and encoding status. Put new model
   classes here, not at the bottom of view model files.
 
 ## Commands

@@ -24,53 +24,67 @@
     
     <Grid RowDefinitions="Auto,2*,*,Auto" ColumnDefinitions="*,*" ShowGridLines="False">
     
-        <!-- Branding -->
-        <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal">
-            <PathIcon Classes="Brand"/>
-            <TextBlock Text="{Binding BrandTitle}" Classes="Brand"/>
-        </StackPanel>
-        
-        <!-- Window Menu -->
-        <Grid Grid.Column="1" Grid.Row="0" ColumnDefinitions="40,35,35,40,35,35,*,35,35,35">
+        <!-- Header: branding on the left; toolbar groups (queue | encoding | window) on the right. -->
+        <Border Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="0" Classes="HeaderPanel">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto">
 
-            <!-- Toolbar Buttons. -->
-            <Button Grid.Column="0" Name="SendMediaItemsButton" Classes="Toolbar" ToolTip.Tip="Send source media items to destination" Margin="5,0,0,0"
-                    Command="{Binding LoadDestinationItemsCommand}">
-                <PathIcon Data="{StaticResource copy_to_destination}" Classes="Toolbar"/>
-            </Button>
-            <Button Grid.Column="1" Name="ManageProfilesToolbarButton" Classes="Toolbar" ToolTip.Tip="Manage FFMpeg Encoding Profiles" Margin="5,0,0,0" Click="ManageProfilesButton_OnClick">
-                <PathIcon Data="{StaticResource sliders_icon}" Classes="Toolbar"/>
-            </Button>
-            <Button Grid.Column="2" Name="LoadColourPalette" Classes="Toolbar" ToolTip.Tip="Show Avalonia colours" Margin="5,0,0,0" Click="LoadColourPalette_OnClick">
-                <PathIcon Data="{StaticResource paint_roller}" Classes="Toolbar"/>
-            </Button>
+                <StackPanel Grid.Column="0" Classes="BrandArea">
+                    <PathIcon Classes="Brand"/>
+                    <StackPanel Classes="BrandText">
+                        <TextBlock Text="{Binding BrandTitle}" Classes="BrandTitle"/>
+                        <TextBlock Text="Encode MKV media for Plex" Classes="BrandSubtitle"/>
+                    </StackPanel>
+                </StackPanel>
 
-            <!-- Encoding: start, cancel, and download FFmpeg (only shown while it's missing). -->
-            <Button Grid.Column="3" Name="EncodeButton" Classes="Toolbar" ToolTip.Tip="Encode the destination list with the selected profile" Margin="10,0,0,0"
-                    Command="{Binding EncodeCommand}">
-                <PathIcon Data="{StaticResource play_icon}" Classes="Toolbar"/>
-            </Button>
-            <Button Grid.Column="4" Name="CancelEncodeButton" Classes="Toolbar" ToolTip.Tip="Cancel encoding (the current file is discarded)" Margin="5,0,0,0"
-                    Command="{Binding EncodeCancelCommand}">
-                <PathIcon Data="{StaticResource stop_icon}" Classes="Toolbar"/>
-            </Button>
-            <Button Grid.Column="5" Name="DownloadFFmpegButton" Classes="Toolbar" ToolTip.Tip="Download FFmpeg and FFprobe into the app's bin folder" Margin="5,0,0,0"
-                    Command="{Binding DownloadFFmpegCommand}" IsVisible="{Binding !IsFFmpegAvailable}">
-                <PathIcon Data="{StaticResource download_icon}" Classes="Toolbar"/>
-            </Button>
+                <!-- Queue and tools. -->
+                <StackPanel Grid.Column="2" Classes="ToolbarGroup">
+                    <Button Name="SendMediaItemsButton" Classes="Toolbar" ToolTip.Tip="Send source media items to destination"
+                            Command="{Binding LoadDestinationItemsCommand}">
+                        <PathIcon Data="{StaticResource copy_to_destination}" Classes="Toolbar"/>
+                    </Button>
+                    <Button Name="ManageProfilesToolbarButton" Classes="Toolbar" ToolTip.Tip="Manage FFMpeg Encoding Profiles" Click="ManageProfilesButton_OnClick">
+                        <PathIcon Data="{StaticResource sliders_icon}" Classes="Toolbar"/>
+                    </Button>
+                    <Button Name="LoadColourPalette" Classes="Toolbar" ToolTip.Tip="Show Avalonia colours" Click="LoadColourPalette_OnClick">
+                        <PathIcon Data="{StaticResource paint_roller}" Classes="Toolbar"/>
+                    </Button>
+                </StackPanel>
 
-            <!-- Window Buttons. -->
-            <Button Grid.Column="7" Name="WindowMinimizeButton" Classes="Toolbar" ToolTip.Tip="Minimize Window" Click="WindowMinimizeButton_OnClick">
-                <PathIcon Data="{StaticResource window_minimize}" Classes="Toolbar"/>
-            </Button>
-            <Button Grid.Column="8" Name="WindowMaximizeButton" Classes="Toolbar" ToolTip.Tip="Maximize/Restore Window" Click="WindowMaximizeButton_OnClick">
-                <PathIcon Data="{StaticResource window_maximize}" Classes="Toolbar"/>
-            </Button>
-            <Button Grid.Column="9" Name="WindowCloseButton" Classes="Toolbar" ToolTip.Tip="Close Window" Click="WindowCloseButton_OnClick">
-                <PathIcon Data="{StaticResource window_close}" Classes="Toolbar"/>
-            </Button>
-        </Grid>
-        
+                <Border Grid.Column="3" Classes="ToolbarSeparator"/>
+
+                <!-- Encoding: start, cancel, and download FFmpeg (only shown while it's missing). -->
+                <StackPanel Grid.Column="4" Classes="ToolbarGroup">
+                    <Button Name="EncodeButton" Classes="Toolbar" ToolTip.Tip="Encode the destination list with the selected profile"
+                            Command="{Binding EncodeCommand}">
+                        <PathIcon Data="{StaticResource play_icon}" Classes="Toolbar"/>
+                    </Button>
+                    <Button Name="CancelEncodeButton" Classes="Toolbar" ToolTip.Tip="Cancel encoding (the current file is discarded)"
+                            Command="{Binding EncodeCancelCommand}">
+                        <PathIcon Data="{StaticResource stop_icon}" Classes="Toolbar"/>
+                    </Button>
+                    <Button Name="DownloadFFmpegButton" Classes="Toolbar" ToolTip.Tip="Download FFmpeg and FFprobe into the app's bin folder"
+                            Command="{Binding DownloadFFmpegCommand}" IsVisible="{Binding !IsFFmpegAvailable}">
+                        <PathIcon Data="{StaticResource download_icon}" Classes="Toolbar"/>
+                    </Button>
+                </StackPanel>
+
+                <Border Grid.Column="5" Classes="ToolbarSeparator"/>
+
+                <!-- Window buttons. -->
+                <StackPanel Grid.Column="6" Classes="ToolbarGroup">
+                    <Button Name="WindowMinimizeButton" Classes="Toolbar" ToolTip.Tip="Minimize Window" Click="WindowMinimizeButton_OnClick">
+                        <PathIcon Data="{StaticResource window_minimize}" Classes="Toolbar"/>
+                    </Button>
+                    <Button Name="WindowMaximizeButton" Classes="Toolbar" ToolTip.Tip="Maximize/Restore Window" Click="WindowMaximizeButton_OnClick">
+                        <PathIcon Data="{StaticResource window_maximize}" Classes="Toolbar"/>
+                    </Button>
+                    <Button Name="WindowCloseButton" Classes="Toolbar" ToolTip.Tip="Close Window" Click="WindowCloseButton_OnClick">
+                        <PathIcon Data="{StaticResource window_close}" Classes="Toolbar"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
         <!-- Source Folder / Files -->
         <Border Grid.Column="0" Grid.Row="1" Classes="SourcePanel">
             <Grid RowDefinitions="Auto,*">
@@ -89,11 +103,16 @@
                 
                 <!-- Source file/folder tree list. -->
                 <TreeView Grid.Row="1" Name="sourceTreeView" ItemsSource="{Binding SourceMediaNodes}" Classes="SourceFiles" >
+                    <!-- Folders: name and file count. Files: name followed by size, as in the destination list. -->
                     <TreeView.ItemTemplate>
-                        <TreeDataTemplate ItemsSource="{Binding SubNodes}">
-                            <Grid ColumnDefinitions="Auto,*">
-                                <CheckBox Grid.Column="0" IsChecked="{Binding Selected}"/>
-                                <TextBlock Grid.Column="1" Text="{Binding Name}" VerticalAlignment="Center"/>
+                        <TreeDataTemplate x:DataType="models:MediaNode" ItemsSource="{Binding SubNodes}">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <CheckBox Grid.Column="0" IsChecked="{Binding Selected}" Classes="SourceSelect"/>
+                                <Grid Grid.Column="1" ColumnDefinitions="*,Auto" Classes="SourceNameLine">
+                                    <TextBlock Grid.Column="0" Text="{Binding Name}" Classes="SourceName" Classes.Folder="{Binding IsFolder}"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SizeText}" IsVisible="{Binding !IsFolder}" Classes="SourceDetail SourceSize"/>
+                                </Grid>
+                                <TextBlock Grid.Column="2" Text="{Binding FileCountText}" IsVisible="{Binding IsFolder}" Classes="SourceDetail SourceFileCount"/>
                             </Grid>
                         </TreeDataTemplate>
                     </TreeView.ItemTemplate>

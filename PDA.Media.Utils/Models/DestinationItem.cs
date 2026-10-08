@@ -28,7 +28,7 @@ public partial class DestinationItem : ObservableObject
     public long SourceSize { get; }
 
     /// <summary>Source size for display after the path, e.g. "- 12.5 GB" or "- 850 MB".</summary>
-    public string SourceSizeText => "- " + FormatSize(SourceSize);
+    public string SourceSizeText => "- " + FileSize.Format(SourceSize);
 
     /// <summary>Output path relative to the destination folder, e.g. <c>Show (2005)/Season 01/Show (2005) - s01e01 - Pilot.mkv</c>.</summary>
     [ObservableProperty] public partial string OutputRelativePath { get; set; } = string.Empty;
@@ -59,16 +59,5 @@ public partial class DestinationItem : ObservableObject
         SourceSize = sourceSize;
     }
 
-    /// <summary>One decimal place for GB, whole numbers below that: "12.5 GB", "850 MB", "12 KB".</summary>
-    public static string FormatSize(long bytes)
-    {
-        const double kb = 1024, mb = kb * 1024, gb = mb * 1024;
-        return bytes switch
-        {
-            >= (long)gb => $"{bytes / gb:0.0} GB",
-            >= (long)mb => $"{bytes / mb:0} MB",
-            >= (long)kb => $"{bytes / kb:0} KB",
-            _ => $"{bytes} B"
-        };
-    }
+    public static string FormatSize(long bytes) => FileSize.Format(bytes);
 }
