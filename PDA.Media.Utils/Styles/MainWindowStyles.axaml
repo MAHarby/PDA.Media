@@ -6,22 +6,45 @@
         </Border>
     </Design.PreviewWith>
 
+        <!-- Header Panel (same look as the profile manager's header). -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.HeaderPanel">
+            <Setter Property="Background" Value="{DynamicResource SystemChromeMediumLowColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Margin" Value="10,10,10,0"/>
+        </Style>
+
         <!-- Brand Styles. -->
         <!-- ====================================================================================================== -->
-        <Style Selector="TextBlock.Brand">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource SystemBaseHighColor}"/>
+        <Style Selector="StackPanel.BrandArea">
+            <Setter Property="Orientation" Value="Horizontal"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Margin" Value="10,5,5,5"/>
         </Style>
-        
         <Style Selector="PathIcon.Brand">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource SystemAccentColorDark1}"/>
-            <Setter Property="Height" Value="25"/>
-            <Setter Property="Width" Value="25"/>
-            <Setter Property="Margin" Value="10,5,5,5"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Data" Value="{StaticResource building_shop_regular}"/>
+        </Style>
+        <Style Selector="StackPanel.BrandText">
+            <Setter Property="Orientation" Value="Vertical"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.BrandTitle">
+            <Setter Property="FontSize" Value="17"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseHighColor}"/>
+        </Style>
+        <Style Selector="TextBlock.BrandSubtitle">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
         </Style>
 
         <!-- Toolbar Styles. -->
@@ -37,6 +60,23 @@
                 <Setter Property="Background" Value="{DynamicResource SystemAccentColorLight3}"/>
             </Style>
             
+        </Style>
+        <!-- Header toolbar: buttons in groups (queue | encoding | window) with separators between them. -->
+        <Style Selector="StackPanel.ToolbarGroup">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="5"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="StackPanel.ToolbarGroup > Button.Toolbar">
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="28"/>
+        </Style>
+        <Style Selector="Border.ToolbarSeparator">
+            <Setter Property="Width" Value="1"/>
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="Margin" Value="12,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Background" Value="{DynamicResource SystemChromeHighColor}"/>
         </Style>
         <Style Selector="PathIcon.Toolbar">
             <Setter Property="Background" Value="Transparent"/>
@@ -98,7 +138,44 @@
             <Setter Property="Margin" Value="10,10,5,5"/>
         </Style>
 
+        <!-- Source tree items: same fonts and colours as the destination list items. -->
+        <!-- Stretch each row's content so a folder's file count can sit at the right-hand edge. -->
+        <Style Selector="TreeView.SourceFiles TreeViewItem /template/ ContentPresenter#PART_HeaderPresenter">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="CheckBox.SourceSelect">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Grid.SourceNameLine">
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.SourceName">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style Selector="TextBlock.SourceName.Folder">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.SourceDetail">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.SourceSize">
+            <Setter Property="Margin" Value="4,0,0,0"/>
+        </Style>
+        <Style Selector="TextBlock.SourceFileCount">
+            <Setter Property="Margin" Value="10,0,6,0"/>
+        </Style>
+
         <Style Selector="TreeView.SourceFiles">
+            <!-- No sideways scrolling: rows fit the panel, so long names are trimmed and sizes/counts stay visible. -->
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>

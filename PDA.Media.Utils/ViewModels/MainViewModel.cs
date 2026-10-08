@@ -238,7 +238,7 @@ public partial class MainViewModel : ViewModelBase
         }
         else if (node.Selected)
         {
-            DestinationItems.Add(new DestinationItem(node.Name, node.FullPath, SourcePath, GetFileSize(node.FullPath)));
+            DestinationItems.Add(new DestinationItem(node.Name, node.FullPath, SourcePath, node.Size));
         }
     }
 
@@ -288,18 +288,7 @@ public partial class MainViewModel : ViewModelBase
 
     private bool CanChangeQueue() => !IsEncoding;
 
-    private long GetFileSize(string path)
-    {
-        try
-        {
-            return new FileInfo(path).Length;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            _logger.LogWarning(ex, "Could not read the size of {SourceFile}", path);
-            return 0;
-        }
-    }
+
 
     /// <summary>
     /// Works out each queued file's Plex output name (relative to the destination) and full output path.
@@ -535,16 +524,19 @@ public partial class MainViewModel : ViewModelBase
         var subNodes = new ObservableCollection<MediaNode>();
         folderCount++;
         
+        var directory = new DirectoryInfo(folderPath);
+
         // Recursively add sub-directories eg Season 1, Season 2 ...
-        foreach (string subDirectory in Directory.EnumerateDirectories(folderPath, "*", SearchOption.TopDirectoryOnly))
+        foreach (var subDirectory in directory.EnumerateDirectories())
         {
-            subNodes.Add(CreateDirectoryNode(subDirectory, ref folderCount, ref fileCount));
+            subNodes.Add(CreateDirectoryNode(subDirectory.FullName, ref folderCount, ref fileCount));
         }
         
-        // Now add any media files that are in the current folder.
-        foreach (string mediaFile in Directory.EnumerateFiles(folderPath, "*.*", SearchOption.TopDirectoryOnly))
+        // Now add any media files that are in the current folder. The sizes come with the folder listing,
+        // so showing them costs no extra trips to the network share.
+        foreach (var mediaFile in directory.EnumerateFiles())
         {
-            subNodes.Add(new MediaNode(Path.GetFileNameWithoutExtension(mediaFile), mediaFile));
+            subNodes.Add(new MediaNode(Path.GetFileNameWithoutExtension(mediaFile.Name), mediaFile.FullName, mediaFile.Length));
             fileCount++;
         }
 
