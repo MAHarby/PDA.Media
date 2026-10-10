@@ -20,7 +20,6 @@ public class AlbumService : IDataService<Album>
     private readonly ILogger<AlbumService> _logger;
 
     public AlbumService(string connectionString) : this(new DataContextFactory(connectionString)) { }
-
     public AlbumService(IDbContextFactory<DataContext> contextFactory, ILogger<AlbumService>? logger = null)
     {
         _contextFactory = contextFactory;
