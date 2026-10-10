@@ -40,10 +40,13 @@ internal sealed partial class SqlServerTestDatabase : IDisposable
             if (sql.Length > 0) Execute(ConnectionString, sql);
         }
 
-        // The rows the foreign key defaults point at: AlbumType 1 and the Id 0 artist.
+        // The rows the foreign key defaults point at: AlbumType 1 and the Id 0 artist, movie type and TV show type
+        // (those tables' identities start at 0).
         Execute(ConnectionString, """
             INSERT INTO AlbumTypes (Name) VALUES ('Album');
             INSERT INTO Artists (Name) VALUES ('Unknown Artist');
+            INSERT INTO MovieTypes (Name) VALUES ('Unknown');
+            INSERT INTO TVShowTypes (Name) VALUES ('Unknown');
             """);
 
         ContextFactory = new DataContextFactory(ConnectionString);

@@ -1,6 +1,6 @@
 namespace PDA.Media.Data.Entities;
 
-public class TVShowType
+public class TVShowType : IEntity
 {
     public int Id { get; set; }
     public string Name { get; set; } = null!;

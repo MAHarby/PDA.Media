@@ -1,6 +1,6 @@
 namespace PDA.Media.Data.Entities;
 
-public class Movie : IAuditable
+public class Movie : IEntity, ISoftDeletable, IAuditable
 {
     public int Id { get; set; }
     public string Name { get; set; } = null!;

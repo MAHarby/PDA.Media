@@ -1,6 +1,6 @@
 namespace PDA.Media.Data.Entities;
 
-public class Album : IAuditable
+public class Album : IEntity, ISoftDeletable, IAuditable
 {
     public int Id { get; set; }
     public int ArtistId { get; set; }

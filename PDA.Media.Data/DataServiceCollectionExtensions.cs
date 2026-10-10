@@ -37,6 +37,16 @@ public static class DataServiceCollectionExtensions
 
         services.AddSingleton<DatabaseStatusService>();
         services.AddSingleton<AlbumService>();
+        services.AddSingleton<AlbumTypeService>();
+        services.AddSingleton<ArtistService>();
+        services.AddSingleton<MediaCategoryService>();
+        services.AddSingleton<MovieService>();
+        services.AddSingleton<MovieTypeService>();
+        services.AddSingleton<SettingService>();
+        services.AddSingleton<TrackService>();
+        services.AddSingleton<TVShowService>();
+        services.AddSingleton<TVShowEpisodeService>();
+        services.AddSingleton<TVShowTypeService>();
         return services;
     }
 }
