@@ -11,7 +11,7 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
 | `PDA.Media.Utils` | **Avalonia 12** desktop app (`WinExe`, `net10.0`) | Active app: "Media Utilities - Batch Encoder". Views are `.axaml`. |
 | `PDA.Media.Desktop` | **WPF** app (`net10.0-windows`, `UseWPF`) | Older UI. Views are `.xaml`, not Avalonia. Don't mix WPF and Avalonia APIs. |
 | `PDA.Media.BatchConverter` | Console app (`net10.0`) | Command-line batch encoder; input/output folders are hard-coded (see TODOs in `Program.cs`). |
-| `PDA.Media.Data` | Class library (`net10.0`) | Placeholder (empty `Entities/`). |
+| `PDA.Media.Data` | Class library (`net10.0`) | EF Core 10 data layer over an existing SQL Server database (see below). Not referenced by the app yet. |
 | `PDA.Media.Tests` | MSTest 4 (`net10.0`) | References `PDA.Media.Utils`. Method-level parallelization is on (`MSTestSettings.cs`). |
 
 ## PDA.Media.Utils (Avalonia) architecture
@@ -79,6 +79,35 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   folder cascades to its children; folders total their `FileCount` and `Size`, read from the folder listing so no
   extra network calls are made); `FileSize.Format` gives the "12.5 GB" / "850 MB" text used in both lists; `DestinationItem` is a file queued in the destination list, with its Plex output path and encoding status. Put new model
   classes here, not at the bottom of view model files.
+
+## PDA.Media.Data (EF Core)
+
+- **Database-first:** the SQL Server database (`Media.Master`, collation `SQL_Latin1_General_CP1_CI_AS`) is the source
+  of truth, described by `Schema/Media.Master.sql` (full create script). There are no EF migrations; never call
+  `EnsureCreated`/`Migrate`. The entity maps (`Entities/EntityMaps/*EntityMap.cs`, `IEntityTypeConfiguration<T>`, picked
+  up by `ApplyConfigurationsFromAssembly`) must describe that script exactly: `SchemaTests` compares columns, types,
+  identity seeds, keys, indexes (clustered / unique / filter), foreign keys and default constraint names.
+- **Schema changes:** edit `Media.Master.sql`, add a numbered upgrade script in `Schema/Upgrades/` (one transaction,
+  refuses to run twice; the developer runs it in SSMS), and change the maps to match. The media cache tables (Artists,
+  Albums, Tracks, Movies, TVShows, TVShowEpisodes) can be emptied and re-scanned; the lookup and configuration tables
+  (AlbumTypes, MovieTypes, TVShowTypes, MediaCategories, Settings) and the Id 0 rows must be kept.
+- **Text columns:** anything that comes from the media folders (names, descriptions, folders, file names, notes) is
+  `nvarchar` (`Notes` is `nvarchar(max)`), because `varchar` with this collation turns non-Western characters into `?`.
+  Values the code controls (audit users, `MediaClass`, external ids, setting keys) are `varchar` (`.IsUnicode(false)`).
+  Dates are `datetime2`.
+- **Foreign keys:** several use `ON DELETE SET DEFAULT` (Id 0 / AlbumType 1), which EF can't express; map them as
+  `DeleteBehavior.ClientNoAction` so the database applies it.
+- **No logging setup in the library:** don't reference Serilog here; the app passes its logging in through the options.
+- **Soft delete:** entities with `IsDeleted` have a named query filter (`DataContext.SoftDeleteFilter`), so queries
+  skip deleted rows. Use `IgnoreQueryFilters([DataContext.SoftDeleteFilter])` to include them.
+- **Audit fields:** entities implementing `IAuditable` get `CreatedOn`/`CreatedBy`/`ModifiedOn`/`ModifiedBy` set by
+  `DataContext` on save (local time, `AuditUser`, default "API"). Don't set them in services. Movie, TVShow and
+  TVShowEpisode store `ModifiedOn`/`ModifiedBy` in their `UpdatedOn`/`UpdatedBy` columns.
+- **Database defaults:** only map a default EF needs to know about. A non-string column whose database default differs
+  from the C# default (e.g. `TrackCount` 1) needs `.ValueGeneratedNever()` and a matching C# initializer, otherwise EF
+  leaves 0 out of the INSERT and the database default wins. Defaults of 0 / false needn't be mapped.
+- **Tests:** `DataContextTests` use `SqlCaptureContext`, which captures the SQL a save would run without a database;
+  `SchemaTests` read `Media.Master.sql` (copied to the test output folder).
 
 ## Commands
 

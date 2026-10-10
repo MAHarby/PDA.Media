@@ -1,6 +1,6 @@
 namespace PDA.Media.Data.Entities;
 
-public class Artist
+public class Artist : IAuditable
 {
     public int Id { get; set; }
     public string Name { get; set; } = null!;
@@ -10,17 +10,12 @@ public class Artist
     public bool IsFavourite { get; set; } = false;
     public string? Notes { get; set; }
     public string? MusicBrainzId { get; set; }
-    public DateTime CreatedOn { get; set; } = DateTime.Now;
-    public string CreatedBy { get; set; } = "API";
-    public DateTime ModifiedOn { get; set; } = DateTime.Now;
-    public string? ModifiedBy { get; set; } = null!;
+
+    // Audit fields: set by DataContext when changes are saved.
+    public DateTime CreatedOn { get; set; }
+    public string CreatedBy { get; set; } = null!;
+    public DateTime ModifiedOn { get; set; }
+    public string? ModifiedBy { get; set; }
 
     public virtual ICollection<Album> Albums { get; set; } = new List<Album>();
-        
-    // public Artist() {}
-    // public Artist(string name, string? description)
-    // {
-    //     Name = name;
-    //     Description = description;
-    // }
 }

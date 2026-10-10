@@ -1,6 +1,6 @@
 namespace PDA.Media.Data.Entities;
 
-public class Track
+public class Track : IAuditable
 {
     public int Id { get; set; }
     public int AlbumId { get; set; }
@@ -16,21 +16,12 @@ public class Track
     public bool IsDeleted { get; set; } = false;
     public bool IsFavourite { get; set; } = false;
     public string? MusicBrainzId { get; set; }
-    public DateTime CreatedOn { get; set; } = DateTime.Now;
-    public string CreatedBy { get; set; } = "API";
-    public DateTime ModifiedOn { get; set; } = DateTime.Now;
+
+    // Audit fields: set by DataContext when changes are saved.
+    public DateTime CreatedOn { get; set; }
+    public string CreatedBy { get; set; } = null!;
+    public DateTime ModifiedOn { get; set; }
     public string? ModifiedBy { get; set; }
 
     public virtual Album Album { get; set; } = null!;
-
-    // public Track(int albumId, int artistId, string name, int trackNo, string? folder, string? originalFilename)
-    // {
-    //     AlbumId = albumId;
-    //     ArtistId = artistId;
-    //     Name = name;
-    //     Description = name;
-    //     Folder = folder;
-    //     OriginalFilename = originalFilename;
-    //     TrackNo = trackNo;
-    // }
 }
