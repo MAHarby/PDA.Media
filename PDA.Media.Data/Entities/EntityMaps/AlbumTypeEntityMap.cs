@@ -9,7 +9,7 @@ public class AlbumTypeEntityMap : IEntityTypeConfiguration<AlbumType>
     {
         entity.HasKey(e => e.Id);
 
-        entity.Property(e => e.Name).IsRequired().HasMaxLength(200).IsUnicode(false);
-        entity.Property(e => e.Description).HasMaxLength(500).IsUnicode(false);
+        entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+        entity.Property(e => e.Description).HasMaxLength(500);
     }
 }

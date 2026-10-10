@@ -20,6 +20,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <None Include="..\PDA.Media.Data\Schema\Media.Master.sql" Link="Schema\Media.Master.sql" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting"/>
     </ItemGroup>
 

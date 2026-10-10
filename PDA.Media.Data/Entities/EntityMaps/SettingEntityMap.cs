@@ -10,6 +10,6 @@ public class SettingEntityMap : IEntityTypeConfiguration<Setting>
         entity.HasKey(e => e.Key);
 
         entity.Property(e => e.Key).HasMaxLength(100).IsUnicode(false);
-        entity.Property(e => e.Value).IsRequired().HasMaxLength(500).IsUnicode(false);
+        entity.Property(e => e.Value).IsRequired().HasMaxLength(500);
     }
 }

@@ -82,19 +82,32 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
 
 ## PDA.Media.Data (EF Core)
 
-- **Database-first:** the SQL Server database (`Media.Master`) already exists and is the source of truth. There are no
-  migrations; never call `EnsureCreated`/`Migrate`. The entity maps (`Entities/EntityMaps/*EntityMap.cs`,
-  `IEntityTypeConfiguration<T>`, picked up by `ApplyConfigurationsFromAssembly`) describe the existing tables, so a
-  schema change is a SQL script run against the database first, then the matching map change.
+- **Database-first:** the SQL Server database (`Media.Master`, collation `SQL_Latin1_General_CP1_CI_AS`) is the source
+  of truth, described by `Schema/Media.Master.sql` (full create script). There are no EF migrations; never call
+  `EnsureCreated`/`Migrate`. The entity maps (`Entities/EntityMaps/*EntityMap.cs`, `IEntityTypeConfiguration<T>`, picked
+  up by `ApplyConfigurationsFromAssembly`) must describe that script exactly: `SchemaTests` compares columns, types,
+  identity seeds, keys, indexes (clustered / unique / filter), foreign keys and default constraint names.
+- **Schema changes:** edit `Media.Master.sql`, add a numbered upgrade script in `Schema/Upgrades/` (one transaction,
+  refuses to run twice; the developer runs it in SSMS), and change the maps to match. The media cache tables (Artists,
+  Albums, Tracks, Movies, TVShows, TVShowEpisodes) can be emptied and re-scanned; the lookup and configuration tables
+  (AlbumTypes, MovieTypes, TVShowTypes, MediaCategories, Settings) and the Id 0 rows must be kept.
+- **Text columns:** anything that comes from the media folders (names, descriptions, folders, file names, notes) is
+  `nvarchar` (`Notes` is `nvarchar(max)`), because `varchar` with this collation turns non-Western characters into `?`.
+  Values the code controls (audit users, `MediaClass`, external ids, setting keys) are `varchar` (`.IsUnicode(false)`).
+  Dates are `datetime2`.
+- **Foreign keys:** several use `ON DELETE SET DEFAULT` (Id 0 / AlbumType 1), which EF can't express; map them as
+  `DeleteBehavior.ClientNoAction` so the database applies it.
 - **No logging setup in the library:** don't reference Serilog here; the app passes its logging in through the options.
 - **Soft delete:** entities with `IsDeleted` have a named query filter (`DataContext.SoftDeleteFilter`), so queries
   skip deleted rows. Use `IgnoreQueryFilters([DataContext.SoftDeleteFilter])` to include them.
 - **Audit fields:** entities implementing `IAuditable` get `CreatedOn`/`CreatedBy`/`ModifiedOn`/`ModifiedBy` set by
   `DataContext` on save (local time, `AuditUser`, default "API"). Don't set them in services. Movie, TVShow and
   TVShowEpisode store `ModifiedOn`/`ModifiedBy` in their `UpdatedOn`/`UpdatedBy` columns.
-- **Database defaults:** a non-string column with a database default (`HasDefaultValue`) also needs
-  `.ValueGeneratedNever()` and a matching C# initializer, otherwise EF leaves 0 out of the INSERT and the default wins.
-- **Tests:** `DataContextTests` use `SqlCaptureContext`, which captures the SQL a save would run without a database.
+- **Database defaults:** only map a default EF needs to know about. A non-string column whose database default differs
+  from the C# default (e.g. `TrackCount` 1) needs `.ValueGeneratedNever()` and a matching C# initializer, otherwise EF
+  leaves 0 out of the INSERT and the database default wins. Defaults of 0 / false needn't be mapped.
+- **Tests:** `DataContextTests` use `SqlCaptureContext`, which captures the SQL a save would run without a database;
+  `SchemaTests` read `Media.Master.sql` (copied to the test output folder).
 
 ## Commands
 
