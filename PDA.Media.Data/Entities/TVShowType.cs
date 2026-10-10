@@ -7,10 +7,4 @@ public class TVShowType
     public string? Description { get; set; }
 
     public virtual ICollection<TVShow> TVShows { get; set; } = new List<TVShow>();
-    
-    // public TVShowType(string name, string? description)
-    // {
-    //     Name = name;
-    //     Description = description;
-    // }
 }

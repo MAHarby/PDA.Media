@@ -1,6 +1,6 @@
 namespace PDA.Media.Data.Entities;
 
-public class TVShowEpisode
+public class TVShowEpisode : IAuditable
 {
     public int Id { get; set; }
     public int TVShowId { get; set; }
@@ -17,10 +17,13 @@ public class TVShowEpisode
 
     public bool IsDeleted { get; set; } = false;
     public bool IsFavourite { get; set; } = false;
-    public DateTime CreatedOn { get; set; } = DateTime.Now;
-    public string CreatedBy { get; set; } = "API";
-    public DateTime UpdatedOn { get; set; } = DateTime.Now;
-    public string? UpdatedBy { get; set; } = null!;
+
+    // Audit fields: set by DataContext when changes are saved.
+    // ModifiedOn / ModifiedBy are stored in the UpdatedOn / UpdatedBy columns (see TVShowEpisodeEntityMap).
+    public DateTime CreatedOn { get; set; }
+    public string CreatedBy { get; set; } = null!;
+    public DateTime ModifiedOn { get; set; }
+    public string? ModifiedBy { get; set; }
 
     public virtual TVShow TVShow { get; set; } = null!;
 }

@@ -1,6 +1,6 @@
 namespace PDA.Media.Data.Entities;
 
-public class Movie
+public class Movie : IAuditable
 {
     public int Id { get; set; }
     public string Name { get; set; } = null!;
@@ -10,23 +10,17 @@ public class Movie
     public bool IsDeleted { get; set; } = false;
     public bool IsFavourite { get; set; } = false;
     public string? TMDB_Id { get; set; }
-    public DateTime CreatedOn { get; set; } = DateTime.Now;
-    public string CreatedBy { get; set; } = "API";
-    public DateTime UpdatedOn { get; set; } = DateTime.Now;
-    public string? UpdatedBy { get; set; }
+
+    // Audit fields: set by DataContext when changes are saved.
+    // ModifiedOn / ModifiedBy are stored in the UpdatedOn / UpdatedBy columns (see MovieEntityMap).
+    public DateTime CreatedOn { get; set; }
+    public string CreatedBy { get; set; } = null!;
+    public DateTime ModifiedOn { get; set; }
+    public string? ModifiedBy { get; set; }
 
     public string? Folder { get; set; }
     public string? OriginalFilename { get; set; }
     public string? CoverArtFilename { get; set; }
 
     public virtual MovieType MovieType { get; set; } = null!;
-
-    // public Movie(int movieTypeId, string name, string? description, string? folder, string? originalFilename)
-    // {
-    //     MovieTypeId = movieTypeId;
-    //     Name = name;
-    //     Description = description;
-    //     Folder = folder;
-    //     OriginalFilename = originalFilename;
-    // }
 }

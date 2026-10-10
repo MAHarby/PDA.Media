@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PDA.Media.Data.Contexts;
 
 namespace PDA.Media.Data.Entities.EntityMaps;
 
-public partial class TVShowEntityMap : IEntityTypeConfiguration<TVShow>
+public class TVShowEntityMap : IEntityTypeConfiguration<TVShow>
 {
     public void Configure(EntityTypeBuilder<TVShow> entity)
     {
@@ -13,6 +14,9 @@ public partial class TVShowEntityMap : IEntityTypeConfiguration<TVShow>
         entity.HasIndex(e => e.Name, "IX_TVShows_Name");
         entity.HasIndex(e => e.TVShowTypeId, "IX_TVShows_TVShowTypeId");
         entity.HasIndex(e => e.IsDeleted, "IX_TVShows_IsDeleted");
+
+        // Hide soft-deleted rows from every query (see DataContext.SoftDeleteFilter).
+        entity.HasQueryFilter(DataContext.SoftDeleteFilter, e => !e.IsDeleted);
 
         entity.Property(e => e.Name).HasMaxLength(200).IsUnicode(false);
         entity.Property(e => e.Description).HasMaxLength(500).IsUnicode(false);
@@ -25,15 +29,12 @@ public partial class TVShowEntityMap : IEntityTypeConfiguration<TVShow>
             
         entity.Property(e => e.CreatedOn).HasDefaultValueSql("(getdate())", "DF_TVShows_CreatedOn").HasColumnType("datetime");
         entity.Property(e => e.CreatedBy).HasMaxLength(100).IsUnicode(false).HasDefaultValue("API", "DF_TVShows_CreatedBy");
-        entity.Property(e => e.UpdatedOn).HasDefaultValueSql("(getdate())", "DF_TVShows_UpdatedOn").HasColumnType("datetime");
-        entity.Property(e => e.UpdatedBy).HasMaxLength(100).IsUnicode(false);
+        entity.Property(e => e.ModifiedOn).HasColumnName("UpdatedOn").HasDefaultValueSql("(getdate())", "DF_TVShows_UpdatedOn").HasColumnType("datetime");
+        entity.Property(e => e.ModifiedBy).HasColumnName("UpdatedBy").HasMaxLength(100).IsUnicode(false);
 
         entity.HasOne(d => d.TvShowType).WithMany(p => p.TVShows)
             .HasForeignKey(d => d.TVShowTypeId)
             .OnDelete(DeleteBehavior.ClientSetNull)
             .HasConstraintName("FK_TVShows_TVShowTypes");
-        
-        OnConfigurePartial(entity);
     }
-    partial void OnConfigurePartial(EntityTypeBuilder<TVShow> entity);
 }

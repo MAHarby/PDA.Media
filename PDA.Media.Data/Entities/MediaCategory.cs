@@ -11,11 +11,4 @@ public class MediaCategory
     public string? Notes { get; set; }
     public bool IsActive { get; set; } = true;
     public bool IsDeleted { get; set; } = false;
-
-    // public MediaCategory(string name, string? description, string? rootFolder)
-    // {
-    //     Name = name;
-    //     Description = description;
-    //     RootFolder = rootFolder;
-    // }
 }

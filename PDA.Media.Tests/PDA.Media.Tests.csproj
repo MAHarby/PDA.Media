@@ -16,6 +16,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\PDA.Media.Utils\PDA.Media.Utils.csproj" />
+        <ProjectReference Include="..\PDA.Media.Data\PDA.Media.Data.csproj" />
     </ItemGroup>
 
     <ItemGroup>

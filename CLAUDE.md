@@ -11,7 +11,7 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
 | `PDA.Media.Utils` | **Avalonia 12** desktop app (`WinExe`, `net10.0`) | Active app: "Media Utilities - Batch Encoder". Views are `.axaml`. |
 | `PDA.Media.Desktop` | **WPF** app (`net10.0-windows`, `UseWPF`) | Older UI. Views are `.xaml`, not Avalonia. Don't mix WPF and Avalonia APIs. |
 | `PDA.Media.BatchConverter` | Console app (`net10.0`) | Command-line batch encoder; input/output folders are hard-coded (see TODOs in `Program.cs`). |
-| `PDA.Media.Data` | Class library (`net10.0`) | Placeholder (empty `Entities/`). |
+| `PDA.Media.Data` | Class library (`net10.0`) | EF Core 10 data layer over an existing SQL Server database (see below). Not referenced by the app yet. |
 | `PDA.Media.Tests` | MSTest 4 (`net10.0`) | References `PDA.Media.Utils`. Method-level parallelization is on (`MSTestSettings.cs`). |
 
 ## PDA.Media.Utils (Avalonia) architecture
@@ -79,6 +79,22 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   folder cascades to its children; folders total their `FileCount` and `Size`, read from the folder listing so no
   extra network calls are made); `FileSize.Format` gives the "12.5 GB" / "850 MB" text used in both lists; `DestinationItem` is a file queued in the destination list, with its Plex output path and encoding status. Put new model
   classes here, not at the bottom of view model files.
+
+## PDA.Media.Data (EF Core)
+
+- **Database-first:** the SQL Server database (`Media.Master`) already exists and is the source of truth. There are no
+  migrations; never call `EnsureCreated`/`Migrate`. The entity maps (`Entities/EntityMaps/*EntityMap.cs`,
+  `IEntityTypeConfiguration<T>`, picked up by `ApplyConfigurationsFromAssembly`) describe the existing tables, so a
+  schema change is a SQL script run against the database first, then the matching map change.
+- **No logging setup in the library:** don't reference Serilog here; the app passes its logging in through the options.
+- **Soft delete:** entities with `IsDeleted` have a named query filter (`DataContext.SoftDeleteFilter`), so queries
+  skip deleted rows. Use `IgnoreQueryFilters([DataContext.SoftDeleteFilter])` to include them.
+- **Audit fields:** entities implementing `IAuditable` get `CreatedOn`/`CreatedBy`/`ModifiedOn`/`ModifiedBy` set by
+  `DataContext` on save (local time, `AuditUser`, default "API"). Don't set them in services. Movie, TVShow and
+  TVShowEpisode store `ModifiedOn`/`ModifiedBy` in their `UpdatedOn`/`UpdatedBy` columns.
+- **Database defaults:** a non-string column with a database default (`HasDefaultValue`) also needs
+  `.ValueGeneratedNever()` and a matching C# initializer, otherwise EF leaves 0 out of the INSERT and the default wins.
+- **Tests:** `DataContextTests` use `SqlCaptureContext`, which captures the SQL a save would run without a database.
 
 ## Commands
 
