@@ -1,6 +1,6 @@
 namespace PDA.Media.Data.Entities;
 
-public class MediaCategory
+public class MediaCategory : IEntity, ISoftDeletable
 {
     public int Id { get; set; }
     public string Name { get; set; } = null!;

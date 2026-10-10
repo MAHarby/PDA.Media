@@ -1,6 +1,6 @@
 namespace PDA.Media.Data.Entities;
 
-public class Artist : IAuditable
+public class Artist : IEntity, ISoftDeletable, IAuditable
 {
     public int Id { get; set; }
     public string Name { get; set; } = null!;

@@ -1,6 +1,6 @@
 namespace PDA.Media.Data.Entities;
 
-public class TVShowEpisode : IAuditable
+public class TVShowEpisode : IEntity, ISoftDeletable, IAuditable
 {
     public int Id { get; set; }
     public int TVShowId { get; set; }

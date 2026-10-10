@@ -1,6 +1,6 @@
 namespace PDA.Media.Data.Entities;
 
-public class AlbumType
+public class AlbumType : IEntity
 {
     public int Id { get; set; }
     public string Name { get; set; } = null!;

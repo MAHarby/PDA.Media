@@ -118,14 +118,26 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
 - **Database defaults:** only map a default EF needs to know about. A non-string column whose database default differs
   from the C# default (e.g. `TrackCount` 1) needs `.ValueGeneratedNever()` and a matching C# initializer, otherwise EF
   leaves 0 out of the INSERT and the database default wins. Defaults of 0 / false needn't be mapped.
-- **Services** (`Services/`, e.g. `AlbumService`, the pattern for the others): take an `IDbContextFactory<DataContext>`
-  (`DataContextFactory` without DI) and create a short-lived context per method (`using var context = ...`), never
-  one held for the service's lifetime. Each operation has a sync and an async method (keep both; async ones take a
-  `CancellationToken`). Reads use `AsNoTracking()`; updates load the row and copy values onto it; deletes are soft
-  (`IsDeleted`). Search terms use `*` as the wildcard, turned into an escaped SQL `LIKE` pattern.
+- **Services** (`Services/`): take an `IDbContextFactory<DataContext>` (`DataContextFactory` without DI) and create a
+  short-lived context per method (`using var context = ...`), never one held for the service's lifetime. Each operation
+  has a sync and an async method (keep both; async ones take a `CancellationToken`). All are singletons registered by
+  `AddMediaData`; add a new service there.
+  - `DataService<TEntity>` (entities implementing `IEntity`: `Id` + `Name`) holds the shared operations: get by id, list,
+    search by name (`*` wildcard, turned into an escaped SQL `LIKE` pattern), add (returns the existing record when
+    `IsSameAs` matches, also after a unique-index clash), update (loads the row and copies every column onto it,
+    keeping the key and Created fields) and delete (soft for `ISoftDeletable`, otherwise the row is removed). Reads use
+    `AsNoTracking()`.
+  - A service derives from it and supplies `IsSameAs` (its natural key), optionally `DefaultOrder` and `IsProtected`
+    (rows that can't be deleted: Artist 0, AlbumType 1, MovieType 0, TVShowType 0, which foreign keys fall back to), and
+    its own queries as one-liners over the `List` / `First` helpers (and their async versions).
+  - Services: `AlbumService` (artist + name; also `TruncateTable`), `ArtistService` (name), `TrackService` (album + track
+    number + name), `MovieService` (name), `TVShowService` (name + release year), `TVShowEpisodeService` (show + season +
+    episode, or name when the episode number is 0), `MediaCategoryService` (name), the lookup services
+    `AlbumTypeService` / `MovieTypeService` / `TVShowTypeService` (name), and `SettingService` (key / value, not a
+    `DataService`).
 - **Tests:** `DataContextTests` use `SqlCaptureContext`, which captures the SQL a save would run without a database;
-  `SchemaTests` read `Media.Master.sql` (copied to the test output folder). Service tests (`AlbumServiceTests`) run
-  against a real SQL Server: `SqlServerTestDatabase` creates a throwaway database from `Media.Master.sql` per test and
+  `SchemaTests` read `Media.Master.sql` (copied to the test output folder). Service tests (`AlbumServiceTests`, which also cover
+  `DataService` in depth, and `DataServiceTests`) run against a real SQL Server: `SqlServerTestDatabase` creates a throwaway database from `Media.Master.sql` per test and
   drops it after. Set `PDA_MEDIA_TEST_SQL` to a server connection string (e.g.
   `Server=(localdb)\MSSQLLocalDB;Integrated Security=true;TrustServerCertificate=true`); without it they report
   Inconclusive. Never point it at the real Media.Master server. In cloud sessions, SQL Server 2022 runs in Docker
