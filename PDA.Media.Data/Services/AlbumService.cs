@@ -21,9 +21,7 @@ public class AlbumService : IDataService<Album>
 
     /// <summary>Uses DataContext's built-in connection string.</summary>
     public AlbumService() : this(new DataContextFactory()) { }
-
     public AlbumService(string connectionString) : this(new DataContextFactory(connectionString)) { }
-
     public AlbumService(IDbContextFactory<DataContext> contextFactory, ILogger<AlbumService>? logger = null)
     {
         _contextFactory = contextFactory;

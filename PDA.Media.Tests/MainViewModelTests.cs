@@ -8,7 +8,7 @@ using PDA.Media.Utils.ViewModels;
 namespace PDA.Media.Tests;
 
 [TestClass]
-public sealed class Test1
+public sealed class MainViewModelTests
 {
     [TestMethod]
     public void TestFluentThemeColors_AllExpectedPaletteKeysExist()
