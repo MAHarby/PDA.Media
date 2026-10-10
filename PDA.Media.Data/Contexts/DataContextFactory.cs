@@ -8,20 +8,25 @@ namespace PDA.Media.Data.Contexts;
 /// for their lifetime.
 /// </summary>
 /// <remarks>
-/// For use without dependency injection. With DI, register the factory with <c>AddDbContextFactory&lt;DataContext&gt;</c>
-/// instead; services only depend on <see cref="IDbContextFactory{TContext}"/>, so either works.
+/// The app gets one through <see cref="DataServiceCollectionExtensions.AddMediaData(Microsoft.Extensions.DependencyInjection.IServiceCollection, string, string)"/>;
+/// tests and small tools can create one from a connection string.
 /// </remarks>
 public sealed class DataContextFactory : IDbContextFactory<DataContext>
 {
-    private readonly DbContextOptions<DataContext>? options;
+    private readonly DbContextOptions<DataContext> _options;
+    private readonly string _auditUser;
 
-    /// <summary>Uses DataContext's built-in connection string.</summary>
-    public DataContextFactory() { }
+    /// <summary>Connects with the app's standard options (see <see cref="DataConnection.Configure"/>).</summary>
+    public DataContextFactory(string connectionString, string auditUser = DataContext.DefaultAuditUser)
+        : this((DbContextOptions<DataContext>)DataConnection.Configure(new DbContextOptionsBuilder<DataContext>(), connectionString).Options, auditUser) { }
 
-    public DataContextFactory(string connectionString)
-        : this(new DbContextOptionsBuilder<DataContext>().UseSqlServer(connectionString).Options) { }
+    /// <param name="options">The options every context is created with.</param>
+    /// <param name="auditUser">Written to CreatedBy / ModifiedBy when changes are saved.</param>
+    public DataContextFactory(DbContextOptions<DataContext> options, string auditUser = DataContext.DefaultAuditUser)
+    {
+        _options = options;
+        _auditUser = auditUser;
+    }
 
-    public DataContextFactory(DbContextOptions<DataContext> options) => this.options = options;
-
-    public DataContext CreateDbContext() => options is null ? new DataContext() : new DataContext(options);
+    public DataContext CreateDbContext() => new(_options) { AuditUser = _auditUser };
 }

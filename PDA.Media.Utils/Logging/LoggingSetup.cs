@@ -33,6 +33,8 @@ public static class LoggingSetup
 
         return new LoggerConfiguration()
             .MinimumLevel.Information()
+            // EF Core logs every SQL command, and each connection retry with its stack trace, at Information.
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
             .Enrich.FromLogContext()
             .WriteTo.Console(outputTemplate: OutputTemplate)
             .WriteTo.File(logFilePath, outputTemplate: OutputTemplate, shared: false)

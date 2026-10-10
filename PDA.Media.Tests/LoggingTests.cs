@@ -74,6 +74,27 @@ public sealed class LoggingTests
     }
 
     [TestMethod]
+    public void TestLoggingSetup_OnlyLogsEntityFrameworkWarnings()
+    {
+        string logDirectory = Path.Combine(Path.GetTempPath(), "pda_logs_test_" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var logger = LoggingSetup.CreateLogger(new AuditLogSink(), out _, logDirectory);
+            var efLogger = logger.ForContext(Constants.SourceContextPropertyName, "Microsoft.EntityFrameworkCore.Database.Command");
+            var appLogger = logger.ForContext(Constants.SourceContextPropertyName, "PDA.Media.Data.Services.AlbumService");
+
+            Assert.IsFalse(efLogger.IsEnabled(LogEventLevel.Information), "EF's SQL commands and retries are not logged");
+            Assert.IsTrue(efLogger.IsEnabled(LogEventLevel.Warning));
+            Assert.IsTrue(appLogger.IsEnabled(LogEventLevel.Information));
+            (logger as IDisposable)?.Dispose();
+        }
+        finally
+        {
+            if (Directory.Exists(logDirectory)) Directory.Delete(logDirectory, true);
+        }
+    }
+
+    [TestMethod]
     public void TestLoggingSetup_DeleteOldLogFiles_KeepsNewest()
     {
         string logDirectory = Path.Combine(Path.GetTempPath(), "pda_logs_test_" + Guid.NewGuid().ToString("N"));

@@ -19,8 +19,6 @@ public class AlbumService : IDataService<Album>
     private readonly IDbContextFactory<DataContext> _contextFactory;
     private readonly ILogger<AlbumService> _logger;
 
-    /// <summary>Uses DataContext's built-in connection string.</summary>
-    public AlbumService() : this(new DataContextFactory()) { }
     public AlbumService(string connectionString) : this(new DataContextFactory(connectionString)) { }
     public AlbumService(IDbContextFactory<DataContext> contextFactory, ILogger<AlbumService>? logger = null)
     {
@@ -289,13 +287,20 @@ public class AlbumService : IDataService<Album>
         try
         {
             using var context = _contextFactory.CreateDbContext();
-            using var transaction = context.Database.BeginTransaction();
 
-            // IgnoreQueryFilters: ExecuteDelete applies the soft-delete filter too, which would leave deleted rows
-            // behind and make the reseed reuse their ids.
-            int deleted = context.Albums.IgnoreQueryFilters([DataContext.SoftDeleteFilter]).ExecuteDelete();
-            context.Database.ExecuteSqlRaw(ReseedAlbumsSql);
-            transaction.Commit();
+            // The connection retries on failure, so a transaction has to run through the execution strategy (which
+            // re-runs the whole block if the connection drops part way).
+            int deleted = context.Database.CreateExecutionStrategy().Execute(() =>
+            {
+                using var transaction = context.Database.BeginTransaction();
+
+                // IgnoreQueryFilters: ExecuteDelete applies the soft-delete filter too, which would leave deleted
+                // rows behind and make the reseed reuse their ids.
+                int count = context.Albums.IgnoreQueryFilters([DataContext.SoftDeleteFilter]).ExecuteDelete();
+                context.Database.ExecuteSqlRaw(ReseedAlbumsSql);
+                transaction.Commit();
+                return count;
+            });
 
             _logger.LogInformation("Truncated Albums: {Count} albums deleted", deleted);
             return true;
@@ -312,12 +317,16 @@ public class AlbumService : IDataService<Album>
         try
         {
             await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
-            await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 
-            int deleted = await context.Albums.IgnoreQueryFilters([DataContext.SoftDeleteFilter])
-                .ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
-            await context.Database.ExecuteSqlRawAsync(ReseedAlbumsSql, cancellationToken).ConfigureAwait(false);
-            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            int deleted = await context.Database.CreateExecutionStrategy().ExecuteAsync(async token =>
+            {
+                await using var transaction = await context.Database.BeginTransactionAsync(token).ConfigureAwait(false);
+                int count = await context.Albums.IgnoreQueryFilters([DataContext.SoftDeleteFilter])
+                    .ExecuteDeleteAsync(token).ConfigureAwait(false);
+                await context.Database.ExecuteSqlRawAsync(ReseedAlbumsSql, token).ConfigureAwait(false);
+                await transaction.CommitAsync(token).ConfigureAwait(false);
+                return count;
+            }, cancellationToken).ConfigureAwait(false);
 
             _logger.LogInformation("Truncated Albums: {Count} albums deleted", deleted);
             return true;

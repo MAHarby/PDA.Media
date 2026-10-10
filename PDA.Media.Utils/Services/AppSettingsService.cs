@@ -1,8 +1,10 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using PDA.Media.Data;
 
 namespace PDA.Media.Utils.Services;
 
@@ -12,6 +14,14 @@ public class UserSettings
     public string EncoderProfile { get; set; } = "Bluray TV";
     public string SourcePath { get; set; } = @"\\pda-hp-z620\data\ARR-Stack\media\tv";
     public string DestinationPath { get; set; } = @"\\Aubrey-NAS\Media\TV Series\ARRstack";
+
+    /// <summary>SQL Server holding the media database (Windows authentication). Read when the app starts.</summary>
+    public string DatabaseServer { get; set; } = DataConnection.DefaultServer;
+
+    public string DatabaseName { get; set; } = DataConnection.DefaultDatabase;
+
+    [JsonIgnore]
+    public string ConnectionString => DataConnection.BuildConnectionString(DatabaseServer, DatabaseName);
 }
 
 public class AppSettingsService

@@ -11,6 +11,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
+using PDA.Media.Data.Services;
 using PDA.Media.Utils.Logging;
 using PDA.Media.Utils.Models;
 using PDA.Media.Utils.Services;
@@ -31,6 +32,10 @@ public partial class MainViewModel : ViewModelBase
     private readonly FFmpegService _ffmpegService;
     private readonly MediaEncodingService _encodingService;
     private readonly ILogger<MainViewModel> _logger;
+    private readonly DatabaseStatusService? _databaseStatus;
+
+    // The settings file as loaded; the view model updates its own fields and saves the rest unchanged.
+    private readonly UserSettings _settings;
     private bool _isInitializing;
     // Set while a general profile applies its paths, so settings are saved once afterwards.
     private bool _isApplyingGeneralProfile;
@@ -67,6 +72,26 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>Text for the status bar: what's happening now, or the last batch's summary.</summary>
     [ObservableProperty] public partial string StatusText { get; set; } = "Ready";
 
+    /// <summary>Whether the media database can be reached (checked in the background; click to check again).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsDatabaseConfigured), nameof(IsDatabaseOnline), nameof(IsDatabaseOffline), nameof(DatabaseToolTip))]
+    public partial DatabaseState DatabaseState { get; set; } = DatabaseState.NotConfigured;
+
+    public bool IsDatabaseConfigured => DatabaseState != DatabaseState.NotConfigured;
+    public bool IsDatabaseOnline => DatabaseState == DatabaseState.Online;
+    public bool IsDatabaseOffline => DatabaseState == DatabaseState.Offline;
+
+    /// <summary>"PDA-Main / Media.Master".</summary>
+    public string DatabaseDisplayName => _databaseStatus == null ? "" : $"{_databaseStatus.Server} / {_databaseStatus.Database}";
+
+    public string DatabaseToolTip => DatabaseState switch
+    {
+        DatabaseState.Checking => $"Connecting to {DatabaseDisplayName}...",
+        DatabaseState.Online => $"Connected to {DatabaseDisplayName}. Click to check again.",
+        DatabaseState.Offline => $"Can't reach {DatabaseDisplayName}; database features are unavailable. Click to try again.",
+        _ => "",
+    };
+
     /// <summary>Progress of the whole batch, 0 to 100.</summary>
     [ObservableProperty] public partial double OverallProgress { get; set; }
 
@@ -97,7 +122,7 @@ public partial class MainViewModel : ViewModelBase
 
     public MainViewModel(AppSettingsService settingsService, EncoderProfileService encoderProfileService,
         AuditLogSink auditLogSink, FFmpegService ffmpegService, MediaEncodingService encodingService,
-        ILogger<MainViewModel> logger)
+        ILogger<MainViewModel> logger, DatabaseStatusService? databaseStatus = null)
     {
         _settingsService = settingsService;
         _encoderProfileService = encoderProfileService;
@@ -105,6 +130,7 @@ public partial class MainViewModel : ViewModelBase
         _ffmpegService = ffmpegService;
         _encodingService = encodingService;
         _logger = logger;
+        _databaseStatus = databaseStatus;
         _isInitializing = true;
         _logger.LogInformation("Initialising main window view model");
 
@@ -112,7 +138,7 @@ public partial class MainViewModel : ViewModelBase
         LoadProfilesFromService();
 
         // Load last session settings.
-        var settings = _settingsService.LoadSettings();
+        var settings = _settings = _settingsService.LoadSettings();
         
         if (!string.IsNullOrEmpty(settings.GeneralProfile)) SelectedGeneralProfile = settings.GeneralProfile; 
         if (!string.IsNullOrEmpty(settings.EncoderProfile))
@@ -137,6 +163,20 @@ public partial class MainViewModel : ViewModelBase
 
         IsFFmpegAvailable = _ffmpegService.Locate();
         if (!IsFFmpegAvailable) StatusText = "FFmpeg not found: use the download button in the toolbar";
+
+        // The app works without the database, so only check it in the background.
+        if (_databaseStatus != null) CheckDatabaseCommand.Execute(null);
+    }
+
+    [RelayCommand]
+    private async Task CheckDatabaseAsync()
+    {
+        if (_databaseStatus == null) return;
+
+        DatabaseState = DatabaseState.Checking;
+        // Off the UI thread: opening a connection to a server that is off waits for the connect timeout.
+        bool online = await Task.Run(() => _databaseStatus.CanConnectAsync());
+        DatabaseState = online ? DatabaseState.Online : DatabaseState.Offline;
     }
 
     /// <summary>
@@ -433,13 +473,13 @@ public partial class MainViewModel : ViewModelBase
 
     private void SaveCurrentSettings()
     {
-        _settingsService.SaveSettings(new UserSettings
-        {
-            GeneralProfile = SelectedGeneralProfile ?? "General",
-            EncoderProfile = SelectedEncoderProfile ?? "Bluray TV",
-            SourcePath = SourcePath,
-            DestinationPath = DestinationPath
-        });
+        // Update the loaded settings rather than saving new ones, so settings this view model doesn't edit (such as
+        // the database server) are kept.
+        _settings.GeneralProfile = SelectedGeneralProfile ?? "General";
+        _settings.EncoderProfile = SelectedEncoderProfile ?? "Bluray TV";
+        _settings.SourcePath = SourcePath;
+        _settings.DestinationPath = DestinationPath;
+        _settingsService.SaveSettings(_settings);
     }
     private void LoadGeneralProfileSettings(string? value)
     {

@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 using PDA.Media.Data.Entities;
 
@@ -13,11 +12,13 @@ public class DataContext : DbContext
     /// </summary>
     public const string SoftDeleteFilter = "SoftDelete";
 
-    // TODO: Need to move this out when we release the app.
-    private readonly string connectionString = "Server=PDA-Main;Database=Media.Master;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=Yes";
+    /// <summary>The default for <see cref="AuditUser"/> (and the database default for CreatedBy).</summary>
+    public const string DefaultAuditUser = "API";
 
-    public DataContext() { }
-    public DataContext(string connectionString) => this.connectionString = connectionString;
+    /// <summary>
+    /// The options (provider, connection string, logging) come from the caller: use <see cref="DataContextFactory"/>
+    /// or register the data layer with <c>AddMediaData</c>.
+    /// </summary>
     public DataContext(DbContextOptions<DataContext> options) : base(options) { }
 
     public virtual DbSet<Album> Albums { get; set; }
@@ -35,17 +36,7 @@ public class DataContext : DbContext
     /// <summary>
     /// The name written to CreatedBy / ModifiedBy when changes are saved.
     /// </summary>
-    public string AuditUser { get; set; } = "API";
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        // Only used by the parameterless and connection string constructors. When options are passed in
-        // (DbContextOptions<DataContext>), the caller has already chosen the provider and logging.
-        if (!optionsBuilder.IsConfigured)
-        {
-            optionsBuilder.UseSqlServer(connectionString).LogTo(Console.WriteLine, LogLevel.Information);
-        }
-    }
+    public string AuditUser { get; set; } = DefaultAuditUser;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
