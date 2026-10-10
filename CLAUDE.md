@@ -11,8 +11,8 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
 | `PDA.Media.Utils` | **Avalonia 12** desktop app (`WinExe`, `net10.0`) | Active app: "Media Utilities - Batch Encoder". Views are `.axaml`. |
 | `PDA.Media.Desktop` | **WPF** app (`net10.0-windows`, `UseWPF`) | Older UI. Views are `.xaml`, not Avalonia. Don't mix WPF and Avalonia APIs. |
 | `PDA.Media.BatchConverter` | Console app (`net10.0`) | Command-line batch encoder; input/output folders are hard-coded (see TODOs in `Program.cs`). |
-| `PDA.Media.Data` | Class library (`net10.0`) | EF Core 10 data layer over an existing SQL Server database (see below). Not referenced by the app yet. |
-| `PDA.Media.Tests` | MSTest 4 (`net10.0`) | References `PDA.Media.Utils`. Method-level parallelization is on (`MSTestSettings.cs`). |
+| `PDA.Media.Data` | Class library (`net10.0`) | EF Core 10 data layer over an existing SQL Server database (see below). Used by `PDA.Media.Utils`. |
+| `PDA.Media.Tests` | MSTest 4 (`net10.0`) | References `PDA.Media.Utils` and `PDA.Media.Data`. Method-level parallelization is on (`MSTestSettings.cs`). |
 
 ## PDA.Media.Utils (Avalonia) architecture
 
@@ -49,16 +49,22 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   The container is built in `Program.Main` and exposed as `App.Services`. `App` resolves `MainWindow`, which receives
   `MainViewModel` and an `EncoderProfilesViewModel` factory. When adding a service, view model or window, register
   it there. Keep the existing non-DI constructors (they default to `NullLogger`), because tests and the XAML
-  previewer use them.
+  previewer use them. The data layer is registered with `services.AddMediaData(...)` (connection string from
+  `UserSettings`, CreatedBy/ModifiedBy = the Windows user); `MainViewModel` takes an optional `DatabaseStatusService`.
 - **Logging:** Serilog behind `Microsoft.Extensions.Logging`. Inject `ILogger<T>` and use message templates
   (`_logger.LogInformation("Saved {Count} profiles", n)`); don't reference Serilog outside `Logging/` and `Program`.
-  The minimum level is Information. `LoggingSetup` writes to the console and to a new timestamped file per run in
+  The minimum level is Information, except `Microsoft.EntityFrameworkCore` at Warning (`MinimumLevel.Override` in
+  `LoggingSetup`; EF logs every SQL command and connection retry at Information). Filter categories there, not with
+  `AddFilter` in `ServiceConfiguration`: `AddSerilog` adds a provider rule that overrides category filters. `LoggingSetup` writes to the console and to a new timestamped file per run in
   `%APPDATA%/PDA.Media/Logs` (keeps the latest 30). `AuditLogSink` feeds the Audit Log panel on the main window
   (`MainViewModel.AuditLogEntries`), whose buttons clear the panel, open `LogViewerView`, and save a copy to
   Downloads through `LogFileService`.
 - **Services** (`Services/`): singletons resolved from DI. They take an optional custom file path so tests can
   redirect storage.
-  - `AppSettingsService` stores `UserSettings` as JSON in `%APPDATA%/PDA.Media/settings.json`.
+  - `AppSettingsService` stores `UserSettings` as JSON in `%APPDATA%/PDA.Media/settings.json`, including
+    `DatabaseServer` / `DatabaseName` (default `PDA-Main` / `Media.Master`, read at startup; restart after changing).
+    `MainViewModel` keeps the loaded `UserSettings` and updates only its own fields when saving, so other settings
+    survive; do the same in any other view model that saves settings.
   - `EncoderProfileService` stores `List<EncodeProfile>` in `%APPDATA%/PDA.Media/profiles.json` and
     provides the built-in defaults (`GetDefaultProfiles`).
   - `FFmpegService` finds `ffmpeg`/`ffprobe` in the app's `bin` folder (`<exe folder>/bin`), then on the PATH, and
@@ -97,6 +103,12 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   Dates are `datetime2`.
 - **Foreign keys:** several use `ON DELETE SET DEFAULT` (Id 0 / AlbumType 1), which EF can't express; map them as
   `DeleteBehavior.ClientNoAction` so the database applies it.
+- **Connecting:** `DataConnection` builds the Windows-authentication connection string (no password; 5 s connect
+  timeout) and the EF options (SQL Server with `EnableRetryOnFailure`). Both `AddMediaData` (the app) and
+  `DataContextFactory(connectionString)` (tests, tools) use it; `DataContext` itself has no connection string. Because
+  of the retries, a transaction started in code must run inside `context.Database.CreateExecutionStrategy().Execute(...)`.
+  `DatabaseStatusService.CanConnectAsync` is the background check behind the status-bar indicator (green / amber /
+  red; click to check again). The app must work without the database: never connect on the UI thread or at startup.
 - **No logging setup in the library:** don't reference Serilog here; the app passes its logging in through the options.
 - **Soft delete:** entities with `IsDeleted` have a named query filter (`DataContext.SoftDeleteFilter`), so queries
   skip deleted rows. Use `IgnoreQueryFilters([DataContext.SoftDeleteFilter])` to include them.

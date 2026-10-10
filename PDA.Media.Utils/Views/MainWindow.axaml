@@ -248,9 +248,17 @@
         
         <!-- Main Window Status Bar. -->
         <Border Name="mainWindowStatusBar" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Classes="StatusPanel" >
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid ColumnDefinitions="*,Auto,Auto">
                 <TextBlock Grid.Column="0" Text="{Binding StatusText}" Classes="StatusText"/>
                 <ProgressBar Grid.Column="1" Value="{Binding OverallProgress}" IsVisible="{Binding IsEncoding}" Classes="StatusProgress"/>
+                <!-- Database connection: green when connected, red when it can't be reached; click to check again. -->
+                <Button Grid.Column="2" Command="{Binding CheckDatabaseCommand}" IsVisible="{Binding IsDatabaseConfigured}"
+                        ToolTip.Tip="{Binding DatabaseToolTip}" Classes="DatabaseStatus">
+                    <StackPanel Classes="DatabaseStatusContent">
+                        <Ellipse Classes="DatabaseDot" Classes.Online="{Binding IsDatabaseOnline}" Classes.Offline="{Binding IsDatabaseOffline}"/>
+                        <TextBlock Text="{Binding DatabaseDisplayName}" Classes="DatabaseName"/>
+                    </StackPanel>
+                </Button>
             </Grid>
         </Border>
         

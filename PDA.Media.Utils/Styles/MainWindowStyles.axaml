@@ -354,6 +354,43 @@
             <Setter Property="Padding" Value="8"/>
             <Setter Property="Margin" Value="10,3,10,5"/>
         </Style>
+
+        <!-- Database Status (status bar). -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Button.DatabaseStatus">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="6,0"/>
+            <Setter Property="Margin" Value="10,-6,0,-6"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <!-- Disabled while a check runs: keep the status bar background (the dot shows it's checking). -->
+        <Style Selector="Button.DatabaseStatus:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="StackPanel.DatabaseStatusContent">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="6"/>
+        </Style>
+        <Style Selector="Ellipse.DatabaseDot">
+            <Setter Property="Width" Value="8"/>
+            <Setter Property="Height" Value="8"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <!-- Checking. -->
+            <Setter Property="Fill" Value="#C08A1E"/>
+        </Style>
+        <Style Selector="Ellipse.DatabaseDot.Online">
+            <Setter Property="Fill" Value="#2E9E44"/>
+        </Style>
+        <Style Selector="Ellipse.DatabaseDot.Offline">
+            <Setter Property="Fill" Value="#D13438"/>
+        </Style>
+        <Style Selector="TextBlock.DatabaseName">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
         
         
 </Styles>
