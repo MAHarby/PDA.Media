@@ -106,8 +106,18 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
 - **Database defaults:** only map a default EF needs to know about. A non-string column whose database default differs
   from the C# default (e.g. `TrackCount` 1) needs `.ValueGeneratedNever()` and a matching C# initializer, otherwise EF
   leaves 0 out of the INSERT and the database default wins. Defaults of 0 / false needn't be mapped.
+- **Services** (`Services/`, e.g. `AlbumService`, the pattern for the others): take an `IDbContextFactory<DataContext>`
+  (`DataContextFactory` without DI) and create a short-lived context per method (`using var context = ...`), never
+  one held for the service's lifetime. Each operation has a sync and an async method (keep both; async ones take a
+  `CancellationToken`). Reads use `AsNoTracking()`; updates load the row and copy values onto it; deletes are soft
+  (`IsDeleted`). Search terms use `*` as the wildcard, turned into an escaped SQL `LIKE` pattern.
 - **Tests:** `DataContextTests` use `SqlCaptureContext`, which captures the SQL a save would run without a database;
-  `SchemaTests` read `Media.Master.sql` (copied to the test output folder).
+  `SchemaTests` read `Media.Master.sql` (copied to the test output folder). Service tests (`AlbumServiceTests`) run
+  against a real SQL Server: `SqlServerTestDatabase` creates a throwaway database from `Media.Master.sql` per test and
+  drops it after. Set `PDA_MEDIA_TEST_SQL` to a server connection string (e.g.
+  `Server=(localdb)\MSSQLLocalDB;Integrated Security=true;TrustServerCertificate=true`); without it they report
+  Inconclusive. Never point it at the real Media.Master server. In cloud sessions, SQL Server 2022 runs in Docker
+  (`dockerd &`, then `docker run ... mcr.microsoft.com/mssql/server:2022-latest` with `MSSQL_COLLATION=SQL_Latin1_General_CP1_CI_AS`).
 
 ## Commands
 
