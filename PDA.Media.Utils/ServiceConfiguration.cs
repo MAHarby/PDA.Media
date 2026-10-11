@@ -37,10 +37,8 @@ public static class ServiceConfiguration
         services.AddSingleton(sp => new MediaEncodingService(sp.GetRequiredService<ILogger<MediaEncodingService>>()));
 
         // Data layer (PDA.Media.Data). The connection string is built from the user settings the first time the
-        // database is used; changes take effect when the app is restarted. CreatedBy / ModifiedBy record the
-        // Windows user.
-        services.AddMediaData(sp => sp.GetRequiredService<AppSettingsService>().LoadSettings().ConnectionString,
-            auditUser: Environment.UserName);
+        // database is used; changes take effect when the app is restarted. CreatedBy / ModifiedBy record the Windows user.
+        services.AddMediaData(sp => sp.GetRequiredService<AppSettingsService>().LoadSettings().ConnectionString, auditUser: Environment.UserName);
 
         // View models.
         services.AddTransient<MainViewModel>();

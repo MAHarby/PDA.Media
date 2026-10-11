@@ -17,7 +17,6 @@ public class UserSettings
 
     /// <summary>SQL Server holding the media database (Windows authentication). Read when the app starts.</summary>
     public string DatabaseServer { get; set; } = DataConnection.DefaultServer;
-
     public string DatabaseName { get; set; } = DataConnection.DefaultDatabase;
 
     [JsonIgnore]
