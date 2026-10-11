@@ -2,6 +2,7 @@ using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PDA.Media.Data;
+using PDA.Media.Scanner;
 using PDA.Media.Utils.Logging;
 using PDA.Media.Utils.Services;
 using PDA.Media.Utils.ViewModels;
@@ -39,6 +40,9 @@ public static class ServiceConfiguration
         // Data layer (PDA.Media.Data). The connection string is built from the user settings the first time the
         // database is used; changes take effect when the app is restarted. CreatedBy / ModifiedBy record the Windows user.
         services.AddMediaData(sp => sp.GetRequiredService<AppSettingsService>().LoadSettings().ConnectionString, auditUser: Environment.UserName);
+
+        // Media scanner (PDA.Media.Scanner); DI gives it the data services above and an ILogger<MediaScanner>.
+        services.AddMediaScanner();
 
         // View models.
         services.AddTransient<MainViewModel>();

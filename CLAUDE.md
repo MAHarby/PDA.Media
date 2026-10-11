@@ -12,7 +12,8 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
 | `PDA.Media.Desktop` | **WPF** app (`net10.0-windows`, `UseWPF`) | Older UI. Views are `.xaml`, not Avalonia. Don't mix WPF and Avalonia APIs. |
 | `PDA.Media.BatchConverter` | Console app (`net10.0`) | Command-line batch encoder; input/output folders are hard-coded (see TODOs in `Program.cs`). |
 | `PDA.Media.Data` | Class library (`net10.0`) | EF Core 10 data layer over an existing SQL Server database (see below). Used by `PDA.Media.Utils`. |
-| `PDA.Media.Tests` | MSTest 4 (`net10.0`) | References `PDA.Media.Utils` and `PDA.Media.Data`. Method-level parallelization is on (`MSTestSettings.cs`). |
+| `PDA.Media.Scanner` | Class library (`net10.0`) | Scans the media folders into the database (`MediaScanner`). Uses `PDA.Media.Data`; used by `PDA.Media.Utils`. |
+| `PDA.Media.Tests` | MSTest 4 (`net10.0`) | References `PDA.Media.Utils`, `PDA.Media.Data` and `PDA.Media.Scanner`. Method-level parallelization is on (`MSTestSettings.cs`). |
 
 ## PDA.Media.Utils (Avalonia) architecture
 
@@ -50,7 +51,8 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   `MainViewModel` and an `EncoderProfilesViewModel` factory. When adding a service, view model or window, register
   it there. Keep the existing non-DI constructors (they default to `NullLogger`), because tests and the XAML
   previewer use them. The data layer is registered with `services.AddMediaData(...)` (connection string from
-  `UserSettings`, CreatedBy/ModifiedBy = the Windows user); `MainViewModel` takes an optional `DatabaseStatusService`.
+  `UserSettings`, CreatedBy/ModifiedBy = the Windows user) and the scanner with `services.AddMediaScanner()`;
+  `MainViewModel` takes an optional `DatabaseStatusService`.
 - **Logging:** Serilog behind `Microsoft.Extensions.Logging`. Inject `ILogger<T>` and use message templates
   (`_logger.LogInformation("Saved {Count} profiles", n)`); don't reference Serilog outside `Logging/` and `Program`.
   The minimum level is Information, except `Microsoft.EntityFrameworkCore` at Warning (`MinimumLevel.Override` in
@@ -142,6 +144,13 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   `Server=(localdb)\MSSQLLocalDB;Integrated Security=true;TrustServerCertificate=true`); without it they report
   Inconclusive. Never point it at the real Media.Master server. In cloud sessions, SQL Server 2022 runs in Docker
   (`dockerd &`, then `docker run ... mcr.microsoft.com/mssql/server:2022-latest` with `MSSQL_COLLATION=SQL_Latin1_General_CP1_CI_AS`).
+
+## PDA.Media.Scanner
+
+- `MediaScanner` gets the data services it needs and an `ILogger<MediaScanner>` through its constructor (logger
+  optional, defaulting to `NullLogger`). Register it with `AddMediaScanner()` (`ScannerServiceCollectionExtensions`)
+  after `AddMediaData(...)`; when it needs another service, add a constructor parameter (every data service is already
+  registered). Tests build it by hand with services from `SqlServerTestDatabase.ContextFactory` (`MediaScannerTests`).
 
 ## Commands
 

@@ -11,4 +11,8 @@
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\PDA.Media.Data\PDA.Media.Data.csproj" />
+    </ItemGroup>
+
 </Project>
