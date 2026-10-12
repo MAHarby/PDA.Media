@@ -11,12 +11,10 @@ namespace PDA.Media.Utils.Logging;
 /// <summary>
 /// Serilog sink that feeds log events into <see cref="Entries"/> for the Audit Log panel.
 /// Events can arrive on any thread; they are queued and added to the collection on the UI thread.
+/// Every entry is kept until the panel is cleared (the panel's ListBox virtualizes, so only the visible rows are drawn).
 /// </summary>
 public sealed class AuditLogSink : ILogEventSink
 {
-    /// <summary>Oldest entries are dropped beyond this count to keep the panel responsive.</summary>
-    public const int MaxEntries = 2000;
-
     private readonly ConcurrentQueue<AuditLogEntry> _pending = new();
     private int _drainScheduled;
 
@@ -47,11 +45,6 @@ public sealed class AuditLogSink : ILogEventSink
         while (_pending.TryDequeue(out var entry))
         {
             Entries.Add(entry);
-        }
-
-        while (Entries.Count > MaxEntries)
-        {
-            Entries.RemoveAt(0);
         }
     }
 }

@@ -59,7 +59,7 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   `LoggingSetup`; EF logs every SQL command and connection retry at Information). Filter categories there, not with
   `AddFilter` in `ServiceConfiguration`: `AddSerilog` adds a provider rule that overrides category filters. `LoggingSetup` writes to the console and to a new timestamped file per run in
   `%APPDATA%/PDA.Media/Logs` (keeps the latest 30). `AuditLogSink` feeds the Audit Log panel on the main window
-  (`MainViewModel.AuditLogEntries`), whose buttons clear the panel, open `LogViewerView`, and save a copy to
+  (`MainViewModel.AuditLogEntries`; it keeps every entry until cleared, the ListBox virtualizes), whose buttons clear the panel, open `LogViewerView`, and save a copy to
   Downloads through `LogFileService`.
 - **Services** (`Services/`): singletons resolved from DI. They take an optional custom file path so tests can
   redirect storage.
@@ -154,11 +154,19 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
 
 ## PDA.Media.Scanner
 
-- `MediaScanner` gets the data services it needs and an `ILogger<MediaScanner>` through its constructor (logger
-  optional, defaulting to `NullLogger`). Register it with `AddMediaScanner()` (`ScannerServiceCollectionExtensions`)
-  after `AddMediaData(...)`; when it needs another service, add a constructor parameter (every data service is already
-  registered). `ScanAllMediaCategories(clearData: true)` empties the cache first through `MediaCacheService`; normal
-  scans should be incremental (add, update, soft-delete what has gone) so favourites and notes survive. Tests build it by hand with services from `SqlServerTestDatabase.ContextFactory` (`MediaScannerTests`).
+- `MediaScanner` gets the data services it needs and an `ILogger<MediaScanner>` through its constructor (logger optional, defaulting to `NullLogger`).
+  Register it with `AddMediaScanner()` (`ScannerServiceCollectionExtensions`) after `AddMediaData(...)`; when it needs another service, add a constructor
+  parameter (every data service is already registered).
+- `ScanAllMediaCategories` / `ScanAllMediaCategoriesAsync` scan each active `MediaCategory`'s `RootFolder` and return a `MediaScanResult` (rows added, restored,
+  updated, unchanged, deleted). `MediaKinds.FromMediaClass` picks the layout from `MediaClass` (Music; Movie/Movies/Film; TV/TV Show/Series; anything else is
+  skipped): music `Artist/Album/NN - Title.ext` (album type from the category), movies `Movie (Year)/…` (largest video file) or loose files in the root,
+  TV `Show (Year)/Season NN/… sNNeNN - Title.ext`. Name parsing is in `MediaFileNames` (pure; `MediaFileNamesTests`).
+- It is an incremental sync: each item goes through `AddOrRestoreRecordAsync` (restores a soft-deleted match with its id, favourites and notes), only the
+  fields the scan owns (folder, file name, cover art, track count, episode title) are updated, and rows under the root (`GetAllRecordsUnderFolder`) that
+  weren't seen are soft-deleted. Each category's folders are read completely before anything is written; a root that can't be reached, an unreadable
+  folder or a database error skips that category without deleting anything. Hidden / system files and folders starting with `.`, `@` or `#` (Synology
+  `@eaDir`, `#recycle`) are ignored. `clearData: true` empties the cache first through `MediaCacheService`.
+- Tests: `MediaScannerTests` build real folder trees in a temp folder and scan them into `SqlServerTestDatabase`.
 
 ## Commands
 

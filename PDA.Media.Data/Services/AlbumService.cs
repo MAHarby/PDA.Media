@@ -40,4 +40,17 @@ public class AlbumService : DataService<Album>
 
     public Task<List<Album>> GetAllRecordsByArtistIdAsync(int artistId, CancellationToken cancellationToken = default)
         => ListAsync(q => DefaultOrder(q.Where(a => a.ArtistId == artistId)), cancellationToken);
+
+    /// <summary>The records whose Folder is <paramref name="folder"/> or anything under it (what a scan of that folder should find).</summary>
+    public List<Album> GetAllRecordsUnderFolder(string folder)
+    {
+        string prefix = ChildFolderPrefix(folder), root = prefix[..^1];
+        return List(q => q.Where(a => a.Folder == root || a.Folder!.StartsWith(prefix)));
+    }
+
+    public Task<List<Album>> GetAllRecordsUnderFolderAsync(string folder, CancellationToken cancellationToken = default)
+    {
+        string prefix = ChildFolderPrefix(folder), root = prefix[..^1];
+        return ListAsync(q => q.Where(a => a.Folder == root || a.Folder!.StartsWith(prefix)), cancellationToken);
+    }
 }
