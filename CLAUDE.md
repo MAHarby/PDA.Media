@@ -99,6 +99,11 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   refuses to run twice; the developer runs it in SSMS), and change the maps to match. The media cache tables (Artists,
   Albums, Tracks, Movies, TVShows, TVShowEpisodes) can be emptied and re-scanned; the lookup and configuration tables
   (AlbumTypes, MovieTypes, TVShowTypes, MediaCategories, Settings) and the Id 0 rows must be kept.
+- **Stored procedures** live in `Media.Master.sql` too (after the tables), each in its own batch: comments in that batch
+  become part of the stored definition, so keep section headings in the batch before it. An upgrade that adds one
+  checks first and uses `RAISERROR` + `SET NOEXEC ON` to skip the rest of the script if it has already run (a
+  `CREATE PROCEDURE` can't sit inside a transaction block). `dbo.ClearMediaCache` empties the media cache tables in one
+  transaction, keeps Artist 0 and the lookup / configuration tables, doesn't restart ids, and returns one row of counts.
 - **Text columns:** anything that comes from the media folders (names, descriptions, folders, file names, notes) is
   `nvarchar` (`Notes` is `nvarchar(max)`), because `varchar` with this collation turns non-Western characters into `?`.
   Values the code controls (audit users, `MediaClass`, external ids, setting keys) are `varchar` (`.IsUnicode(false)`).
@@ -132,15 +137,17 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   - A service derives from it and supplies `IsSameAs` (its natural key), optionally `DefaultOrder` and `IsProtected`
     (rows that can't be deleted: Artist 0, AlbumType 1, MovieType 0, TVShowType 0, which foreign keys fall back to), and
     its own queries as one-liners over the `List` / `First` helpers (and their async versions).
-  - Services: `AlbumService` (artist + name; also `TruncateTable`), `ArtistService` (name), `TrackService` (album + track
+  - Services: `AlbumService` (artist + name), `ArtistService` (name), `TrackService` (album + track
     number + name), `MovieService` (name), `TVShowService` (name + release year), `TVShowEpisodeService` (show + season +
     episode, or name when the episode number is 0), `MediaCategoryService` (name), the lookup services
-    `AlbumTypeService` / `MovieTypeService` / `TVShowTypeService` (name), and `SettingService` (key / value, not a
-    `DataService`).
+    `AlbumTypeService` / `MovieTypeService` / `TVShowTypeService` (name), `SettingService` (key / value, not a
+    `DataService`) and `MediaCacheService` (`ClearMediaCache`, which runs `dbo.ClearMediaCache` through
+    `Database.SqlQuery<MediaCacheCleared>`; for starting again, since it also loses favourites, notes and external ids).
 - **Tests:** `DataContextTests` use `SqlCaptureContext`, which captures the SQL a save would run without a database;
   `SchemaTests` read `Media.Master.sql` (copied to the test output folder). Service tests (`AlbumServiceTests`, which also cover
   `DataService` in depth, and `DataServiceTests`) run against a real SQL Server: `SqlServerTestDatabase` creates a throwaway database from `Media.Master.sql` per test and
-  drops it after. Set `PDA_MEDIA_TEST_SQL` to a server connection string (e.g.
+  drops it after; its `ExecuteScript` runs an upgrade script the way SSMS does (one connection, carrying on after
+  errors). Set `PDA_MEDIA_TEST_SQL` to a server connection string (e.g.
   `Server=(localdb)\MSSQLLocalDB;Integrated Security=true;TrustServerCertificate=true`); without it they report
   Inconclusive. Never point it at the real Media.Master server. In cloud sessions, SQL Server 2022 runs in Docker
   (`dockerd &`, then `docker run ... mcr.microsoft.com/mssql/server:2022-latest` with `MSSQL_COLLATION=SQL_Latin1_General_CP1_CI_AS`).
@@ -150,7 +157,8 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
 - `MediaScanner` gets the data services it needs and an `ILogger<MediaScanner>` through its constructor (logger
   optional, defaulting to `NullLogger`). Register it with `AddMediaScanner()` (`ScannerServiceCollectionExtensions`)
   after `AddMediaData(...)`; when it needs another service, add a constructor parameter (every data service is already
-  registered). Tests build it by hand with services from `SqlServerTestDatabase.ContextFactory` (`MediaScannerTests`).
+  registered). `ScanAllMediaCategories(clearData: true)` empties the cache first through `MediaCacheService`; normal
+  scans should be incremental (add, update, soft-delete what has gone) so favourites and notes survive. Tests build it by hand with services from `SqlServerTestDatabase.ContextFactory` (`MediaScannerTests`).
 
 ## Commands
 

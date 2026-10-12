@@ -263,30 +263,6 @@ public sealed class AlbumServiceTests
         Assert.IsNotNull(context.Albums.IgnoreQueryFilters([DataContext.SoftDeleteFilter]).SingleOrDefault(a => a.Id == added.Id));
     }
 
-    // Truncating.
-    // ==================================================================================================
-
-    [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task TestTruncateTable(bool async)
-    {
-        using var db = new SqlServerTestDatabase();
-        var service = new AlbumService(db.ContextFactory);
-        int artistId = AddArtist(db, "Abba");
-        Album gold = service.AddRecord(new Album { ArtistId = artistId, Name = "Gold" });
-        Album arrival = service.AddRecord(new Album { ArtistId = artistId, Name = "Arrival" });
-        service.DeleteRecord(arrival.Id);
-        db.Execute($"INSERT INTO Tracks (AlbumId, ArtistId, Name) VALUES ({gold.Id}, {artistId}, 'Dancing Queen')");
-
-        bool truncated = async ? await service.TruncateTableAsync() : service.TruncateTable();
-
-        Assert.IsTrue(truncated);
-        Assert.AreEqual(0, db.Scalar<int>("SELECT COUNT(*) FROM Albums"), "soft-deleted albums are removed too");
-        Assert.AreEqual(0, db.Scalar<int>("SELECT COUNT(*) FROM Tracks"), "tracks are removed by the cascade");
-        Assert.AreEqual(1, service.AddRecord(new Album { ArtistId = artistId, Name = "Voyage" }).Id, "ids restart at 1");
-    }
-
     private static int AddArtist(SqlServerTestDatabase db, string name)
     {
         using var context = db.ContextFactory.CreateDbContext();

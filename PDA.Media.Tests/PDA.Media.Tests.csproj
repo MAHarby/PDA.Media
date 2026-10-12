@@ -22,6 +22,7 @@
 
     <ItemGroup>
         <None Include="..\PDA.Media.Data\Schema\Media.Master.sql" Link="Schema\Media.Master.sql" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="..\PDA.Media.Data\Schema\Upgrades\*.sql" Link="Schema\Upgrades\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>
