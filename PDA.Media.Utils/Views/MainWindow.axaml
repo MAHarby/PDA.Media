@@ -24,9 +24,9 @@
     
     <Grid RowDefinitions="Auto,2*,*,Auto" ColumnDefinitions="*,*" ShowGridLines="False">
     
-        <!-- Header: branding on the left; toolbar groups (queue | encoding | window) on the right. -->
+        <!-- Header: branding on the left; toolbar groups (queue | encoding | media database | window) on the right. -->
         <Border Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="0" Classes="HeaderPanel">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
 
                 <StackPanel Grid.Column="0" Classes="BrandArea">
                     <PathIcon Classes="Brand"/>
@@ -70,8 +70,22 @@
 
                 <Border Grid.Column="5" Classes="ToolbarSeparator"/>
 
+                <!-- Media database: scan the media folders into the database (needs the database connected), and cancel a running scan. -->
+                <StackPanel Grid.Column="6" Classes="ToolbarGroup" IsVisible="{Binding IsMediaScannerAvailable}">
+                    <Button Name="ScanMediaButton" Classes="Toolbar" ToolTip.Tip="{Binding ScanMediaToolTip}" ToolTip.ShowOnDisabled="True"
+                            Command="{Binding ScanMediaCommand}">
+                        <PathIcon Data="{StaticResource scan_icon}" Classes="Toolbar"/>
+                    </Button>
+                    <Button Name="CancelScanButton" Classes="Toolbar" ToolTip.Tip="Cancel the scan: what was saved so far stays, and the category being scanned deletes nothing"
+                            Command="{Binding ScanMediaCancelCommand}" IsVisible="{Binding IsScanning}">
+                        <PathIcon Data="{StaticResource stop_icon}" Classes="Toolbar"/>
+                    </Button>
+                </StackPanel>
+
+                <Border Grid.Column="7" Classes="ToolbarSeparator" IsVisible="{Binding IsMediaScannerAvailable}"/>
+
                 <!-- Window buttons. -->
-                <StackPanel Grid.Column="6" Classes="ToolbarGroup">
+                <StackPanel Grid.Column="8" Classes="ToolbarGroup">
                     <Button Name="WindowMinimizeButton" Classes="Toolbar" ToolTip.Tip="Minimize Window" Click="WindowMinimizeButton_OnClick">
                         <PathIcon Data="{StaticResource window_minimize}" Classes="Toolbar"/>
                     </Button>
