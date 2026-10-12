@@ -30,4 +30,17 @@ public class TVShowService : DataService<TVShow>
 
     public Task<List<TVShow>> GetAllRecordsByTVShowTypeIdAsync(int tvShowTypeId, CancellationToken cancellationToken = default)
         => ListAsync(q => DefaultOrder(q.Where(s => s.TVShowTypeId == tvShowTypeId)), cancellationToken);
+
+    /// <summary>The records whose Folder is <paramref name="folder"/> or anything under it (what a scan of that folder should find).</summary>
+    public List<TVShow> GetAllRecordsUnderFolder(string folder)
+    {
+        string prefix = ChildFolderPrefix(folder), root = prefix[..^1];
+        return List(q => q.Where(s => s.Folder == root || s.Folder!.StartsWith(prefix)));
+    }
+
+    public Task<List<TVShow>> GetAllRecordsUnderFolderAsync(string folder, CancellationToken cancellationToken = default)
+    {
+        string prefix = ChildFolderPrefix(folder), root = prefix[..^1];
+        return ListAsync(q => q.Where(s => s.Folder == root || s.Folder!.StartsWith(prefix)), cancellationToken);
+    }
 }

@@ -29,4 +29,17 @@ public class MovieService : DataService<Movie>
 
     public Task<List<Movie>> GetAllRecordsByMovieTypeIdAsync(int movieTypeId, CancellationToken cancellationToken = default)
         => ListAsync(q => DefaultOrder(q.Where(m => m.MovieTypeId == movieTypeId)), cancellationToken);
+
+    /// <summary>The records whose Folder is <paramref name="folder"/> or anything under it (what a scan of that folder should find).</summary>
+    public List<Movie> GetAllRecordsUnderFolder(string folder)
+    {
+        string prefix = ChildFolderPrefix(folder), root = prefix[..^1];
+        return List(q => q.Where(m => m.Folder == root || m.Folder!.StartsWith(prefix)));
+    }
+
+    public Task<List<Movie>> GetAllRecordsUnderFolderAsync(string folder, CancellationToken cancellationToken = default)
+    {
+        string prefix = ChildFolderPrefix(folder), root = prefix[..^1];
+        return ListAsync(q => q.Where(m => m.Folder == root || m.Folder!.StartsWith(prefix)), cancellationToken);
+    }
 }

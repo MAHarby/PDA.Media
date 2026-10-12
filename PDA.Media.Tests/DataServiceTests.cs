@@ -1,3 +1,4 @@
+using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using PDA.Media.Data;
 using PDA.Media.Data.Entities;
@@ -94,6 +95,46 @@ public sealed class DataServiceTests
 
         CollectionAssert.AreEqual(new[] { "Alien (1979)", "Aliens (1986)" }, aliens.Select(m => m.Name).ToArray());
         Assert.AreEqual("千と千尋の神隠し (2001)", unicode.Single().Name);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task TestAddOrRestoreRecord(bool async)
+    {
+        using var db = new SqlServerTestDatabase();
+        var service = new ArtistService(db.ContextFactory);
+        Artist abba = service.AddRecord(new Artist { Name = "ABBA", Notes = "Swedish" });
+        Artist bjork = service.AddRecord(new Artist { Name = "Björk" });
+        service.DeleteRecord(bjork.Id);
+
+        var live = async ? await service.AddOrRestoreRecordAsync(new Artist { Name = "ABBA" }) : service.AddOrRestoreRecord(new Artist { Name = "ABBA" });
+        var restored = async ? await service.AddOrRestoreRecordAsync(new Artist { Name = "Björk" }) : service.AddOrRestoreRecord(new Artist { Name = "Björk" });
+        var added = async ? await service.AddOrRestoreRecordAsync(new Artist { Name = "Sigur Rós" }) : service.AddOrRestoreRecord(new Artist { Name = "Sigur Rós" });
+
+        Assert.AreEqual((abba.Id, AddOutcome.Existing), (live.Record.Id, live.Outcome));
+        Assert.AreEqual("Swedish", live.Record.Notes);
+        Assert.AreEqual((bjork.Id, AddOutcome.Restored), (restored.Record.Id, restored.Outcome), "same id as before it was deleted");
+        Assert.IsNotNull(service.GetRecordById(bjork.Id));
+        Assert.AreEqual(AddOutcome.Added, added.Outcome);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task TestGetAllRecordsUnderFolder(bool async)
+    {
+        using var db = new SqlServerTestDatabase();
+        var service = new MovieService(db.ContextFactory);
+        string root = Path.Combine("nas", "Movies"), sep = Path.DirectorySeparatorChar.ToString();
+        service.AddRecord(new Movie { Name = "In a folder", Folder = Path.Combine(root, "In a folder") });
+        service.AddRecord(new Movie { Name = "In the root", Folder = root });
+        service.AddRecord(new Movie { Name = "In Movies2", Folder = Path.Combine("nas", "Movies2", "Other") });
+        service.AddRecord(new Movie { Name = "No folder" });
+
+        List<Movie> under = async ? await service.GetAllRecordsUnderFolderAsync(root + sep) : service.GetAllRecordsUnderFolder(root + sep);
+
+        CollectionAssert.AreEquivalent(new[] { "In a folder", "In the root" }, under.Select(m => m.Name).ToArray(), "not Movies2, even though it starts the same");
     }
 
     // Artists.

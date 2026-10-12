@@ -90,6 +90,12 @@ public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity
     }
 
     /// <summary>
+    /// The prefix that every path inside <paramref name="folder"/> starts with (the folder plus a separator), for "this folder or anything under it" queries:
+    /// <c>e.Folder == folder || e.Folder.StartsWith(prefix)</c>. The separator stops "\\nas\Music" also matching "\\nas\Music2".
+    /// </summary>
+    protected static string ChildFolderPrefix(string folder) => folder.TrimEnd('\\', '/') + Path.DirectorySeparatorChar;
+
+    /// <summary>
     /// Turns a search term into a SQL LIKE pattern, or null to match everything.
     /// LIKE's own wildcards (%, _ and [) in the term are escaped so they match literally; '*' becomes '%'.
     /// </summary>
@@ -173,6 +179,58 @@ public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity
 
         Logger.LogInformation("Added {Entity} {Id} {Name}", EntityName, record.Id, record.Name);
         return record;
+    }
+
+    /// <summary>
+    /// Like <see cref="AddRecord"/>, but a soft-deleted record with the same natural key is restored (IsDeleted = false) rather than added again,
+    /// so it keeps its id and anything stored with it (favourites, notes, external ids).
+    /// Returns the record and what happened to it.
+    /// </summary>
+    public (TEntity Record, AddOutcome Outcome) AddOrRestoreRecord(TEntity record)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        TEntity? existing = First(IsSameAs(record));
+        if (existing != null) return (existing, AddOutcome.Existing);
+
+        if (record is ISoftDeletable)
+        {
+            using var context = ContextFactory.CreateDbContext();
+            TEntity? deleted = context.Set<TEntity>().IgnoreQueryFilters([DataContext.SoftDeleteFilter]).FirstOrDefault(IsSameAs(record));
+            if (deleted != null)
+            {
+                ((ISoftDeletable)deleted).IsDeleted = false;
+                context.SaveChanges();
+                Logger.LogInformation("Restored {Entity} {Id} {Name}", EntityName, deleted.Id, deleted.Name);
+                return (deleted, AddOutcome.Restored);
+            }
+        }
+
+        TEntity added = AddRecord(record);
+        return (added, ReferenceEquals(added, record) ? AddOutcome.Added : AddOutcome.Existing);
+    }
+
+    public async Task<(TEntity Record, AddOutcome Outcome)> AddOrRestoreRecordAsync(TEntity record, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        TEntity? existing = await FirstAsync(IsSameAs(record), cancellationToken).ConfigureAwait(false);
+        if (existing != null) return (existing, AddOutcome.Existing);
+
+        if (record is ISoftDeletable)
+        {
+            await using var context = await ContextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+            TEntity? deleted = await context.Set<TEntity>().IgnoreQueryFilters([DataContext.SoftDeleteFilter])
+                .FirstOrDefaultAsync(IsSameAs(record), cancellationToken).ConfigureAwait(false);
+            if (deleted != null)
+            {
+                ((ISoftDeletable)deleted).IsDeleted = false;
+                await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                Logger.LogInformation("Restored {Entity} {Id} {Name}", EntityName, deleted.Id, deleted.Name);
+                return (deleted, AddOutcome.Restored);
+            }
+        }
+
+        TEntity added = await AddRecordAsync(record, cancellationToken).ConfigureAwait(false);
+        return (added, ReferenceEquals(added, record) ? AddOutcome.Added : AddOutcome.Existing);
     }
 
     /// <summary>

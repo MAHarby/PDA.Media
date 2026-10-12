@@ -1,3 +1,4 @@
+using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PDA.Media.Data.Entities;
@@ -8,14 +9,16 @@ using PDA.Media.Utils.Logging;
 
 namespace PDA.Media.Tests;
 
+/// <summary>
+/// MediaScanner against folder trees in a temp folder and a real SQL Server database (see SqlServerTestDatabase; Inconclusive without one).
+/// </summary>
 [TestClass]
 public sealed class MediaScannerTests
 {
     [TestMethod]
     public void TestAppContainerCreatesTheScanner()
     {
-        // The app's own registrations: AddMediaData + AddMediaScanner, with the logging the app sets up. Nothing
-        // connects to a database until a service is used.
+        // The app's own registrations: AddMediaData + AddMediaScanner. Nothing connects to a database until a service is used.
         using var services = ServiceConfiguration.BuildServiceProvider(new AuditLogSink(), "test.log");
 
         var scanner = services.GetRequiredService<MediaScanner>();
@@ -23,40 +26,230 @@ public sealed class MediaScannerTests
         Assert.AreSame(scanner, services.GetRequiredService<MediaScanner>(), "one scanner for the app (singleton)");
     }
 
+    // Music.
+    // ==================================================================================================
+
     [TestMethod]
-    public void TestScanUsesTheInjectedServicesAndLogger()
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task TestScanMusic(bool async)
     {
         using var db = new SqlServerTestDatabase();
-        var categories = new MediaCategoryService(db.ContextFactory);
-        categories.AddRecord(new MediaCategory { Name = "Movies", MediaClass = "Movie", RootFolder = @"\\nas\Movies" });
-        categories.AddRecord(new MediaCategory { Name = "Old", MediaClass = "Movie", IsActive = false });
+        using var disk = new TempMedia();
+        disk.File("Music", "ABBA", "Gold", "01 - Dancing Queen.flac");
+        disk.File("Music", "ABBA", "Gold", "02 - Knowing Me, Knowing You.flac");
+        disk.File("Music", "ABBA", "Gold", "cover.jpg");
+        disk.File("Music", "ABBA", "Gold", "notes.txt");
+        disk.File("Music", "Björk", "Homogenic", "05 - Jóga.mp3");
+        disk.File("Music", "Björk", "Empty Folder", "readme.txt");
+        disk.File("Music", "@eaDir", "Thumbs", "01 - Not Music.flac");
+        int compilation = new AlbumTypeService(db.ContextFactory).AddRecord(new AlbumType { Name = "Compilation" }).Id;
+        AddCategory(db, "Music", "Music", disk.Path("Music"), compilation);
+
+        MediaScanResult result = async ? await Scanner(db).ScanAllMediaCategoriesAsync() : Scanner(db).ScanAllMediaCategories();
+
+        Assert.AreEqual(1, result.CategoriesScanned);
+        Assert.AreEqual(2 + 2 + 3, result.Added, "2 artists, 2 albums, 3 tracks");
+        Album gold = new AlbumService(db.ContextFactory).GetAllRecords("Gold").Single();
+        Assert.AreEqual(2, gold.TrackCount);
+        Assert.AreEqual("cover.jpg", gold.CoverArtFilename);
+        Assert.AreEqual(compilation, gold.AlbumTypeId, "the category's album type");
+        Assert.AreEqual(disk.Path("Music", "ABBA", "Gold"), gold.Folder);
+        List<Track> tracks = new TrackService(db.ContextFactory).GetAllRecordsByAlbumId(gold.Id);
+        CollectionAssert.AreEqual(new[] { "Dancing Queen", "Knowing Me, Knowing You" }, tracks.Select(t => t.Name).ToArray());
+        Assert.AreEqual("01 - Dancing Queen.flac", tracks[0].OriginalFilename);
+        Assert.AreEqual("Jóga", new TrackService(db.ContextFactory).GetAllRecords("Jóga").Single().Name);
+        Assert.IsNull(new AlbumService(db.ContextFactory).GetAllRecords("Empty Folder").SingleOrDefault(), "album folders without audio are ignored");
+        Assert.IsNull(new ArtistService(db.ContextFactory).GetRecordByName("@eaDir"), "NAS housekeeping folders are ignored");
+    }
+
+    [TestMethod]
+    public void TestRescanIsIncremental()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        disk.File("Music", "ABBA", "Gold", "01 - Dancing Queen.flac");
+        disk.File("Music", "ABBA", "Gold", "02 - Waterloo.flac");
+        disk.File("Music", "ABBA", "Arrival", "01 - When I Kissed the Teacher.flac");
+        AddCategory(db, "Music", "Music", disk.Path("Music"));
+        Scanner(db).ScanAllMediaCategories();
+        var albums = new AlbumService(db.ContextFactory);
+        Album arrival = albums.GetAllRecords("Arrival").Single();
+        arrival.IsFavourite = true;
+        arrival.Notes = "Bought on vinyl";
+        albums.UpdateRecord(arrival.Id, arrival);
+
+        // Nothing changed on disk: nothing changes in the database.
+        MediaScanResult unchanged = Scanner(db).ScanAllMediaCategories();
+        Assert.AreEqual(0, unchanged.Added + unchanged.Updated + unchanged.Deleted + unchanged.Restored);
+        Assert.AreEqual(1 + 2 + 3, unchanged.Unchanged);
+
+        // An album folder goes: it and its track are soft-deleted; a track is added to another album.
+        Directory.Move(disk.Path("Music", "ABBA", "Arrival"), disk.Path("Arrival (moved away)"));
+        disk.File("Music", "ABBA", "Gold", "03 - Mamma Mia.flac");
+        MediaScanResult changed = Scanner(db).ScanAllMediaCategories();
+        Assert.AreEqual(1, changed.Added, "Mamma Mia");
+        Assert.AreEqual(1, changed.Updated, "Gold's track count");
+        Assert.AreEqual(2, changed.Deleted, "Arrival and its track");
+        Assert.IsNull(albums.GetRecordById(arrival.Id));
+        Assert.AreEqual(3, albums.GetAllRecords("Gold").Single().TrackCount);
+
+        // It comes back: restored with its id, favourite and notes.
+        Directory.Move(disk.Path("Arrival (moved away)"), disk.Path("Music", "ABBA", "Arrival"));
+        MediaScanResult restored = Scanner(db).ScanAllMediaCategories();
+        Assert.AreEqual(2, restored.Restored);
+        Album back = albums.GetRecordById(arrival.Id)!;
+        Assert.IsTrue(back.IsFavourite);
+        Assert.AreEqual("Bought on vinyl", back.Notes);
+    }
+
+    // Movies and TV.
+    // ==================================================================================================
+
+    [TestMethod]
+    public void TestScanMovies()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        disk.File("Movies", "Alien (1979)", "Alien (1979).mkv", size: 3000);
+        disk.File("Movies", "Alien (1979)", "Alien (1979) - Sample.mkv", size: 10);
+        disk.File("Movies", "Alien (1979)", "poster.jpg");
+        disk.File("Movies", "千と千尋の神隠し (2001)", "千と千尋の神隠し (2001).mp4");
+        disk.File("Movies", "Loose Movie (2020).mkv");
+        disk.File("Movies", "No Video", "info.nfo");
+        AddCategory(db, "Movies", "Movie", disk.Path("Movies"));
+
+        MediaScanResult result = Scanner(db).ScanAllMediaCategories();
+
+        Assert.AreEqual(3, result.Added);
+        var movies = new MovieService(db.ContextFactory);
+        Movie alien = movies.GetRecordByName("Alien (1979)")!;
+        Assert.AreEqual("Alien (1979).mkv", alien.OriginalFilename, "the largest video file, not the sample");
+        Assert.AreEqual("poster.jpg", alien.CoverArtFilename);
+        Assert.IsNotNull(movies.GetRecordByName("千と千尋の神隠し (2001)"));
+        Assert.AreEqual(disk.Path("Movies"), movies.GetRecordByName("Loose Movie (2020)")!.Folder);
+    }
+
+    [TestMethod]
+    public void TestScanTVShows()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        disk.File("TV", "The Office (US) (2005)", "Season 01", "The Office (US) (2005) - s01e01 - Pilot.mkv");
+        disk.File("TV", "The Office (US) (2005)", "Season 01", "The Office (US) (2005) - s01e02 - Diversity Day.mkv");
+        disk.File("TV", "The Office (US) (2005)", "Specials", "The Office (US) (2005) - s00e01 - Webisode.mkv");
+        disk.File("TV", "The Office (US) (2005)", "poster.jpg");
+        disk.File("TV", "Firefly", "Season 1", "Firefly - s01e01 - Serenity.mkv");
+        disk.File("TV", "New Show (2026)", "readme.txt");
+        AddCategory(db, "TV", "TV Show", disk.Path("TV"));
+
+        MediaScanResult result = Scanner(db).ScanAllMediaCategories();
+
+        Assert.AreEqual(3 + 4, result.Added, "3 shows (one with no episodes yet), 4 episodes");
+        var shows = new TVShowService(db.ContextFactory);
+        TVShow office = shows.GetRecordByName("The Office (US)", 2005)!;
+        Assert.AreEqual("poster.jpg", office.CoverArtFilename);
+        Assert.IsNotNull(shows.GetRecordByName("Firefly", 0));
+        List<TVShowEpisode> episodes = new TVShowEpisodeService(db.ContextFactory).GetAllRecordsByTVShowId(office.Id);
+        CollectionAssert.AreEqual(new[] { "0x1 Webisode", "1x1 Pilot", "1x2 Diversity Day" },
+            episodes.Select(e => $"{e.SeasonNo}x{e.EpisodeNo} {e.Name}").ToArray());
+        Assert.AreEqual(disk.Path("TV", "The Office (US) (2005)", "Season 01"), episodes[1].Folder);
+    }
+
+    // Safety and options.
+    // ==================================================================================================
+
+    [TestMethod]
+    public void TestUnreachableRootDeletesNothing()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        disk.File("Music", "ABBA", "Gold", "01 - Dancing Queen.flac");
+        MediaCategory music = AddCategory(db, "Music", "Music", disk.Path("Music"));
+        Scanner(db).ScanAllMediaCategories();
+
+        // The NAS is off: the root folder can't be reached.
+        Directory.Move(disk.Path("Music"), disk.Path("Music (offline)"));
+        var logger = new CapturingLogger<MediaScanner>();
+        MediaScanResult result = Scanner(db, logger).ScanAllMediaCategories();
+
+        Assert.AreEqual(1, result.CategoriesSkipped);
+        Assert.AreEqual(0, result.Deleted);
+        Assert.AreEqual(3, db.Scalar<int>("SELECT COUNT(*) FROM Artists WHERE Id <> 0") + db.Scalar<int>("SELECT COUNT(*) FROM Albums WHERE IsDeleted = 0")
+            + db.Scalar<int>("SELECT COUNT(*) FROM Tracks WHERE IsDeleted = 0"));
+        Assert.IsTrue(logger.Messages.Any(m => m.Contains("can't be reached") && m.Contains(music.Name)), string.Join("\n", logger.Messages));
+    }
+
+    [TestMethod]
+    public void TestUnknownMediaClassAndInactiveCategoriesAreSkipped()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        disk.File("Books", "Author", "Book", "01 - Chapter.mp3");
+        AddCategory(db, "Books", "Audiobooks", disk.Path("Books"));
+        new MediaCategoryService(db.ContextFactory).AddRecord(new MediaCategory { Name = "Old", MediaClass = "Music", RootFolder = disk.Path("Books"), IsActive = false });
         var logger = new CapturingLogger<MediaScanner>();
 
-        // Without DI: build the services from one context factory and pass them in.
-        var scanner = new MediaScanner(categories, new ArtistService(db.ContextFactory), new AlbumService(db.ContextFactory),
-            new TrackService(db.ContextFactory), new MovieService(db.ContextFactory), new TVShowService(db.ContextFactory),
-            new TVShowEpisodeService(db.ContextFactory), new MediaCacheService(db.ContextFactory), logger);
+        MediaScanResult result = Scanner(db, logger).ScanAllMediaCategories();
 
-        Assert.IsTrue(scanner.ScanAllMediaCategories());
-        CollectionAssert.AreEqual(new[]
-        {
-            "Scanning 1 active media categories",
-            @"Media category Movies (Movie): \\nas\Movies",
-        }, logger.Messages);
+        Assert.AreEqual(0, result.CategoriesScanned);
+        Assert.AreEqual(1, result.CategoriesSkipped, "the inactive category isn't looked at");
+        Assert.AreEqual(0, result.Added);
+        Assert.IsTrue(logger.Messages.Any(m => m.Contains("isn't Music, Movie or TV")), string.Join("\n", logger.Messages));
     }
 
     [TestMethod]
     public void TestScanCanClearTheCacheFirst()
     {
         using var db = new SqlServerTestDatabase();
-        new ArtistService(db.ContextFactory).AddRecord(new Artist { Name = "ABBA" });
-        var scanner = new MediaScanner(new MediaCategoryService(db.ContextFactory), new ArtistService(db.ContextFactory), new AlbumService(db.ContextFactory),
-            new TrackService(db.ContextFactory), new MovieService(db.ContextFactory), new TVShowService(db.ContextFactory),
-            new TVShowEpisodeService(db.ContextFactory), new MediaCacheService(db.ContextFactory));
+        using var disk = new TempMedia();
+        disk.File("Music", "ABBA", "Gold", "01 - Dancing Queen.flac");
+        AddCategory(db, "Music", "Music", disk.Path("Music"));
+        Scanner(db).ScanAllMediaCategories();
+        var albums = new AlbumService(db.ContextFactory);
+        int firstId = albums.GetAllRecords().Single().Id;
 
-        scanner.ScanAllMediaCategories(clearData: true);
+        MediaScanResult result = Scanner(db).ScanAllMediaCategories(clearData: true);
 
-        Assert.AreEqual(0, db.Scalar<int>("SELECT COUNT(*) FROM Artists WHERE Id <> 0"));
+        Assert.AreEqual(3, result.Added, "everything is added again");
+        Assert.AreNotEqual(firstId, albums.GetAllRecords().Single().Id);
+    }
+
+    // Helpers.
+    // ==================================================================================================
+
+    private static MediaScanner Scanner(SqlServerTestDatabase db, ILogger<MediaScanner>? logger = null) =>
+        new(new MediaCategoryService(db.ContextFactory), new ArtistService(db.ContextFactory), new AlbumService(db.ContextFactory),
+            new AlbumTypeService(db.ContextFactory), new TrackService(db.ContextFactory), new MovieService(db.ContextFactory),
+            new TVShowService(db.ContextFactory), new TVShowEpisodeService(db.ContextFactory), new MediaCacheService(db.ContextFactory), logger);
+
+    private static MediaCategory AddCategory(SqlServerTestDatabase db, string name, string mediaClass, string rootFolder, int albumTypeId = 5) =>
+        new MediaCategoryService(db.ContextFactory).AddRecord(new MediaCategory { Name = name, MediaClass = mediaClass, RootFolder = rootFolder, AlbumTypeId = albumTypeId });
+
+    /// <summary>A folder tree of media files in a temp folder, deleted on dispose.</summary>
+    private sealed class TempMedia : IDisposable
+    {
+        private readonly string _root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "pda_scan_test_" + Guid.NewGuid().ToString("N"));
+
+        public string Path(params string[] parts) => System.IO.Path.Combine([_root, .. parts]);
+
+        /// <summary>Creates a one-byte file (and its folders) at the path made of <paramref name="parts"/>.</summary>
+        public void File(params string[] parts) => Create(parts, 1);
+
+        /// <summary>Creates a file of <paramref name="size"/> bytes at folder / subfolder / name.</summary>
+        public void File(string folder, string subFolder, string name, int size) => Create([folder, subFolder, name], size);
+
+        private void Create(string[] parts, int size)
+        {
+            string path = Path(parts);
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
+            System.IO.File.WriteAllBytes(path, new byte[size]);
+        }
+
+        public void Dispose()
+        {
+            if (Directory.Exists(_root)) Directory.Delete(_root, true);
+        }
     }
 
     /// <summary>An ILogger that keeps the formatted messages, for checking what a class logged.</summary>

@@ -32,4 +32,17 @@ public class TrackService : DataService<Track>
 
     public Task<List<Track>> GetAllRecordsByArtistIdAsync(int artistId, CancellationToken cancellationToken = default)
         => ListAsync(q => q.Where(t => t.ArtistId == artistId).OrderBy(t => t.AlbumId).ThenBy(t => t.TrackNo), cancellationToken);
+
+    /// <summary>The records whose Folder is <paramref name="folder"/> or anything under it (what a scan of that folder should find).</summary>
+    public List<Track> GetAllRecordsUnderFolder(string folder)
+    {
+        string prefix = ChildFolderPrefix(folder), root = prefix[..^1];
+        return List(q => q.Where(t => t.Folder == root || t.Folder!.StartsWith(prefix)));
+    }
+
+    public Task<List<Track>> GetAllRecordsUnderFolderAsync(string folder, CancellationToken cancellationToken = default)
+    {
+        string prefix = ChildFolderPrefix(folder), root = prefix[..^1];
+        return ListAsync(q => q.Where(t => t.Folder == root || t.Folder!.StartsWith(prefix)), cancellationToken);
+    }
 }
