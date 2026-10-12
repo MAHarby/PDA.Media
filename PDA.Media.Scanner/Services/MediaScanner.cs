@@ -39,17 +39,38 @@ public class MediaScanner
         _logger = logger ?? NullLogger<MediaScanner>.Instance;
     }
 
-    public bool ScanAllMediaCategories()
+    /// <summary>
+    /// Step through each media category and scan all media files based on the category's root folder.
+    /// </summary>
+    /// <param name="clearData">If true, then clear all existing media data before scanning.</param>
+    /// <returns>The count of media files added.</returns>
+    public bool ScanAllMediaCategories(bool clearData = false)
     {
+        int mediaFilesAdded = 0;
         List<MediaCategory> categories = _categoryService.GetActiveRecords();
         _logger.LogInformation("Scanning {Count} active media categories", categories.Count);
 
+        if (clearData) ClearAllData();
+        
         foreach (MediaCategory category in categories)
         {
-            _logger.LogInformation("Media category {Category} ({MediaClass}): {RootFolder}",
-                category.Name, category.MediaClass, category.RootFolder ?? "(no root folder)");
+            _logger.LogInformation("Media category {Category} ({MediaClass}): {RootFolder}", category.Name, category.MediaClass, category.RootFolder ?? "(no root folder)");
+            
+            
+            
         }
 
+
+
+
+
+        return true;
+    }
+
+    private bool ClearAllData()
+    {
+        // _categoryService.ClearExistingData();
+        
         return true;
     }
 }

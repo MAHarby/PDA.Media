@@ -8,16 +8,14 @@ using PDA.Media.Data.Entities;
 namespace PDA.Media.Data.Services;
 
 /// <summary>
-/// The record operations every data service shares: get, list, search by name, add, update and delete, each with
-/// a sync and an async method. A service derives from this and adds what is specific to its entity: which existing
-/// record counts as the same one (<see cref="IsSameAs"/>), the list order, rows that can't be deleted, and its own
-/// queries (built with <see cref="List"/> / <see cref="First"/> and their async versions).
+/// The record operations every data service shares: get, list, search by name, add, update and delete, each with a sync and an async method.
+/// A service derives from this and adds what is specific to its entity: which existing record counts as the same one (<see cref="IsSameAs"/>),
+/// the list order, rows that can't be deleted, and its own queries (built with <see cref="List"/> / <see cref="First"/> and their async versions).
 /// </summary>
 /// <remarks>
-/// Each method creates its own short-lived <see cref="DataContext"/>, so a service is safe to keep for the life of the
-/// app and to call from more than one place at a time. Records returned are detached; reads don't track them.
-/// Soft-deleted rows are hidden by the DataContext query filter, so no method returns them. Audit fields are set by
-/// DataContext when changes are saved.
+/// Each method creates its own short-lived <see cref="DataContext"/>, so a service is safe to keep for the life of the app and to call from more than one place at a time.
+/// Records returned are detached; reads don't track them.
+/// Soft-deleted rows are hidden by the DataContext query filter, so no method returns them. Audit fields are set by DataContext when changes are saved.
 /// </remarks>
 public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity : class, IEntity
 {
@@ -36,8 +34,8 @@ public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity
     // ==================================================================================================
 
     /// <summary>
-    /// Matches an existing record that is the same as <paramref name="record"/> (its natural key, e.g. an album's
-    /// artist and name). AddRecord returns that record instead of adding a duplicate.
+    /// Matches an existing record that is the same as <paramref name="record"/> (its natural key, e.g. an album's artist and name).
+    /// AddRecord returns that record instead of adding a duplicate.
     /// </summary>
     protected abstract Expression<Func<TEntity, bool>> IsSameAs(TEntity record);
 
@@ -45,8 +43,8 @@ public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity
     protected virtual IOrderedQueryable<TEntity> DefaultOrder(IQueryable<TEntity> query) => query.OrderBy(e => e.Name);
 
     /// <summary>
-    /// Rows that must never be deleted, such as the Id 0 "unknown" row that foreign keys fall back to
-    /// (ON DELETE SET DEFAULT). DeleteRecord throws for them.
+    /// Rows that must never be deleted, such as the Id 0 "unknown" row that foreign keys fall back to (ON DELETE SET DEFAULT).
+    /// DeleteRecord throws for them.
     /// </summary>
     protected virtual bool IsProtected(int id) => false;
 
@@ -81,8 +79,9 @@ public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity
 
     /// <summary>
     /// Records whose name matches <paramref name="searchTerm"/>: without a '*' the name only has to contain the term;
-    /// '*' is a wildcard for any text ("Abba*" starts with Abba, "*Gold" ends with Gold, "Abba*Gold" both). An empty
-    /// term or "*" matches everything. Matching ignores case (database collation).
+    /// '*' is a wildcard for any text ("Abba*" starts with Abba, "*Gold" ends with Gold, "Abba*Gold" both).
+    /// An empty term or "*" matches everything.
+    /// Matching ignores case (database collation).
     /// </summary>
     protected static IQueryable<TEntity> WhereNameMatches(IQueryable<TEntity> query, string? searchTerm)
     {
@@ -91,8 +90,8 @@ public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity
     }
 
     /// <summary>
-    /// Turns a search term into a SQL LIKE pattern, or null to match everything. LIKE's own wildcards (%, _ and [)
-    /// in the term are escaped so they match literally; '*' becomes '%'.
+    /// Turns a search term into a SQL LIKE pattern, or null to match everything.
+    /// LIKE's own wildcards (%, _ and [) in the term are escaped so they match literally; '*' becomes '%'.
     /// </summary>
     internal static string? ToLikePattern(string? searchTerm)
     {
@@ -177,9 +176,9 @@ public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity
     }
 
     /// <summary>
-    /// Copies every column of <paramref name="record"/> onto record <paramref name="id"/> and saves it. Returns the
-    /// saved record, or null if there is no record with that id. The key and Created fields are kept and the Modified
-    /// fields are set by DataContext, so <paramref name="record"/> may be a new object with no id or audit values.
+    /// Copies every column of <paramref name="record"/> onto record <paramref name="id"/> and saves it.
+    /// Returns the saved record, or null if there is no record with that id.
+    /// The key and Created fields are kept and the Modified fields are set by DataContext, so <paramref name="record"/> may be a new object with no id or audit values.
     /// </summary>
     public TEntity? UpdateRecord(int id, TEntity record)
     {
@@ -212,8 +211,8 @@ public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity
     }
 
     /// <summary>
-    /// Copies all of record's column values onto the tracked entity, so a column added later is updated too. EF only
-    /// saves the columns that changed.
+    /// Copies all of record's column values onto the tracked entity, so a column added later is updated too.
+    /// EF only saves the columns that changed.
     /// </summary>
     private static void CopyValues(DataContext context, TEntity entity, TEntity record)
     {
@@ -228,8 +227,8 @@ public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity
     }
 
     /// <summary>
-    /// Deletes record <paramref name="id"/>: a soft delete (IsDeleted) for entities that have it, otherwise the row is
-    /// removed. Returns false if there is no such record; throws for a protected row (see <see cref="IsProtected"/>).
+    /// Deletes record <paramref name="id"/>: a soft delete (IsDeleted) for entities that have it, otherwise the row is removed.
+    /// Returns false if there is no such record; throws for a protected row (see <see cref="IsProtected"/>).
     /// </summary>
     public bool DeleteRecord(int id)
     {

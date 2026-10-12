@@ -16,8 +16,8 @@ public class DataContext : DbContext
     public const string DefaultAuditUser = "API";
 
     /// <summary>
-    /// The options (provider, connection string, logging) come from the caller: use <see cref="DataContextFactory"/>
-    /// or register the data layer with <c>AddMediaData</c>.
+    /// The options (provider, connection string, logging) come from the caller:
+    /// use <see cref="DataContextFactory"/> or register the data layer with <c>AddMediaData</c>.
     /// </summary>
     public DataContext(DbContextOptions<DataContext> options) : base(options) { }
 
