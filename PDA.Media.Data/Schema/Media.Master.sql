@@ -239,4 +239,40 @@ ALTER TABLE [dbo].[Tracks] ADD CONSTRAINT [FK_Tracks_Albums] FOREIGN KEY ([Album
 ALTER TABLE [dbo].[Movies] ADD CONSTRAINT [FK_Movies_MovieTypes] FOREIGN KEY ([MovieTypeId]) REFERENCES [dbo].[MovieTypes] ([Id]) ON UPDATE CASCADE ON DELETE SET DEFAULT;
 ALTER TABLE [dbo].[TVShows] ADD CONSTRAINT [FK_TVShows_TVShowTypes] FOREIGN KEY ([TVShowTypeId]) REFERENCES [dbo].[TVShowTypes] ([Id]) ON DELETE SET DEFAULT;
 ALTER TABLE [dbo].[TVShowEpisodes] ADD CONSTRAINT [FK_TVShowEpisodes_TVShows] FOREIGN KEY ([TVShowId]) REFERENCES [dbo].[TVShows] ([Id]) ON UPDATE CASCADE;
+
+-- Stored procedures.
+-- (The heading is in the batch above: comments in a procedure's own batch become part of its stored definition.)
+-- ==================================================================================================
+GO
+
+-- Empties the media cache tables (everything a re-scan of the media folders rebuilds), children first, in one transaction.
+-- Soft-deleted rows go too. Artist 0 (the albums' fallback) and the lookup and configuration tables are kept. Ids are not restarted.
+-- Returns one row with the number of rows deleted from each table.
+CREATE PROCEDURE [dbo].[ClearMediaCache]
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    DECLARE @Tracks int, @Albums int, @TVShowEpisodes int, @TVShows int, @Movies int, @Artists int;
+
+    BEGIN TRANSACTION;
+
+    DELETE FROM [dbo].[Tracks];
+    SET @Tracks = @@ROWCOUNT;
+    DELETE FROM [dbo].[Albums];
+    SET @Albums = @@ROWCOUNT;
+    DELETE FROM [dbo].[TVShowEpisodes];
+    SET @TVShowEpisodes = @@ROWCOUNT;
+    DELETE FROM [dbo].[TVShows];
+    SET @TVShows = @@ROWCOUNT;
+    DELETE FROM [dbo].[Movies];
+    SET @Movies = @@ROWCOUNT;
+    DELETE FROM [dbo].[Artists] WHERE [Id] <> 0;
+    SET @Artists = @@ROWCOUNT;
+
+    COMMIT TRANSACTION;
+
+    SELECT @Tracks AS [Tracks], @Albums AS [Albums], @TVShowEpisodes AS [TVShowEpisodes], @TVShows AS [TVShows], @Movies AS [Movies], @Artists AS [Artists];
+END
 GO

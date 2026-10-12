@@ -23,11 +23,12 @@ public class MediaScanner
     private readonly MovieService _movieService;
     private readonly TVShowService _tvShowService;
     private readonly TVShowEpisodeService _episodeService;
+    private readonly MediaCacheService _mediaCacheService;
     private readonly ILogger<MediaScanner> _logger;
 
     public MediaScanner(MediaCategoryService categoryService, ArtistService artistService, AlbumService albumService,
         TrackService trackService, MovieService movieService, TVShowService tvShowService, TVShowEpisodeService episodeService,
-        ILogger<MediaScanner>? logger = null)
+        MediaCacheService mediaCacheService, ILogger<MediaScanner>? logger = null)
     {
         _categoryService = categoryService;
         _artistService = artistService;
@@ -36,6 +37,7 @@ public class MediaScanner
         _movieService = movieService;
         _tvShowService = tvShowService;
         _episodeService = episodeService;
+        _mediaCacheService = mediaCacheService;
         _logger = logger ?? NullLogger<MediaScanner>.Instance;
     }
 
@@ -67,10 +69,13 @@ public class MediaScanner
         return true;
     }
 
+    /// <summary>
+    /// Empties the media cache (dbo.ClearMediaCache) so the scan starts from nothing.
+    /// Favourites, notes and external ids are lost with it; categories, types and settings are kept.
+    /// </summary>
     private bool ClearAllData()
     {
-        // _categoryService.ClearExistingData();
-        
-        return true;
+        MediaCacheCleared cleared = _mediaCacheService.ClearMediaCache();
+        return cleared.Total >= 0;
     }
 }

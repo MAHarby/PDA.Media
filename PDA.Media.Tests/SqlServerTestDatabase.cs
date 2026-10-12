@@ -55,6 +55,33 @@ internal sealed partial class SqlServerTestDatabase : IDisposable
     /// <summary>Runs SQL against the test database (for setting up or checking data behind a service's back).</summary>
     public void Execute(string sql) => Execute(ConnectionString, sql);
 
+    /// <summary>
+    /// Runs a script file (e.g. an upgrade in Schema/Upgrades) the way SSMS does: batch by batch (GO) on one connection, so session settings such as
+    /// SET NOEXEC carry over, and carrying on after a batch fails. Its USE line is skipped. Returns the error messages, in order.
+    /// </summary>
+    public List<string> ExecuteScript(string relativePath)
+    {
+        string script = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, relativePath));
+        var errors = new List<string>();
+        using var connection = new SqlConnection(ConnectionString);
+        connection.Open();
+        foreach (string batch in GoRegex().Split(script))
+        {
+            string sql = UseRegex().Replace(batch, "").Trim();
+            if (sql.Length == 0) continue;
+            try
+            {
+                using var command = new SqlCommand(sql, connection);
+                command.ExecuteNonQuery();
+            }
+            catch (SqlException ex)
+            {
+                errors.Add(ex.Message);
+            }
+        }
+        return errors;
+    }
+
     public T Scalar<T>(string sql)
     {
         using var connection = new SqlConnection(ConnectionString);

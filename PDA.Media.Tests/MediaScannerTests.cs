@@ -35,7 +35,7 @@ public sealed class MediaScannerTests
         // Without DI: build the services from one context factory and pass them in.
         var scanner = new MediaScanner(categories, new ArtistService(db.ContextFactory), new AlbumService(db.ContextFactory),
             new TrackService(db.ContextFactory), new MovieService(db.ContextFactory), new TVShowService(db.ContextFactory),
-            new TVShowEpisodeService(db.ContextFactory), logger);
+            new TVShowEpisodeService(db.ContextFactory), new MediaCacheService(db.ContextFactory), logger);
 
         Assert.IsTrue(scanner.ScanAllMediaCategories());
         CollectionAssert.AreEqual(new[]
@@ -43,6 +43,20 @@ public sealed class MediaScannerTests
             "Scanning 1 active media categories",
             @"Media category Movies (Movie): \\nas\Movies",
         }, logger.Messages);
+    }
+
+    [TestMethod]
+    public void TestScanCanClearTheCacheFirst()
+    {
+        using var db = new SqlServerTestDatabase();
+        new ArtistService(db.ContextFactory).AddRecord(new Artist { Name = "ABBA" });
+        var scanner = new MediaScanner(new MediaCategoryService(db.ContextFactory), new ArtistService(db.ContextFactory), new AlbumService(db.ContextFactory),
+            new TrackService(db.ContextFactory), new MovieService(db.ContextFactory), new TVShowService(db.ContextFactory),
+            new TVShowEpisodeService(db.ContextFactory), new MediaCacheService(db.ContextFactory));
+
+        scanner.ScanAllMediaCategories(clearData: true);
+
+        Assert.AreEqual(0, db.Scalar<int>("SELECT COUNT(*) FROM Artists WHERE Id <> 0"));
     }
 
     /// <summary>An ILogger that keeps the formatted messages, for checking what a class logged.</summary>
