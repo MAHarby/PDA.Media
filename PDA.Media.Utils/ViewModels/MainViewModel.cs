@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 using PDA.Media.Data.Services;
+using PDA.Media.Scanner.Services;
 using PDA.Media.Utils.Logging;
 using PDA.Media.Utils.Models;
 using PDA.Media.Utils.Services;
@@ -33,6 +34,7 @@ public partial class MainViewModel : ViewModelBase
     private readonly MediaEncodingService _encodingService;
     private readonly ILogger<MainViewModel> _logger;
     private readonly DatabaseStatusService? _databaseStatus;
+    private readonly MediaScanner? _mediaScanner;
 
     // The settings file as loaded; the view model updates its own fields and saves the rest unchanged.
     private readonly UserSettings _settings;
@@ -74,7 +76,8 @@ public partial class MainViewModel : ViewModelBase
 
     /// <summary>Whether the media database can be reached (checked in the background; click to check again).</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsDatabaseConfigured), nameof(IsDatabaseOnline), nameof(IsDatabaseOffline), nameof(DatabaseToolTip))]
+    [NotifyPropertyChangedFor(nameof(IsDatabaseConfigured), nameof(IsDatabaseOnline), nameof(IsDatabaseOffline), nameof(DatabaseToolTip), nameof(ScanMediaToolTip))]
+    [NotifyCanExecuteChangedFor(nameof(ScanMediaCommand))]
     public partial DatabaseState DatabaseState { get; set; } = DatabaseState.NotConfigured;
 
     public bool IsDatabaseConfigured => DatabaseState != DatabaseState.NotConfigured;
@@ -122,7 +125,7 @@ public partial class MainViewModel : ViewModelBase
 
     public MainViewModel(AppSettingsService settingsService, EncoderProfileService encoderProfileService,
         AuditLogSink auditLogSink, FFmpegService ffmpegService, MediaEncodingService encodingService,
-        ILogger<MainViewModel> logger, DatabaseStatusService? databaseStatus = null)
+        ILogger<MainViewModel> logger, DatabaseStatusService? databaseStatus = null, MediaScanner? mediaScanner = null)
     {
         _settingsService = settingsService;
         _encoderProfileService = encoderProfileService;
@@ -131,6 +134,7 @@ public partial class MainViewModel : ViewModelBase
         _encodingService = encodingService;
         _logger = logger;
         _databaseStatus = databaseStatus;
+        _mediaScanner = mediaScanner;
         _isInitializing = true;
         _logger.LogInformation("Initialising main window view model");
 
@@ -177,6 +181,56 @@ public partial class MainViewModel : ViewModelBase
         // Off the UI thread: opening a connection to a server that is off waits for the connect timeout.
         bool online = await Task.Run(() => _databaseStatus.CanConnectAsync());
         DatabaseState = online ? DatabaseState.Online : DatabaseState.Offline;
+    }
+
+    // Media scan.
+    // ==================================================================================================
+
+    /// <summary>True while a media scan runs (shows the cancel button).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ScanMediaToolTip))]
+    public partial bool IsScanning { get; set; }
+
+    /// <summary>False without a scanner (tests and the XAML previewer): the scan buttons are hidden.</summary>
+    public bool IsMediaScannerAvailable => _mediaScanner != null;
+
+    public string ScanMediaToolTip => IsScanning ? "Scanning the media folders..."
+        : IsDatabaseOnline ? "Scan the media folders of every active media category into the database"
+        : "Scan the media folders into the database (needs the database: see the indicator in the status bar)";
+
+    private bool CanScanMedia() => _mediaScanner != null && IsDatabaseOnline;
+
+    /// <summary>
+    /// Scans every active media category's folders into the database (an incremental sync: see MediaScanner) and shows the result in the status bar.
+    /// It runs off the UI thread; the scanner's progress appears in the Audit Log. ScanMediaCancelCommand cancels it.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanScanMedia), IncludeCancelCommand = true)]
+    private async Task ScanMediaAsync(CancellationToken cancellationToken)
+    {
+        if (_mediaScanner == null) return;
+
+        IsScanning = true;
+        StatusText = "Scanning the media folders...";
+        try
+        {
+            MediaScanResult result = await Task.Run(() => _mediaScanner.ScanAllMediaCategoriesAsync(clearData: false, cancellationToken), cancellationToken);
+            StatusText = $"Scan finished: {result.Added} added, {result.Restored} restored, {result.Updated} updated, {result.Deleted} deleted"
+                + (result.CategoriesSkipped > 0 ? $"; {result.CategoriesSkipped} categories skipped (see the Audit Log)" : "");
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("Media scan cancelled");
+            StatusText = "Scan cancelled";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Media scan failed");
+            StatusText = "Scan failed: see the Audit Log";
+        }
+        finally
+        {
+            IsScanning = false;
+        }
     }
 
     /// <summary>

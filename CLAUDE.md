@@ -52,7 +52,9 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   it there. Keep the existing non-DI constructors (they default to `NullLogger`), because tests and the XAML
   previewer use them. The data layer is registered with `services.AddMediaData(...)` (connection string from
   `UserSettings`, CreatedBy/ModifiedBy = the Windows user) and the scanner with `services.AddMediaScanner()`;
-  `MainViewModel` takes an optional `DatabaseStatusService`.
+  `MainViewModel` takes an optional `DatabaseStatusService` and `MediaScanner`. The toolbar's media database group (shown when there is a
+  scanner) has Scan (`ScanMediaCommand`: enabled once the database indicator is green, runs `ScanAllMediaCategoriesAsync` off the UI thread and puts the
+  result in the status bar) and a cancel button shown while `IsScanning` (`ScanMediaCancelCommand`).
 - **Logging:** Serilog behind `Microsoft.Extensions.Logging`. Inject `ILogger<T>` and use message templates
   (`_logger.LogInformation("Saved {Count} profiles", n)`); don't reference Serilog outside `Logging/` and `Program`.
   The minimum level is Information, except `Microsoft.EntityFrameworkCore` at Warning (`MinimumLevel.Override` in
