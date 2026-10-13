@@ -40,8 +40,12 @@ public partial class MediaScanner
         // The category's album type, if it exists (albums fall back to type 1).
         int albumTypeId = await _albumTypeService.GetRecordByIdAsync(category.AlbumTypeId, run.Token).ConfigureAwait(false) != null ? category.AlbumTypeId : 1;
 
+        // An artist can be in more than one music category, but has one row: its folder only moves to this category when the stored folder isn't
+        // another music category's copy of the artist that is still there (so it doesn't flip on every scan).
+        List<string> otherRoots = run.MusicRoots.Where(r => !string.Equals(r, root, StringComparison.OrdinalIgnoreCase)).ToList();
         var artistSync = new EntitySync<Artist>(_artistService, "artist", a => a.Folder,
-            (stored, found) => Set(stored.Folder, found.Folder, v => stored.Folder = v));
+            (stored, found) => !(otherRoots.Any(r => IsUnder(stored.Folder, r)) && Directory.Exists(stored.Folder))
+                && Set(stored.Folder, found.Folder, v => stored.Folder = v));
         // The album type isn't copied onto an existing album: it may have been changed by hand (e.g. to Live).
         var albumSync = new EntitySync<Album>(_albumService, "album", a => a.Folder,
             (stored, found) => Set(stored.Folder, found.Folder, v => stored.Folder = v)
@@ -88,6 +92,15 @@ public partial class MediaScanner
         // Everything was read: whatever is stored under this root and wasn't seen has gone from disk (deleted tracks first, then albums, then artists).
         trackSync.QueueMissing(await _trackService.GetAllRecordsUnderFolderAsync(root, run.Token).ConfigureAwait(false), run);
         albumSync.QueueMissing(await _albumService.GetAllRecordsUnderFolderAsync(root, run.Token).ConfigureAwait(false), run);
-        artistSync.QueueMissing(await _artistService.GetAllRecordsUnderFolderAsync(root, run.Token).ConfigureAwait(false), run);
+
+        // An artist that has gone from this category is only deleted when it has no albums left anywhere (it may be in another music category).
+        List<Artist> artistsUnderRoot = await _artistService.GetAllRecordsUnderFolderAsync(root, run.Token).ConfigureAwait(false);
+        var keep = new HashSet<int>();
+        foreach (Artist gone in artistSync.Unseen(artistsUnderRoot))
+        {
+            List<Album> albums = await _albumService.GetAllRecordsByArtistIdAsync(gone.Id, run.Token).ConfigureAwait(false);
+            if (albums.Any(a => !albumSync.QueuedIds.Contains(a.Id))) keep.Add(gone.Id);
+        }
+        artistSync.QueueMissing(artistsUnderRoot, run, keep);
     }
 }

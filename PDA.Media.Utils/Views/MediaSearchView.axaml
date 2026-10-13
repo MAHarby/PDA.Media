@@ -1,0 +1,195 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PDA.Media.Utils.ViewModels"
+             xmlns:models="using:PDA.Media.Utils.Models"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1150" d:DesignHeight="640"
+             x:Class="PDA.Media.Utils.Views.MediaSearchView"
+             x:DataType="vm:MediaSearchViewModel">
+
+    <UserControl.Styles>
+        <StyleInclude Source="../Styles/MediaSearchViewStyles.axaml"/>
+    </UserControl.Styles>
+
+    <Panel>
+        <Grid ColumnDefinitions="420,12,*" Classes="SearchContent">
+
+            <!-- Left: search, categories, filters and the results tree. -->
+            <!-- ============================================================================================================== -->
+            <Border Grid.Column="0" Classes="ContentPanel">
+                <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Classes="SearchBar">
+                        <TextBox Grid.Column="0" Name="SearchTextBox" Text="{Binding SearchText}" Classes="SearchBox"
+                                 PlaceholderText="Names, descriptions and notes (* for everything)">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter" Command="{Binding SearchCommand}"/>
+                            </TextBox.KeyBindings>
+                        </TextBox>
+                        <Button Grid.Column="1" Command="{Binding SearchCommand}" Classes="SearchButton accent"
+                                ToolTip.Tip="Search the ticked categories (Enter). * is a wildcard: Abba* starts with Abba">
+                            <StackPanel Classes="ButtonContent">
+                                <PathIcon Data="{StaticResource scan_icon}" Classes="ButtonIcon"/>
+                                <TextBlock Text="Search"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding Categories}" Classes="SearchCategories">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:SearchCategoryItem">
+                                <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected}" ToolTip.Tip="{Binding RootFolder}" Classes="SearchCategory"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <StackPanel Grid.Row="2" Classes="SearchFilters">
+                        <CheckBox Content="Favourites only" IsChecked="{Binding FavouritesOnly}"/>
+                        <CheckBox Content="Show deleted" IsChecked="{Binding ShowDeleted}"
+                                  ToolTip.Tip="Include rows a scan has soft-deleted (no longer in the media folders); shown greyed out"/>
+                    </StackPanel>
+
+                    <TreeView Grid.Row="3" ItemsSource="{Binding Results}" SelectedItem="{Binding SelectedNode, Mode=TwoWay}" Classes="MediaTree">
+                        <TreeView.Styles>
+                            <Style Selector="TreeViewItem" x:DataType="models:MediaTreeNode">
+                                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                            </Style>
+                        </TreeView.Styles>
+                        <TreeView.ItemTemplate>
+                            <TreeDataTemplate x:DataType="models:MediaTreeNode" ItemsSource="{Binding Children}">
+                                <StackPanel Classes="NodeContent">
+                                    <PathIcon Classes="NodeIcon" IsVisible="{Binding !IsMessage}"
+                                              Classes.Group="{Binding IsGroup}" Classes.Artist="{Binding IsArtist}" Classes.Album="{Binding IsAlbum}"
+                                              Classes.Track="{Binding IsTrack}" Classes.Source="{Binding IsSource}" Classes.Movie="{Binding IsMovie}"
+                                              Classes.Show="{Binding IsShow}" Classes.Season="{Binding IsSeason}" Classes.Episode="{Binding IsEpisode}"/>
+                                    <TextBlock Text="{Binding Title}" Classes="NodeTitle" Classes.Match="{Binding IsMatch}" Classes.Deleted="{Binding IsDeleted}"
+                                               Classes.Message="{Binding IsMessage}" Classes.Group="{Binding IsGroup}"/>
+                                    <TextBlock Text="{Binding Subtitle}" Classes="NodeSubtitle"
+                                               IsVisible="{Binding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                    <PathIcon Data="{StaticResource star_icon}" Classes="Favourite" IsVisible="{Binding IsFavourite}"/>
+                                </StackPanel>
+                            </TreeDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+
+                    <Grid Grid.Row="4" RowDefinitions="Auto,Auto" Classes="SearchStatus">
+                        <ProgressBar Grid.Row="0" IsIndeterminate="True" IsVisible="{Binding IsSearching}" Classes="Searching"/>
+                        <TextBlock Grid.Row="1" Text="{Binding StatusText}" ToolTip.Tip="{Binding StatusText}" Classes="SearchStatusText"/>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- Right: details and editing of the selected row. -->
+            <!-- ============================================================================================================== -->
+            <Border Grid.Column="2" Classes="ContentPanel">
+                <Panel>
+                    <TextBlock Text="Search, then select an item to see its details" IsVisible="{Binding !HasSelection}" Classes="DetailsEmpty"/>
+
+                    <Grid RowDefinitions="Auto,*,Auto" IsVisible="{Binding HasSelection}">
+                        <!-- Cover art, title and file. -->
+                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Classes="DetailsHeader">
+                            <Border Grid.Column="0" Classes="CoverArt" IsVisible="{Binding HasCoverArt}">
+                                <Image Source="{Binding CoverArt}" Classes="CoverArt"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" Classes="DetailsHeading">
+                                <SelectableTextBlock Text="{Binding DetailsTitle}" Classes="DetailsTitle"/>
+                                <TextBlock Text="{Binding DetailsSubtitle}" Classes="DetailsSubtitle"/>
+                                <TextBlock Text="{Binding FileText}" Classes="DetailsFile"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <ScrollViewer Grid.Row="1" Classes="Details">
+                            <StackPanel Classes="DetailsContent">
+                                <!-- Read-only details. -->
+                                <ItemsControl ItemsSource="{Binding DetailRows}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:DetailRow">
+                                            <Grid ColumnDefinitions="130,*" Classes="DetailRow">
+                                                <TextBlock Grid.Column="0" Text="{Binding Label}" Classes="DetailLabel"/>
+                                                <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" Classes="DetailValue"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!-- Editable fields. -->
+                                <StackPanel IsVisible="{Binding HasEditor}" Classes="Editor">
+                                    <TextBlock Text="Edit" Classes="SectionHeading"/>
+                                    <CheckBox Content="Favourite" IsChecked="{Binding Editor.IsFavourite, FallbackValue=False}"/>
+                                    <Grid ColumnDefinitions="130,*" Classes="EditRow">
+                                        <Label Grid.Column="0" Content="Description" Classes="EditLabel"/>
+                                        <TextBox Grid.Column="1" Text="{Binding Editor.Description}" Classes="Description"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="130,*" Classes="EditRow">
+                                        <Label Grid.Column="0" Content="Notes" Classes="EditLabel"/>
+                                        <TextBox Grid.Column="1" Text="{Binding Editor.Notes}" Classes="Notes"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="130,*" Classes="EditRow" IsVisible="{Binding Editor.HasType, FallbackValue=False}">
+                                        <Label Grid.Column="0" Content="{Binding Editor.TypeLabel, FallbackValue=''}" Classes="EditLabel"/>
+                                        <ComboBox Grid.Column="1" ItemsSource="{Binding Editor.TypeOptions}" SelectedItem="{Binding Editor.SelectedType}" Classes="Type"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="130,*" Classes="EditRow" IsVisible="{Binding Editor.HasMusicBrainzId, FallbackValue=False}">
+                                        <Label Grid.Column="0" Content="MusicBrainz id" Classes="EditLabel"/>
+                                        <TextBox Grid.Column="1" Text="{Binding Editor.MusicBrainzId}" Classes="MusicBrainzId"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="130,*" Classes="EditRow" IsVisible="{Binding Editor.HasLength, FallbackValue=False}">
+                                        <Label Grid.Column="0" Content="Length" Classes="EditLabel"/>
+                                        <NumericUpDown Grid.Column="1" Value="{Binding Editor.Length}" Minimum="0" FormatString="0" Classes="Length"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="130,*" Classes="EditRow" IsVisible="{Binding Editor.HasReleaseDate, FallbackValue=False}">
+                                        <Label Grid.Column="0" Content="Release date" Classes="EditLabel"/>
+                                        <CalendarDatePicker Grid.Column="1" SelectedDate="{Binding Editor.ReleaseDate}" Classes="ReleaseDate"/>
+                                    </Grid>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <!-- Actions. -->
+                        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*,Auto,Auto" Classes="DetailsActions">
+                            <Button Grid.Column="0" Command="{Binding OpenFolderCommand}" Classes="DetailsAction" ToolTip.Tip="Open the folder (and select the file)">
+                                <StackPanel Classes="ButtonContent">
+                                    <PathIcon Data="{StaticResource folder_open}" Classes="ButtonIcon"/>
+                                    <TextBlock Text="Open folder"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Grid.Column="1" Click="CopyPathButton_OnClick" Classes="DetailsAction" ToolTip.Tip="Copy the file's (or folder's) path"
+                                    IsEnabled="{Binding SelectedPath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <StackPanel Classes="ButtonContent">
+                                    <PathIcon Data="{StaticResource copy_icon}" Classes="ButtonIcon"/>
+                                    <TextBlock Text="Copy path"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Grid.Column="3" Command="{Binding DiscardChangesCommand}" Content="Discard" Classes="DialogAction" IsVisible="{Binding HasEditor}"/>
+                            <Button Grid.Column="4" Command="{Binding SaveChangesCommand}" Classes="DialogAction accent" IsVisible="{Binding HasEditor}">
+                                <StackPanel Classes="ButtonContent">
+                                    <PathIcon Data="{StaticResource save_icon}" Classes="ButtonIcon"/>
+                                    <TextBlock Text="Save Changes"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Panel>
+            </Border>
+        </Grid>
+
+        <!-- A question over the tab (unsaved changes). -->
+        <!-- ============================================================================================================== -->
+        <Border IsVisible="{Binding HasConfirmation}" Classes="ConfirmationOverlay">
+            <Border Classes="ConfirmationCard">
+                <StackPanel Classes="ConfirmationContent">
+                    <TextBlock Text="{Binding Confirmation.Title, FallbackValue=''}" Classes="ConfirmationTitle"/>
+                    <TextBlock Text="{Binding Confirmation.Message, FallbackValue=''}" Classes="ConfirmationMessage"/>
+                    <StackPanel Classes="ConfirmationActions">
+                        <Button Command="{Binding DismissConfirmationCommand}" Content="{Binding Confirmation.BackText, FallbackValue=''}" Classes="DialogAction"/>
+                        <Button Command="{Binding ConfirmCommand}" Content="{Binding Confirmation.ConfirmText, FallbackValue=''}" Classes="DialogAction accent"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Panel>
+</UserControl>

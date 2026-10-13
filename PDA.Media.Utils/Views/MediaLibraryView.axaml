@@ -1,0 +1,68 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PDA.Media.Utils.ViewModels"
+        xmlns:views="using:PDA.Media.Utils.Views"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1250" d:DesignHeight="820"
+        Width="1250" Height="840" MinWidth="900" MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        x:Class="PDA.Media.Utils.Views.MediaLibraryView"
+        x:DataType="vm:MediaLibraryViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        FontFamily="Inter" FontSize="13"
+        Title="Media Library Services">
+
+    <Window.Styles>
+        <StyleInclude Source="../Styles/MediaLibraryViewStyles.axaml"/>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto" Classes="WindowContent">
+
+        <!-- Header -->
+        <Border Grid.Row="0" Classes="HeaderPanel">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Grid.Column="0" Classes="HeaderText">
+                    <TextBlock Text="Media Library Services" Classes="HeaderTitle"/>
+                    <TextBlock Text="Search, browse and edit the media database, and scan the media folders into it" Classes="HeaderSubtitle"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Classes="HeaderActions">
+                    <TextBlock Text="{Binding DatabaseText}" Classes="HeaderInfo"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Search (first) and Scanner tabs. -->
+        <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}" Classes="LibraryTabs">
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Classes="TabHeader">
+                        <PathIcon Data="{StaticResource scan_icon}" Classes="TabIcon"/>
+                        <TextBlock Text="Search"/>
+                    </StackPanel>
+                </TabItem.Header>
+                <views:MediaSearchView DataContext="{Binding Search}"/>
+            </TabItem>
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Classes="TabHeader">
+                        <PathIcon Data="{StaticResource library_icon}" Classes="TabIcon"/>
+                        <TextBlock Text="Scanner"/>
+                    </StackPanel>
+                </TabItem.Header>
+                <views:MediaScannerView DataContext="{Binding Scanner}"/>
+            </TabItem>
+        </TabControl>
+
+        <!-- Footer -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Classes="FooterBar">
+            <StackPanel Grid.Column="0" Classes="FooterInfo">
+                <TextBlock Text="Names, folders and files come from the media folders: rename them on disk and scan. Descriptions, notes, favourites and types are edited here."
+                           Classes="FooterText"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Classes="FooterActions">
+                <Button Content="Close" Click="CloseButton_OnClick" Classes="DialogAction"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

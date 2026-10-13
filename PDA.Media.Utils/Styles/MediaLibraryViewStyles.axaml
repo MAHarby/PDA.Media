@@ -1,0 +1,91 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Design.PreviewWith>
+        <Border Padding="20">
+            <!-- Add Controls for Previewer Here -->
+        </Border>
+    </Design.PreviewWith>
+
+        <!-- The Media Library Services window. Its heading, panels and footer use CommonStyles (HeaderPanel, ContentPanel, FooterBar);
+             the styles here also apply inside its two tabs (MediaSearchView, MediaScannerView). -->
+
+        <!-- Heading. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="TextBlock.HeaderInfo">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+
+        <!-- Tabs. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="TabControl.LibraryTabs">
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+        <Style Selector="TabControl.LibraryTabs TabItem">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="MinHeight" Value="34"/>
+            <Setter Property="Padding" Value="12,0"/>
+        </Style>
+        <Style Selector="StackPanel.TabHeader">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="8"/>
+        </Style>
+        <Style Selector="PathIcon.TabIcon">
+            <Setter Property="Width" Value="14"/>
+            <Setter Property="Height" Value="14"/>
+        </Style>
+
+
+        <!-- Section Headings (in both tabs' panels). -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="TextBlock.SectionHeading">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="StackPanel.SectionActions">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="4"/>
+        </Style>
+        <Style Selector="Button.SectionAction">
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+        </Style>
+
+
+        <!-- Confirmation (shown over a tab). -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.ConfirmationOverlay">
+            <Setter Property="Background" Value="#80000000"/>
+        </Style>
+        <Style Selector="Border.ConfirmationCard">
+            <Setter Property="Background" Value="{DynamicResource SystemChromeMediumLowColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemBaseLowColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="20"/>
+            <Setter Property="MaxWidth" Value="460"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="StackPanel.ConfirmationContent">
+            <Setter Property="Spacing" Value="12"/>
+        </Style>
+        <Style Selector="TextBlock.ConfirmationTitle">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.ConfirmationMessage">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="StackPanel.ConfirmationActions">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="8"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+        </Style>
+
+</Styles>

@@ -1,25 +1,20 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:PDA.Media.Utils.ViewModels"
-        xmlns:models="using:PDA.Media.Utils.Models"
-        xmlns:scanner="using:PDA.Media.Scanner.Services"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="720"
-        Width="1150" Height="740" MinWidth="820" MinHeight="520"
-        WindowStartupLocation="CenterScreen"
-        x:Class="PDA.Media.Utils.Views.MediaScannerView"
-        x:DataType="vm:MediaScannerViewModel"
-        Icon="/Assets/avalonia-logo.ico"
-        FontFamily="Inter" FontSize="13"
-        Title="Media Scanner">
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PDA.Media.Utils.ViewModels"
+             xmlns:models="using:PDA.Media.Utils.Models"
+             xmlns:scanner="using:PDA.Media.Scanner.Services"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="640"
+             x:Class="PDA.Media.Utils.Views.MediaScannerView"
+             x:DataType="vm:MediaScannerViewModel">
 
-    <Window.Styles>
+    <UserControl.Styles>
         <StyleInclude Source="../Styles/MediaScannerViewStyles.axaml"/>
-    </Window.Styles>
+    </UserControl.Styles>
 
     <Panel>
-        <Grid RowDefinitions="*,Auto" ColumnDefinitions="380,*" Classes="WindowContent">
+        <Grid RowDefinitions="*,Auto" ColumnDefinitions="380,12,*" Classes="ScannerContent">
 
             <!-- Left: categories, options and results. -->
             <!-- ============================================================================================================== -->
@@ -27,7 +22,7 @@
                 <StackPanel Classes="ScannerSettings">
 
                     <!-- Media categories. -->
-                    <Border Classes="ScannerSection">
+                    <Border Classes="ContentPanel">
                         <StackPanel Classes="SectionContent">
                             <Grid ColumnDefinitions="*,Auto">
                                 <TextBlock Grid.Column="0" Text="Media categories" Classes="SectionHeading"/>
@@ -60,7 +55,7 @@
                     </Border>
 
                     <!-- Options. -->
-                    <Border Classes="ScannerSection">
+                    <Border Classes="ContentPanel">
                         <StackPanel Classes="SectionContent" IsEnabled="{Binding !IsScanning}">
                             <TextBlock Text="Options" Classes="SectionHeading"/>
                             <CheckBox IsChecked="{Binding DryRun}" Classes="Option"
@@ -92,7 +87,7 @@
                     </Border>
 
                     <!-- Results of this run. -->
-                    <Border Classes="ScannerSection">
+                    <Border Classes="ContentPanel">
                         <StackPanel Classes="SectionContent">
                             <TextBlock Text="Results" Classes="SectionHeading"/>
                             <Grid ColumnDefinitions="*,52,52,52,52" Classes="ResultsHeader">
@@ -126,7 +121,8 @@
 
             <!-- Right: the live activity log. -->
             <!-- ============================================================================================================== -->
-            <Grid Grid.Row="0" Grid.Column="1" RowDefinitions="Auto,*" Classes="Activity">
+            <Border Grid.Row="0" Grid.Column="2" Classes="ContentPanel">
+            <Grid RowDefinitions="Auto,*" Classes="Activity">
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
                     <TextBlock Grid.Column="0" Text="Activity" Classes="SectionHeading"/>
                     <StackPanel Grid.Column="1" Classes="SectionActions">
@@ -148,10 +144,11 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
             </Grid>
+            </Border>
 
             <!-- Footer: progress and actions. -->
             <!-- ============================================================================================================== -->
-            <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto,Auto,Auto,Auto" Classes="ScannerFooter">
+            <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto,Auto,Auto" Classes="ScannerFooter">
                 <ProgressBar Grid.Row="0" Grid.Column="0" Value="{Binding ProgressValue}" Maximum="{Binding ProgressMaximum}"
                              IsIndeterminate="{Binding IsProgressIndeterminate}" Classes="ScanProgress"/>
                 <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ElapsedText}" Classes="Elapsed"/>
@@ -169,15 +166,14 @@
                         <TextBlock Text="Cancel"/>
                     </StackPanel>
                 </Button>
-                <Button Grid.Row="0" Grid.Column="4" Content="Close" Click="CloseButton_OnClick" Classes="DialogAction"/>
-                <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="5" ColumnDefinitions="Auto,*">
+                <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" ColumnDefinitions="Auto,*">
                     <TextBlock Grid.Column="0" Text="{Binding ProgressText}" Classes="ProgressText"/>
                     <TextBlock Grid.Column="1" Text="{Binding StatusText}" ToolTip.Tip="{Binding StatusText}" Classes="ScannerStatus"/>
                 </Grid>
             </Grid>
         </Grid>
 
-        <!-- A question over the whole window (clear all data, close during a scan). -->
+        <!-- A question over the tab (clear all data, close during a scan). -->
         <!-- ============================================================================================================== -->
         <Border IsVisible="{Binding HasConfirmation}" Classes="ConfirmationOverlay">
             <Border Classes="ConfirmationCard">
@@ -192,4 +188,4 @@
             </Border>
         </Border>
     </Panel>
-</Window>
+</UserControl>

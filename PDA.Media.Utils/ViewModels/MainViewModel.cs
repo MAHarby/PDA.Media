@@ -187,10 +187,10 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>False without a scanner (tests and the XAML previewer): the scan button is hidden.</summary>
     public bool IsMediaScannerAvailable => _mediaScanner != null;
 
-    public string ScanMediaToolTip => IsDatabaseOnline ? "Open the media scanner: scan media categories into the database"
-        : "Open the media scanner (needs the database: see the indicator in the status bar)";
+    public string ScanMediaToolTip => IsDatabaseOnline ? "Media Library Services: search, browse and edit the media database, and scan the media folders into it"
+        : "Media Library Services (needs the database: see the indicator in the status bar)";
 
-    /// <summary>The Scan button opens the media scanner window (MediaScannerView), which needs the database.</summary>
+    /// <summary>The Media Library button opens the Media Library Services window (MediaLibraryView), which needs the database.</summary>
     public bool CanOpenMediaScanner => _mediaScanner != null && IsDatabaseOnline;
 
     /// <summary>

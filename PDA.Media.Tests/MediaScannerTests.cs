@@ -103,6 +103,37 @@ public sealed class MediaScannerTests
         Assert.AreEqual("Bought on vinyl", back.Notes);
     }
 
+    [TestMethod]
+    public void TestArtistInTwoMusicCategories()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        disk.File("Music", "Queen", "A Night at the Opera", "11 - Bohemian Rhapsody.flac");
+        disk.File("Live", "Queen", "Live Killers", "01 - We Will Rock You.flac");
+        AddCategory(db, "Live", "Music", disk.Path("Live"));
+        AddCategory(db, "Music", "Music", disk.Path("Music"));
+        Scanner(db).ScanAllMediaCategories();
+        var artists = new ArtistService(db.ContextFactory);
+        Artist queen = artists.GetRecordByName("Queen")!;
+        Assert.AreEqual(disk.Path("Live", "Queen"), queen.Folder, "the first category scanned (by name) claims the artist");
+
+        // Scanning again doesn't move the artist back and forth.
+        MediaScanResult again = Scanner(db).ScanAllMediaCategories();
+        Assert.AreEqual((0, 0), (again.Updated, again.Deleted));
+
+        // Gone from Live: the artist stays (it still has an album in Music) and moves there.
+        Directory.Delete(disk.Path("Live", "Queen"), true);
+        MediaScanResult gone = Scanner(db).ScanAllMediaCategories();
+        Assert.AreEqual(2, gone.Deleted, "Live Killers and its track, not the artist");
+        Artist moved = artists.GetRecordById(queen.Id)!;
+        Assert.AreEqual(disk.Path("Music", "Queen"), moved.Folder);
+
+        // Gone from Music too: now the artist goes.
+        Directory.Delete(disk.Path("Music", "Queen"), true);
+        Scanner(db).ScanAllMediaCategories();
+        Assert.IsNull(artists.GetRecordById(queen.Id));
+    }
+
     // Movies and TV.
     // ==================================================================================================
 
