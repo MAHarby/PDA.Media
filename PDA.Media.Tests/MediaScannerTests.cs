@@ -111,23 +111,77 @@ public sealed class MediaScannerTests
     {
         using var db = new SqlServerTestDatabase();
         using var disk = new TempMedia();
-        disk.File("Movies", "Alien (1979)", "Alien (1979).mkv", size: 3000);
-        disk.File("Movies", "Alien (1979)", "Alien (1979) - Sample.mkv", size: 10);
-        disk.File("Movies", "Alien (1979)", "poster.jpg");
-        disk.File("Movies", "千と千尋の神隠し (2001)", "千と千尋の神隠し (2001).mp4");
-        disk.File("Movies", "Loose Movie (2020).mkv");
-        disk.File("Movies", "No Video", "info.nfo");
+        // A movie in its own folder, with a sample and extras that aren't movies of their own.
+        disk.File(3000, "Movies", "Compressed Blu-Rays", "Alien (1979)", "Alien (1979).mkv");
+        disk.File(10, "Movies", "Compressed Blu-Rays", "Alien (1979)", "Alien (1979) - Sample.mkv");
+        disk.File(20, "Movies", "Compressed Blu-Rays", "Alien (1979)", "Extras", "Making Of.mkv");
+        disk.File("Movies", "Compressed Blu-Rays", "Alien (1979)", "poster.jpg");
+        // Folder names don't need a year.
+        disk.File("Movies", "Raw Blu-Rays", "千と千尋の神隠し", "Title_t00.mkv");
+        // Loose movie files in a source folder.
+        disk.File("Movies", "Compressed Movies", "Heat (1995).mkv");
+        disk.File("Movies", "Compressed Movies", "Ronin.mp4");
+        // A folder of movie folders, two levels below the source folder.
+        disk.File("Movies", "Concert Movies", "Queen", "Live at Wembley (1986)", "Live at Wembley.mkv");
+        disk.File("Movies", "Concert Movies", "Queen", "Live Aid (1985)", "Live Aid.mkv");
+        // Folders without a video file anywhere, and an empty source folder.
+        disk.File("Movies", "Filmous", "No Video", "info.nfo");
+        Directory.CreateDirectory(disk.Path("Movies", "ARRstack"));
         AddCategory(db, "Movies", "Movie", disk.Path("Movies"));
 
         MediaScanResult result = Scanner(db).ScanAllMediaCategories();
 
-        Assert.AreEqual(3, result.Added);
         var movies = new MovieService(db.ContextFactory);
+        CollectionAssert.AreEquivalent(new[] { "Alien (1979)", "千と千尋の神隠し", "Heat (1995)", "Ronin", "Live at Wembley (1986)", "Live Aid (1985)" },
+            movies.GetAllRecords().Select(m => m.Name).ToList());
+        Assert.AreEqual(6, result.Added);
         Movie alien = movies.GetRecordByName("Alien (1979)")!;
+        Assert.AreEqual(disk.Path("Movies", "Compressed Blu-Rays", "Alien (1979)"), alien.Folder);
         Assert.AreEqual("Alien (1979).mkv", alien.OriginalFilename, "the largest video file, not the sample");
         Assert.AreEqual("poster.jpg", alien.CoverArtFilename);
-        Assert.IsNotNull(movies.GetRecordByName("千と千尋の神隠し (2001)"));
-        Assert.AreEqual(disk.Path("Movies"), movies.GetRecordByName("Loose Movie (2020)")!.Folder);
+        Assert.AreEqual("Title_t00.mkv", movies.GetRecordByName("千と千尋の神隠し")!.OriginalFilename);
+        Movie heat = movies.GetRecordByName("Heat (1995)")!;
+        Assert.AreEqual(disk.Path("Movies", "Compressed Movies"), heat.Folder);
+        Assert.AreEqual("Heat (1995).mkv", heat.OriginalFilename);
+        Assert.AreEqual(disk.Path("Movies", "Concert Movies", "Queen", "Live Aid (1985)"), movies.GetRecordByName("Live Aid (1985)")!.Folder);
+    }
+
+    [TestMethod]
+    public void TestMovieMovedToAnotherSourceFolderIsUpdated()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        disk.File("Movies", "Raw Blu-Rays", "Alien (1979)", "Alien (1979).mkv");
+        AddCategory(db, "Movies", "Movie", disk.Path("Movies"));
+        Scanner(db).ScanAllMediaCategories();
+        int id = new MovieService(db.ContextFactory).GetRecordByName("Alien (1979)")!.Id;
+
+        // Compressed and moved: the same record now points at the new folder.
+        Directory.Delete(disk.Path("Movies", "Raw Blu-Rays", "Alien (1979)"), true);
+        disk.File("Movies", "Compressed Blu-Rays", "Alien (1979)", "Alien (1979).mkv");
+        MediaScanResult result = Scanner(db).ScanAllMediaCategories();
+
+        Assert.AreEqual((0, 1, 0), (result.Added, result.Updated, result.Deleted));
+        Movie alien = new MovieService(db.ContextFactory).GetRecordById(id)!;
+        Assert.AreEqual(disk.Path("Movies", "Compressed Blu-Rays", "Alien (1979)"), alien.Folder);
+    }
+
+    [TestMethod]
+    public void TestDuplicateMovieIsReported()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        disk.File("Movies", "Compressed Blu-Rays", "Alien (1979)", "Alien (1979).mkv");
+        disk.File("Movies", "Raw Blu-Rays", "Alien (1979)", "Alien (1979).mkv");
+        AddCategory(db, "Movies", "Movie", disk.Path("Movies"));
+        var logger = new CapturingLogger<MediaScanner>();
+
+        MediaScanResult result = Scanner(db, logger).ScanAllMediaCategories();
+
+        Assert.AreEqual(1, result.Added);
+        Assert.AreEqual(disk.Path("Movies", "Compressed Blu-Rays", "Alien (1979)"), new MovieService(db.ContextFactory).GetRecordByName("Alien (1979)")!.Folder);
+        Assert.IsTrue(logger.Messages.Any(m => m.Contains("Alien (1979)") && m.Contains("Raw Blu-Rays") && m.Contains("only the first is kept")),
+            string.Join("\n", logger.Messages));
     }
 
     [TestMethod]
@@ -236,8 +290,8 @@ public sealed class MediaScannerTests
         /// <summary>Creates a one-byte file (and its folders) at the path made of <paramref name="parts"/>.</summary>
         public void File(params string[] parts) => Create(parts, 1);
 
-        /// <summary>Creates a file of <paramref name="size"/> bytes at folder / subfolder / name.</summary>
-        public void File(string folder, string subFolder, string name, int size) => Create([folder, subFolder, name], size);
+        /// <summary>Creates a file of <paramref name="size"/> bytes (and its folders) at the path made of <paramref name="parts"/>.</summary>
+        public void File(int size, params string[] parts) => Create(parts, size);
 
         private void Create(string[] parts, int size)
         {

@@ -161,7 +161,7 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   parameter (every data service is already registered).
 - `ScanAllMediaCategories` / `ScanAllMediaCategoriesAsync` scan each active `MediaCategory`'s `RootFolder` and return a `MediaScanResult` (rows added, restored,
   updated, unchanged, deleted). `MediaKinds.FromMediaClass` picks the layout from `MediaClass` (Music; Movie/Movies/Film; TV/TV Show/Series; anything else is
-  skipped): music `Artist/Album/NN - Title.ext` (album type from the category), movies `Movie (Year)/…` (largest video file) or loose files in the root,
+  skipped): music `Artist/Album/NN - Title.ext` (album type from the category), movies `Source/…` (each folder in the root is a source such as `Compressed Blu-Rays`: a video file directly in it is a movie named after the file; below it, a folder holding a video file is a movie named after the folder, using its largest video file and ignoring extras, and a folder without one is searched further; a duplicate name is logged and the first kept),
   TV `Show (Year)/Season NN/… sNNeNN - Title.ext`. Name parsing is in `MediaFileNames` (pure; `MediaFileNamesTests`).
 - It is an incremental sync: each item goes through `AddOrRestoreRecordAsync` (restores a soft-deleted match with its id, favourites and notes), only the
   fields the scan owns (folder, file name, cover art, track count, episode title) are updated, and rows under the root (`GetAllRecordsUnderFolder`) that
