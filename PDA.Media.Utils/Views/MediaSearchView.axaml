@@ -98,7 +98,7 @@
                 <Panel>
                     <TextBlock Text="Search, then select an item to see its details" IsVisible="{Binding !HasSelection}" Classes="DetailsEmpty"/>
 
-                    <Grid RowDefinitions="Auto,*,Auto" IsVisible="{Binding HasSelection}">
+                    <Grid RowDefinitions="Auto,Auto,*,Auto" IsVisible="{Binding HasSelection}">
                         <!-- Cover art, title and file. -->
                         <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Classes="DetailsHeader">
                             <Border Grid.Column="0" Classes="CoverArt" IsVisible="{Binding HasCoverArt}">
@@ -111,7 +111,37 @@
                             </StackPanel>
                         </Grid>
 
-                        <ScrollViewer Grid.Row="1" Classes="Details">
+                        <!-- Play: the row, or everything under the selected branch, in order. -->
+                        <StackPanel Grid.Row="1" Classes="PlayActions">
+                            <Button Command="{Binding PlayCommand}" Classes="PlayAction accent"
+                                    ToolTip.Tip="Play it (or everything in it, in order): VLC for movies and TV, Windows Media Player for music">
+                                <StackPanel Classes="ButtonContent">
+                                    <PathIcon Data="{StaticResource play_icon}" Classes="ButtonIcon"/>
+                                    <TextBlock Text="Play"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding PlayFromHereCommand}" IsVisible="{Binding CanPlayFromHere}" Classes="PlayAction"
+                                    ToolTip.Tip="Play this one and the rest of its season or album">
+                                <StackPanel Classes="ButtonContent">
+                                    <PathIcon Data="{StaticResource play_icon}" Classes="ButtonIcon"/>
+                                    <TextBlock Text="Play from here"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding ShuffleCommand}" Classes="PlayAction" ToolTip.Tip="Play everything in it in a random order">
+                                <StackPanel Classes="ButtonContent">
+                                    <PathIcon Data="{StaticResource shuffle_icon}" Classes="ButtonIcon"/>
+                                    <TextBlock Text="Shuffle"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding EnqueueCommand}" Classes="PlayAction" ToolTip.Tip="Add it to the playlist of the VLC that is already playing">
+                                <StackPanel Classes="ButtonContent">
+                                    <PathIcon Data="{StaticResource enqueue_icon}" Classes="ButtonIcon"/>
+                                    <TextBlock Text="Add to VLC playlist"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <ScrollViewer Grid.Row="2" Classes="Details">
                             <StackPanel Classes="DetailsContent">
                                 <!-- Read-only details. -->
                                 <ItemsControl ItemsSource="{Binding DetailRows}">
@@ -158,7 +188,7 @@
                         </ScrollViewer>
 
                         <!-- Actions. -->
-                        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" Classes="DetailsActions">
+                        <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" Classes="DetailsActions">
                             <Button Grid.Column="0" Command="{Binding OpenFolderCommand}" Classes="DetailsAction" ToolTip.Tip="Open the folder (and select the file)">
                                 <StackPanel Classes="ButtonContent">
                                     <PathIcon Data="{StaticResource folder_open}" Classes="ButtonIcon"/>

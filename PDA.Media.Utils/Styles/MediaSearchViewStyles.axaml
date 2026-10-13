@@ -157,6 +157,14 @@
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
         </Style>
+        <Style Selector="StackPanel.PlayActions">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="8"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
+        <Style Selector="Button.PlayAction">
+            <Setter Property="Padding" Value="12,6"/>
+        </Style>
         <Style Selector="StackPanel.DetailsContent">
             <Setter Property="Spacing" Value="4"/>
             <Setter Property="Margin" Value="0,0,8,0"/>

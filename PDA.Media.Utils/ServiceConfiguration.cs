@@ -36,6 +36,7 @@ public static class ServiceConfiguration
         services.AddSingleton(sp => new LogFileService(logFilePath, sp.GetRequiredService<ILogger<LogFileService>>()));
         services.AddSingleton(sp => new FFmpegService(sp.GetRequiredService<ILogger<FFmpegService>>()));
         services.AddSingleton(sp => new MediaEncodingService(sp.GetRequiredService<ILogger<MediaEncodingService>>()));
+        services.AddSingleton(sp => new MediaPlayerService(sp.GetRequiredService<AppSettingsService>(), sp.GetRequiredService<ILogger<MediaPlayerService>>()));
 
         // Data layer (PDA.Media.Data). The connection string is built from the user settings the first time the
         // database is used; changes take effect when the app is restarted. CreatedBy / ModifiedBy record the Windows user.
