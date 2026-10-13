@@ -12,6 +12,7 @@ public static class ScannerServiceCollectionExtensions
     public static IServiceCollection AddMediaScanner(this IServiceCollection services)
     {
         services.AddSingleton<MediaScanner>();
+        services.AddSingleton<MediaRenameService>();
         return services;
     }
 }

@@ -60,7 +60,24 @@ public partial class MediaScanner
     }
 
     /// <summary>True while a scan is running (only one can run at a time).</summary>
+    /// <remarks>A rename (MediaRenameService) holds the same flag while it runs, so scans and renames never overlap.</remarks>
     public bool IsScanning => Volatile.Read(ref _isScanning) == 1;
+
+    /// <summary>
+    /// Takes the scanner's busy flag for something that mustn't run during a scan (a rename); null if a scan or another rename is running.
+    /// Dispose the result to release it.
+    /// </summary>
+    internal IDisposable? TryReserve() => Interlocked.Exchange(ref _isScanning, 1) == 1 ? null : new Reservation(this);
+
+    private sealed class Reservation(MediaScanner scanner) : IDisposable
+    {
+        private int _released;
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _released, 1) == 0) Volatile.Write(ref scanner._isScanning, 0);
+        }
+    }
 
     // Categories.
     // ==================================================================================================
@@ -132,7 +149,7 @@ public partial class MediaScanner
     {
         options ??= new MediaScanOptions();
         HashSet<int> ids = categoryIds.ToHashSet();
-        if (Interlocked.Exchange(ref _isScanning, 1) == 1) throw new InvalidOperationException("A media scan is already running.");
+        if (Interlocked.Exchange(ref _isScanning, 1) == 1) throw new InvalidOperationException("A media scan (or a rename) is already running.");
         try
         {
             List<MediaCategory> all = await _categoryService.GetAllRecordsAsync(cancellationToken).ConfigureAwait(false);

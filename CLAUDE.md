@@ -67,7 +67,12 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   (`LoadChildrenAsync`, a "Loading..." child until then); after a search the way down to the matches is opened (up to 50 paths), and matches are bold.
   The details panel shows cover art (decoded off the UI thread), the read-only fields (`DetailRow`), the file's size / date from disk, Open folder (selects
   the file in Explorer) and Copy path, and edits the hand-editable fields through `MediaItemEditor` (Save Changes / Discard; selecting another row with
-  unsaved changes asks first). Names, folders, files, numbers and years are read-only: the scan owns them or matches rows by them.
+  unsaved changes asks first). Names, folders, files, numbers and years are read-only there: the scan owns them or matches rows by them, so they are
+  changed with **Rename...** instead (`MediaRenameViewModel`, a panel over the tab: new name, Tidy name, the folder / files options for movies and shows,
+  a preview of every disk step and database change that refreshes as you type, Apply; it needs no unsaved edits). **Tidy names...** (`TidyNamesViewModel`)
+  works on the selected branch: every item under it (up to 1000) whose `MediaNameTidy` suggestion differs, each checked first (problems unticked),
+  editable `TidyRow`s, then Apply renames the ticked rows one at a time, deepest first, each re-planned and with its own rollback; closing after any
+  renames runs the search again.
 - **Scanner tab** (`MediaScannerView` / `MediaScannerViewModel`): on the left, the media categories (ticked: the ones ticked last time, else the
   active ones; ones that can't be scanned are disabled; each shows its last scan), the options (dry run, hold back deletions over a % of a category's
   rows, clear all media data first: only with every active category ticked, never in a dry run, asked first and not kept) and this run's results per
@@ -99,6 +104,9 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
     encoded) isn't encoded: it is copied unchanged, keeping its own extension, when it isn't at the destination yet
     (status `Copied`), and skipped when it is. It never modifies the source, writes `<output>.partial` and only replaces
     (overwrites) the real output on success.
+  - `MediaNameTidy` (static, pure) suggests tidy names: `PlexNaming.CleanMovieName` for movies and shows (`Title (Year)`; dots kept when the name
+    already has spaces), `CleanEpisodeTitle` for episodes, and for music only technical tags (`[FLAC]`, `(Remastered 2011)`, ...) removed; always
+    `PlexNaming.SafeName`. Covered by `MediaNameTidyTests`.
   - `PlexNaming` (static, pure) turns a source path into a Plex output path: `Show (Year)/Season 01/Show (Year) - s01e02 -
     Title.mkv` or `Movie (Year)/Movie (Year).mkv`, cutting release tags (Bluray, 1080p, x265, ...). Covered by
     `PlexNamingTests`; add a DataRow there for any new naming case.
@@ -175,6 +183,9 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
     `GetAlbumTracks` / `GetShowEpisodes` (and async) load a branch. `SaveEditableFields(Async)` saves only `CopyEditableFields`: Description, Notes,
     IsFavourite, plus MusicBrainzId, the type, Length and ReleaseDate where the row has them (also on a soft-deleted row). The sync methods run the async
     core with `isAsync: false`.
+  - `MediaPathService.ApplyRename(Async)(MediaRenameChanges)`: the database side of a rename, in one SaveChanges: the row's new Name (and a show's
+    year), and the Folder / OriginalFilename / CoverArtFilename of every row (any media table, deleted rows too) under the renamed folders or with a
+    renamed file. `FolderQueries` holds the shared "folder or under it" query and path move.
 - **Tests:** `DataContextTests` use `SqlCaptureContext`, which captures the SQL a save would run without a database;
   `SchemaTests` read `Media.Master.sql` (copied to the test output folder). Service tests (`AlbumServiceTests`, which also cover
   `DataService` in depth, and `DataServiceTests`) run against a real SQL Server: `SqlServerTestDatabase` creates a throwaway database from `Media.Master.sql` per test and
@@ -200,6 +211,15 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   `MediaScanner.LastScan.<id>`, not for a dry run); `GetCategories(Async)` lists the categories with `CanScan` / `CannotScanReason` and `LastScan`. `MediaKinds.FromMediaClass` picks the layout from `MediaClass` (Music; Movie/Movies/Film; TV/TV Show/Series; anything else is
   skipped): music `Artist/Album/NN - Title.ext` (album type from the category), movies `Source/…` (each folder in the root is a source such as `Compressed Blu-Rays`: a video file directly in it is a movie named after the file; below it, a folder holding a video file is a movie named after the folder, using its largest video file and ignoring extras, and a folder without one is searched further; a duplicate name is logged and the first kept),
   TV `Show (Year)/Season NN/… sNNeNN - Title.ext`. Name parsing is in `MediaFileNames` (pure; `MediaFileNamesTests`).
+- `MediaRenameService` renames an item on disk and in the database together, so the next scan finds the same row: `PlanAsync(MediaRenameRequest)`
+  reads the row again and works out every step (`MediaRenamePlan`: steps, database changes, problems, warnings) without changing anything;
+  `ApplyAsync` re-checks the disk, renames files first and then folders (a case-only change goes through a temporary name), then calls
+  `MediaPathService`, and puts the disk back if a step or the database update fails (`MediaRenameResult` lists anything that couldn't be put back).
+  Movie: its folder and/or the files named like it (a loose movie by its files); TV show: its folder and/or the show-name part of its numbered episode
+  files; episode / track: the title part of its file and of files beside it with the same name start; album: its folder; artist: its folder in every
+  music category. Checks: names Windows allows, nothing already at the target, no other live row with the name (the natural key), and that the scan
+  will read the new file name back as the new name. Movies and TV get a Plex warning. It holds the scanner's busy flag (`MediaScanner.TryReserve`), so a
+  rename and a scan never overlap. Tests: `MediaRenameServiceTests` (rename, rescan finds nothing to change), `MediaRenameViewModelTests`.
 - An artist can be in more than one music category but has one row: its folder only moves to the category being scanned when the stored folder isn't
   another music category's copy that is still there, and an artist is only soft-deleted when it has no albums left anywhere.
 - It is an incremental sync: each item goes through `AddOrRestoreRecordAsync` (restores a soft-deleted match with its id, favourites and notes), only the

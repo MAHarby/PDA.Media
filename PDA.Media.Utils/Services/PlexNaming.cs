@@ -90,9 +90,15 @@ public static partial class PlexNaming
     /// <summary>
     /// Cleans a movie name to <c>Title (Year)</c>, dropping release tags and anything after the year.
     /// </summary>
-    public static string CleanMovieName(string name)
+    public static string CleanMovieName(string name) => CleanMovieName(name, keepDots: false);
+
+    /// <summary>
+    /// <see cref="CleanMovieName(string)"/>, keeping dots when <paramref name="keepDots"/> (for a name that already has spaces, where a dot is part
+    /// of the title, as in "Mr. &amp; Mrs. Smith").
+    /// </summary>
+    public static string CleanMovieName(string name, bool keepDots)
     {
-        string cleaned = CutReleaseTags(Normalise(name));
+        string cleaned = CutReleaseTags(Normalise(name, keepDots));
         var match = TitleAndYear.Match(cleaned);
         if (match.Success && match.Groups["title"].Value.Trim(' ', '-', '(').Length > 0)
         {
@@ -126,6 +132,12 @@ public static partial class PlexNaming
 
     private static string CleanTitle(string text) => CutReleaseTags(" " + text).Trim(' ', '-');
 
+    /// <summary>
+    /// Cleans an episode title: bracketed tags, underscores and release tags (and anything after them) removed. Dots are kept when the title already
+    /// has spaces ("Our Mrs. Reynolds"), and turned into spaces in a release-style title ("Serenity.1080p.WEB-DL").
+    /// </summary>
+    public static string CleanEpisodeTitle(string title) => CleanTitle(Normalise(title, keepDots: title.Contains(' ')));
+
     private static string CutReleaseTags(string text)
     {
         string cut = ReleaseTagToEnd.Replace(text, "");
@@ -133,16 +145,16 @@ public static partial class PlexNaming
     }
 
     // Drops bracketed tags and turns dots/underscores into spaces ("The.Office.S01E01" -> "The Office S01E01").
-    private static string Normalise(string name)
+    private static string Normalise(string name, bool keepDots = false)
     {
         string text = BracketedTags.Replace(name, " ");
-        text = DotsAndUnderscores.Replace(text, " ");
+        text = keepDots ? text.Replace('_', ' ') : DotsAndUnderscores.Replace(text, " ");
         return Whitespace.Replace(text, " ").Trim(' ', '-');
     }
 
     // Output goes to a Windows share, so remove characters Windows doesn't allow in names,
     // whatever platform this runs on. A colon becomes " -" ("Star Trek: Picard" -> "Star Trek - Picard").
-    private static string SafeName(string name)
+    public static string SafeName(string name)
     {
         var builder = new StringBuilder(name.Length);
         foreach (char c in name.Replace(":", " -"))

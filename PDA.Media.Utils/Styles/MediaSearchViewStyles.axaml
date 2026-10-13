@@ -205,4 +205,105 @@
             <Setter Property="Padding" Value="10,6"/>
         </Style>
 
+
+        <!-- Rename and Tidy Names Panels (over the tab; their card is the ConfirmationCard from MediaLibraryViewStyles, made larger). -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.RenameCard">
+            <Setter Property="MaxWidth" Value="760"/>
+            <Setter Property="Width" Value="760"/>
+            <Setter Property="MaxHeight" Value="600"/>
+        </Style>
+        <Style Selector="Border.TidyCard">
+            <Setter Property="MaxWidth" Value="1060"/>
+            <Setter Property="Width" Value="1060"/>
+            <Setter Property="Height" Value="600"/>
+        </Style>
+        <Style Selector="Grid.RenameContent">
+            <Setter Property="RowSpacing" Value="10"/>
+        </Style>
+        <Style Selector="StackPanel.RenameHeading">
+            <Setter Property="Spacing" Value="2"/>
+        </Style>
+        <Style Selector="TextBlock.RenameCurrent, TextBlock.RenameHint">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+        </Style>
+        <Style Selector="Grid.RenameNameRow">
+            <Setter Property="ColumnSpacing" Value="8"/>
+        </Style>
+        <Style Selector="TextBox.RenameName">
+            <Setter Property="FontSize" Value="15"/>
+        </Style>
+        <Style Selector="StackPanel.RenameOptions">
+            <Setter Property="Spacing" Value="2"/>
+        </Style>
+        <Style Selector="StackPanel.RenamePreview">
+            <Setter Property="Spacing" Value="4"/>
+            <Setter Property="Margin" Value="0,0,10,0"/>
+        </Style>
+        <Style Selector="TextBlock.RenameSection">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,6,0,0"/>
+        </Style>
+        <Style Selector="TextBlock.RenameProblem">
+            <Setter Property="Foreground" Value="#D9534F"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="TextBlock.RenameWarning">
+            <Setter Property="Foreground" Value="#D19A2E"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="Grid.RenameStep">
+            <Setter Property="Margin" Value="0,2"/>
+        </Style>
+        <Style Selector="TextBlock.RenameStepKind">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+        </Style>
+        <Style Selector="TextBlock.RenameFrom">
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style Selector="TextBlock.RenameTo">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style Selector="TextBlock.RenameDatabase">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="Grid.TidyHeader > TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+        </Style>
+        <Style Selector="Grid.TidyHeader, Grid.TidyRow">
+            <Setter Property="ColumnSpacing" Value="8"/>
+        </Style>
+        <Style Selector="ListBox.TidyRows">
+            <Setter Property="Background" Value="{DynamicResource SystemChromeMediumLowColor}"/>
+            <Setter Property="CornerRadius" Value="6"/>
+        </Style>
+        <Style Selector="ListBox.TidyRows ListBoxItem">
+            <Setter Property="Padding" Value="4,2"/>
+        </Style>
+        <Style Selector="TextBlock.TidyKind, TextBlock.TidyCurrent, TextBlock.TidyMessage">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style Selector="TextBlock.TidyKind">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+        </Style>
+        <Style Selector="TextBlock.TidyMessage">
+            <Setter Property="FontSize" Value="11"/>
+        </Style>
+        <Style Selector="TextBlock.TidyMessage.Problem, TextBlock.TidyMessage.Failed">
+            <Setter Property="Foreground" Value="#D9534F"/>
+        </Style>
+        <Style Selector="TextBlock.TidyMessage.Done">
+            <Setter Property="Foreground" Value="#4CAF50"/>
+        </Style>
+        <Style Selector="Grid.TidyProgress">
+            <Setter Property="RowSpacing" Value="4"/>
+        </Style>
+
 </Styles>

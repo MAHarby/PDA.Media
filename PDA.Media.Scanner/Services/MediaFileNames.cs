@@ -88,6 +88,16 @@ public static partial class MediaFileNames
         return (season, episode, title.Length > 0 ? title : $"Episode {episode}");
     }
 
+    /// <summary>
+    /// The start of an episode file name up to and including its "sNNeNN" marker ("Show (2005) - s01e02" of "Show (2005) - s01e02 - Title"),
+    /// or null without a marker.
+    /// </summary>
+    public static string? EpisodeMarkerPrefix(string fileNameWithoutExtension)
+    {
+        Match match = EpisodeMarkerRegex().Match(fileNameWithoutExtension);
+        return match.Success ? fileNameWithoutExtension[..(match.Index + match.Length)] : null;
+    }
+
     /// <summary>The season number of a folder: "Season 01" and "S2" give 1 and 2; "Specials" gives 0; anything else 0.</summary>
     public static int ParseSeasonFolder(string folderName)
     {
@@ -105,6 +115,9 @@ public static partial class MediaFileNames
     // "s01e02", optionally "-e03" / "e03" for more episodes, then an optional " - Title".
     [GeneratedRegex(@"\bs(?<season>\d{1,3})e(?<episode>\d{1,4})(?:-?e\d{1,4})*\b\s*(?:-\s*)?(?<title>.*)$", RegexOptions.IgnoreCase)]
     private static partial Regex EpisodeRegex();
+
+    [GeneratedRegex(@"\bs\d{1,3}e\d{1,4}(?:-?e\d{1,4})*\b", RegexOptions.IgnoreCase)]
+    private static partial Regex EpisodeMarkerRegex();
 
     [GeneratedRegex(@"^(?:season|s)\s*(?<season>\d{1,3})$", RegexOptions.IgnoreCase)]
     private static partial Regex SeasonFolderRegex();

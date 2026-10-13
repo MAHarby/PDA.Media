@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:PDA.Media.Utils.ViewModels"
              xmlns:models="using:PDA.Media.Utils.Models"
+             xmlns:scanner="using:PDA.Media.Scanner.Services"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1150" d:DesignHeight="640"
@@ -77,9 +78,16 @@
                         </TreeView.ItemTemplate>
                     </TreeView>
 
-                    <Grid Grid.Row="4" RowDefinitions="Auto,Auto" Classes="SearchStatus">
-                        <ProgressBar Grid.Row="0" IsIndeterminate="True" IsVisible="{Binding IsSearching}" Classes="Searching"/>
-                        <TextBlock Grid.Row="1" Text="{Binding StatusText}" ToolTip.Tip="{Binding StatusText}" Classes="SearchStatusText"/>
+                    <Grid Grid.Row="4" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" Classes="SearchStatus">
+                        <ProgressBar Grid.Row="0" Grid.ColumnSpan="2" IsIndeterminate="True" IsVisible="{Binding IsSearching}" Classes="Searching"/>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding StatusText}" ToolTip.Tip="{Binding StatusText}" Classes="SearchStatusText"/>
+                        <Button Grid.Row="1" Grid.Column="1" Command="{Binding TidyNamesInBranchCommand}" Classes="DetailsAction"
+                                ToolTip.Tip="Suggest tidy names for everything in the selected branch, then rename the ones you tick">
+                            <StackPanel Classes="ButtonContent">
+                                <PathIcon Data="{StaticResource tidy_icon}" Classes="ButtonIcon"/>
+                                <TextBlock Text="Tidy names..."/>
+                            </StackPanel>
+                        </Button>
                     </Grid>
                 </Grid>
             </Border>
@@ -150,7 +158,7 @@
                         </ScrollViewer>
 
                         <!-- Actions. -->
-                        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*,Auto,Auto" Classes="DetailsActions">
+                        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" Classes="DetailsActions">
                             <Button Grid.Column="0" Command="{Binding OpenFolderCommand}" Classes="DetailsAction" ToolTip.Tip="Open the folder (and select the file)">
                                 <StackPanel Classes="ButtonContent">
                                     <PathIcon Data="{StaticResource folder_open}" Classes="ButtonIcon"/>
@@ -164,8 +172,15 @@
                                     <TextBlock Text="Copy path"/>
                                 </StackPanel>
                             </Button>
-                            <Button Grid.Column="3" Command="{Binding DiscardChangesCommand}" Content="Discard" Classes="DialogAction" IsVisible="{Binding HasEditor}"/>
-                            <Button Grid.Column="4" Command="{Binding SaveChangesCommand}" Classes="DialogAction accent" IsVisible="{Binding HasEditor}">
+                            <Button Grid.Column="2" Command="{Binding RenameItemCommand}" Classes="DetailsAction" ToolTip.ShowOnDisabled="True"
+                                    ToolTip.Tip="Rename it on disk and in the database together (save or discard your changes first)">
+                                <StackPanel Classes="ButtonContent">
+                                    <PathIcon Data="{StaticResource rename_icon}" Classes="ButtonIcon"/>
+                                    <TextBlock Text="Rename..."/>
+                                </StackPanel>
+                            </Button>
+                            <Button Grid.Column="4" Command="{Binding DiscardChangesCommand}" Content="Discard" Classes="DialogAction" IsVisible="{Binding HasEditor}"/>
+                            <Button Grid.Column="5" Command="{Binding SaveChangesCommand}" Classes="DialogAction accent" IsVisible="{Binding HasEditor}">
                                 <StackPanel Classes="ButtonContent">
                                     <PathIcon Data="{StaticResource save_icon}" Classes="ButtonIcon"/>
                                     <TextBlock Text="Save Changes"/>
@@ -176,6 +191,133 @@
                 </Panel>
             </Border>
         </Grid>
+
+        <!-- Rename (over the tab). -->
+        <!-- ============================================================================================================== -->
+        <Border IsVisible="{Binding HasRename}" Classes="ConfirmationOverlay">
+            <Border Classes="ConfirmationCard RenameCard" DataContext="{Binding Rename}" x:DataType="vm:MediaRenameViewModel">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Classes="RenameContent">
+                    <StackPanel Grid.Row="0" Classes="RenameHeading">
+                        <TextBlock Text="{Binding Title}" Classes="ConfirmationTitle"/>
+                        <TextBlock Text="{Binding CurrentName, StringFormat='Now: {0}'}" Classes="RenameCurrent"/>
+                    </StackPanel>
+                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Classes="RenameNameRow">
+                        <TextBox Grid.Column="0" Text="{Binding NewName}" Classes="RenameName"/>
+                        <Button Grid.Column="1" Command="{Binding TidyCommand}" Classes="DetailsAction"
+                                ToolTip.Tip="Suggest a tidy name (Plex naming for movies and TV; technical tags removed for music)">
+                            <StackPanel Classes="ButtonContent">
+                                <PathIcon Data="{StaticResource tidy_icon}" Classes="ButtonIcon"/>
+                                <TextBlock Text="Tidy name"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                    <TextBlock Grid.Row="2" Text="{Binding NameHint}" Classes="RenameHint"/>
+                    <StackPanel Grid.Row="3" Classes="RenameOptions">
+                        <CheckBox Content="{Binding FolderOptionText}" IsChecked="{Binding RenameFolder}" IsVisible="{Binding HasFolderOption}"/>
+                        <CheckBox Content="{Binding FilesOptionText}" IsChecked="{Binding RenameFiles}" IsVisible="{Binding HasFilesOption}"/>
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="4" Classes="RenamePreview">
+                        <StackPanel Classes="RenamePreview">
+                            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Classes="Searching"/>
+                            <TextBlock Text="{Binding ResultText}" IsVisible="{Binding ResultText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                       Classes="RenameProblem"/>
+                            <ItemsControl ItemsSource="{Binding Problems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <TextBlock Text="{Binding}" Classes="RenameProblem"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <ItemsControl ItemsSource="{Binding Warnings}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <TextBlock Text="{Binding}" Classes="RenameWarning"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="On disk (files first, then folders)" IsVisible="{Binding HasPlan}" Classes="RenameSection"/>
+                            <ItemsControl ItemsSource="{Binding Steps}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="scanner:MediaRenameStep">
+                                        <Grid ColumnDefinitions="60,*" Classes="RenameStep" ToolTip.Tip="{Binding To}">
+                                            <TextBlock Grid.Column="0" Text="{Binding Kind}" Classes="RenameStepKind"/>
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="{Binding FromName}" Classes="RenameFrom"/>
+                                                <TextBlock Text="{Binding ToName, StringFormat='→ {0}'}" Classes="RenameTo"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="In the database" IsVisible="{Binding HasPlan}" Classes="RenameSection"/>
+                            <ItemsControl ItemsSource="{Binding DatabaseChanges}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <TextBlock Text="{Binding}" Classes="RenameDatabase"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="5" Classes="ConfirmationActions">
+                        <Button Command="{Binding CloseCommand}" Content="Cancel" Classes="DialogAction"/>
+                        <Button Command="{Binding ApplyCommand}" Classes="DialogAction accent">
+                            <StackPanel Classes="ButtonContent">
+                                <PathIcon Data="{StaticResource rename_icon}" Classes="ButtonIcon"/>
+                                <TextBlock Text="Apply"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
+
+        <!-- Tidy names (over the tab). -->
+        <!-- ============================================================================================================== -->
+        <Border IsVisible="{Binding HasTidyNames}" Classes="ConfirmationOverlay">
+            <Border Classes="ConfirmationCard TidyCard" DataContext="{Binding TidyNames}" x:DataType="vm:TidyNamesViewModel">
+                <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto" Classes="RenameContent">
+                    <TextBlock Grid.Row="0" Text="{Binding Title}" Classes="ConfirmationTitle"/>
+                    <CheckBox Grid.Row="1" Content="Rename movie and episode files with their folders" IsChecked="{Binding RenameFiles}" IsEnabled="{Binding !IsBusy}"/>
+                    <Grid Grid.Row="2" ColumnDefinitions="32,70,*,*,180" Classes="TidyHeader">
+                        <TextBlock Grid.Column="1" Text="Kind"/>
+                        <TextBlock Grid.Column="2" Text="Now"/>
+                        <TextBlock Grid.Column="3" Text="Tidy name (edit if you like)"/>
+                        <TextBlock Grid.Column="4" Text="Check / result"/>
+                    </Grid>
+                    <ListBox Grid.Row="3" ItemsSource="{Binding Rows}" Classes="TidyRows">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:TidyRow">
+                                <Grid ColumnDefinitions="32,70,*,*,180" Classes="TidyRow">
+                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Kind}" Classes="TidyKind"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding CurrentName}" ToolTip.Tip="{Binding CurrentName}" Classes="TidyCurrent"/>
+                                    <TextBox Grid.Column="3" Text="{Binding NewName}" Classes="TidyNew"/>
+                                    <TextBlock Grid.Column="4" Text="{Binding Message}" ToolTip.Tip="{Binding Message}" Classes="TidyMessage"
+                                               Classes.Problem="{Binding IsProblem}" Classes.Failed="{Binding IsFailed}" Classes.Done="{Binding IsDone}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <Grid Grid.Row="4" RowDefinitions="Auto,Auto" Classes="TidyProgress">
+                        <ProgressBar Grid.Row="0" Value="{Binding ProgressValue}" Maximum="{Binding ProgressMaximum}" IsVisible="{Binding IsBusy}" Classes="Searching"/>
+                        <TextBlock Grid.Row="1" Text="{Binding StatusText}" Classes="SearchStatusText"/>
+                    </Grid>
+                    <StackPanel Grid.Row="5" Classes="ConfirmationActions">
+                        <Button Command="{Binding ApplyCancelCommand}" Content="Stop" Classes="DialogAction" IsVisible="{Binding IsBusy}"/>
+                        <Button Command="{Binding CloseCommand}" Content="Close" Classes="DialogAction"/>
+                        <Button Command="{Binding ApplyCommand}" Classes="DialogAction accent">
+                            <StackPanel Classes="ButtonContent">
+                                <PathIcon Data="{StaticResource tidy_icon}" Classes="ButtonIcon"/>
+                                <TextBlock Text="Rename ticked"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
 
         <!-- A question over the tab (unsaved changes). -->
         <!-- ============================================================================================================== -->

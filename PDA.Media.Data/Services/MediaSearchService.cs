@@ -22,8 +22,6 @@ public class MediaSearchService
     private static readonly MethodInfo LikeMethod =
         typeof(DbFunctionsExtensions).GetMethod(nameof(DbFunctionsExtensions.Like), [typeof(DbFunctions), typeof(string), typeof(string)])!;
 
-    private static readonly MethodInfo StartsWithMethod = typeof(string).GetMethod(nameof(string.StartsWith), [typeof(string)])!;
-
     private readonly IDbContextFactory<DataContext> _contextFactory;
     private readonly ILogger<MediaSearchService> _logger;
 
@@ -276,7 +274,7 @@ public class MediaSearchService
     private static Expression<Func<T, bool>> TextMatches<T>(string pattern)
     {
         ParameterExpression e = Expression.Parameter(typeof(T), "e");
-        Expression value = Expression.Property(Expression.Constant(new Box(pattern)), nameof(Box.Value));
+        Expression value = FolderQueries.AsParameter(pattern);
         Expression body = new[] { "Name", "Description", "Notes" }
             .Select(field => (Expression)Expression.Call(LikeMethod, Expression.Constant(EF.Functions), Expression.Property(e, field), value))
             .Aggregate(Expression.OrElse);
@@ -289,26 +287,5 @@ public class MediaSearchService
         return Expression.Lambda<Func<T, bool>>(Expression.Property(e, property), e);
     }
 
-    /// <summary><c>e => e.Folder == root || e.Folder.StartsWith(root + separator) || ...</c> for each root: the row is in one of those folders or under it.</summary>
-    private static Expression<Func<T, bool>> UnderAny<T>(string folderProperty, IReadOnlyList<string> roots)
-    {
-        ParameterExpression e = Expression.Parameter(typeof(T), "e");
-        MemberExpression folder = Expression.Property(e, folderProperty);
-        Expression body = Expression.Constant(false);
-        foreach (string root in roots)
-        {
-            string trimmed = root.TrimEnd('\\', '/');
-            Expression equals = Expression.Equal(folder, Expression.Property(Expression.Constant(new Box(trimmed)), nameof(Box.Value)));
-            Expression startsWith = Expression.Call(folder, StartsWithMethod,
-                Expression.Property(Expression.Constant(new Box(trimmed + Path.DirectorySeparatorChar)), nameof(Box.Value)));
-            body = Expression.OrElse(body, Expression.OrElse(equals, startsWith));
-        }
-        return Expression.Lambda<Func<T, bool>>(body, e);
-    }
-
-    /// <summary>Holds a value so EF sends it as a query parameter rather than a literal.</summary>
-    private sealed class Box(string value)
-    {
-        public string Value { get; } = value;
-    }
+    private static Expression<Func<T, bool>> UnderAny<T>(string folderProperty, IReadOnlyList<string> roots) => FolderQueries.UnderAny<T>(folderProperty, roots);
 }
