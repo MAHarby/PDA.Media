@@ -36,8 +36,6 @@ public partial class MainViewModel : ViewModelBase
     private readonly DatabaseStatusService? _databaseStatus;
     private readonly MediaScanner? _mediaScanner;
 
-    // The settings file as loaded; the view model updates its own fields and saves the rest unchanged.
-    private readonly UserSettings _settings;
     private bool _isInitializing;
     // Set while a general profile applies its paths, so settings are saved once afterwards.
     private bool _isApplyingGeneralProfile;
@@ -76,8 +74,8 @@ public partial class MainViewModel : ViewModelBase
 
     /// <summary>Whether the media database can be reached (checked in the background; click to check again).</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsDatabaseConfigured), nameof(IsDatabaseOnline), nameof(IsDatabaseOffline), nameof(DatabaseToolTip), nameof(ScanMediaToolTip))]
-    [NotifyCanExecuteChangedFor(nameof(ScanMediaCommand))]
+    [NotifyPropertyChangedFor(nameof(IsDatabaseConfigured), nameof(IsDatabaseOnline), nameof(IsDatabaseOffline), nameof(DatabaseToolTip), nameof(ScanMediaToolTip),
+        nameof(CanOpenMediaScanner))]
     public partial DatabaseState DatabaseState { get; set; } = DatabaseState.NotConfigured;
 
     public bool IsDatabaseConfigured => DatabaseState != DatabaseState.NotConfigured;
@@ -142,7 +140,7 @@ public partial class MainViewModel : ViewModelBase
         LoadProfilesFromService();
 
         // Load last session settings.
-        var settings = _settings = _settingsService.LoadSettings();
+        var settings = _settingsService.LoadSettings();
         
         if (!string.IsNullOrEmpty(settings.GeneralProfile)) SelectedGeneralProfile = settings.GeneralProfile; 
         if (!string.IsNullOrEmpty(settings.EncoderProfile))
@@ -186,52 +184,14 @@ public partial class MainViewModel : ViewModelBase
     // Media scan.
     // ==================================================================================================
 
-    /// <summary>True while a media scan runs (shows the cancel button).</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ScanMediaToolTip))]
-    public partial bool IsScanning { get; set; }
-
-    /// <summary>False without a scanner (tests and the XAML previewer): the scan buttons are hidden.</summary>
+    /// <summary>False without a scanner (tests and the XAML previewer): the scan button is hidden.</summary>
     public bool IsMediaScannerAvailable => _mediaScanner != null;
 
-    public string ScanMediaToolTip => IsScanning ? "Scanning the media folders..."
-        : IsDatabaseOnline ? "Scan the media folders of every active media category into the database"
-        : "Scan the media folders into the database (needs the database: see the indicator in the status bar)";
+    public string ScanMediaToolTip => IsDatabaseOnline ? "Open the media scanner: scan media categories into the database"
+        : "Open the media scanner (needs the database: see the indicator in the status bar)";
 
-    private bool CanScanMedia() => _mediaScanner != null && IsDatabaseOnline;
-
-    /// <summary>
-    /// Scans every active media category's folders into the database (an incremental sync: see MediaScanner) and shows the result in the status bar.
-    /// It runs off the UI thread; the scanner's progress appears in the Audit Log. ScanMediaCancelCommand cancels it.
-    /// </summary>
-    [RelayCommand(CanExecute = nameof(CanScanMedia), IncludeCancelCommand = true)]
-    private async Task ScanMediaAsync(CancellationToken cancellationToken)
-    {
-        if (_mediaScanner == null) return;
-
-        IsScanning = true;
-        StatusText = "Scanning the media folders...";
-        try
-        {
-            MediaScanResult result = await Task.Run(() => _mediaScanner.ScanAllMediaCategoriesAsync(clearData: false, cancellationToken), cancellationToken);
-            StatusText = $"Scan finished: {result.Added} added, {result.Restored} restored, {result.Updated} updated, {result.Deleted} deleted"
-                + (result.CategoriesSkipped > 0 ? $"; {result.CategoriesSkipped} categories skipped (see the Audit Log)" : "");
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogWarning("Media scan cancelled");
-            StatusText = "Scan cancelled";
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Media scan failed");
-            StatusText = "Scan failed: see the Audit Log";
-        }
-        finally
-        {
-            IsScanning = false;
-        }
-    }
+    /// <summary>The Scan button opens the media scanner window (MediaScannerView), which needs the database.</summary>
+    public bool CanOpenMediaScanner => _mediaScanner != null && IsDatabaseOnline;
 
     /// <summary>
     /// Loads encoding profiles and refreshes profile lists.
@@ -527,13 +487,14 @@ public partial class MainViewModel : ViewModelBase
 
     private void SaveCurrentSettings()
     {
-        // Update the loaded settings rather than saving new ones, so settings this view model doesn't edit (such as
-        // the database server) are kept.
-        _settings.GeneralProfile = SelectedGeneralProfile ?? "General";
-        _settings.EncoderProfile = SelectedEncoderProfile ?? "Bluray TV";
-        _settings.SourcePath = SourcePath;
-        _settings.DestinationPath = DestinationPath;
-        _settingsService.SaveSettings(_settings);
+        // Read the file again and change only this view model's fields, so settings it doesn't edit (the database server,
+        // or the media scanner's options saved by another window since) are kept.
+        UserSettings settings = _settingsService.LoadSettings();
+        settings.GeneralProfile = SelectedGeneralProfile ?? "General";
+        settings.EncoderProfile = SelectedEncoderProfile ?? "Bluray TV";
+        settings.SourcePath = SourcePath;
+        settings.DestinationPath = DestinationPath;
+        _settingsService.SaveSettings(settings);
     }
     private void LoadGeneralProfileSettings(string? value)
     {

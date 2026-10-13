@@ -70,15 +70,11 @@
 
                 <Border Grid.Column="5" Classes="ToolbarSeparator"/>
 
-                <!-- Media database: scan the media folders into the database (needs the database connected), and cancel a running scan. -->
+                <!-- Media database: open the media scanner (needs the database connected). -->
                 <StackPanel Grid.Column="6" Classes="ToolbarGroup" IsVisible="{Binding IsMediaScannerAvailable}">
                     <Button Name="ScanMediaButton" Classes="Toolbar" ToolTip.Tip="{Binding ScanMediaToolTip}" ToolTip.ShowOnDisabled="True"
-                            Command="{Binding ScanMediaCommand}">
+                            IsEnabled="{Binding CanOpenMediaScanner}" Click="ScanMediaButton_OnClick">
                         <PathIcon Data="{StaticResource scan_icon}" Classes="Toolbar"/>
-                    </Button>
-                    <Button Name="CancelScanButton" Classes="Toolbar" ToolTip.Tip="Cancel the scan: what was saved so far stays, and the category being scanned deletes nothing"
-                            Command="{Binding ScanMediaCancelCommand}" IsVisible="{Binding IsScanning}">
-                        <PathIcon Data="{StaticResource stop_icon}" Classes="Toolbar"/>
                     </Button>
                 </StackPanel>
 
