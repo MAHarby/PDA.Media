@@ -33,6 +33,7 @@ public enum MediaNodeKind
 /// </summary>
 public partial class MediaTreeNode : ObservableObject
 {
+    private readonly Func<Task<List<MediaTreeNode>>>? _loader;
     private Func<Task<List<MediaTreeNode>>>? _loadChildren;
     private Task? _loading;
 
@@ -41,7 +42,7 @@ public partial class MediaTreeNode : ObservableObject
         Kind = kind;
         Title = title;
         Entity = entity;
-        _loadChildren = loadChildren;
+        _loader = _loadChildren = loadChildren;
         if (loadChildren != null) Children.Add(new MediaTreeNode(MediaNodeKind.Message, "Loading..."));
     }
 
@@ -113,6 +114,17 @@ public partial class MediaTreeNode : ObservableObject
         _loadChildren = null;
         Children.Clear();
         foreach (MediaTreeNode child in children) AddChild(child);
+    }
+
+    /// <summary>Forgets the children read so far (e.g. after a rename moved their folders): they are read again when the node is next opened.</summary>
+    public void ResetChildren()
+    {
+        if (_loader == null) return;
+        _loadChildren = _loader;
+        _loading = null;
+        Children.Clear();
+        Children.Add(new MediaTreeNode(MediaNodeKind.Message, "Loading..."));
+        if (IsExpanded) _ = LoadChildrenAsync();
     }
 
     /// <summary>The node and its parents, from the top of the tree.</summary>

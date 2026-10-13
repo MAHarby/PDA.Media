@@ -35,6 +35,7 @@ public partial class MediaSearchViewModel : ViewModelBase
     private readonly AlbumTypeService _albumTypeService;
     private readonly MovieTypeService _movieTypeService;
     private readonly TVShowTypeService _tvShowTypeService;
+    private readonly MediaRenameService? _renameService;
     private readonly ILogger<MediaSearchViewModel> _logger;
     private Dictionary<Type, IReadOnlyList<LookupOption>>? _typeOptions;
     private CancellationTokenSource? _detailsLoad;
@@ -43,8 +44,9 @@ public partial class MediaSearchViewModel : ViewModelBase
     private bool _closeWhenDone;
 
     public MediaSearchViewModel(MediaScanner scanner, MediaSearchService searchService, AlbumTypeService albumTypeService, MovieTypeService movieTypeService,
-        TVShowTypeService tvShowTypeService, ILogger<MediaSearchViewModel>? logger = null)
+        TVShowTypeService tvShowTypeService, ILogger<MediaSearchViewModel>? logger = null, MediaRenameService? renameService = null)
     {
+        _renameService = renameService;
         _scanner = scanner;
         _searchService = searchService;
         _albumTypeService = albumTypeService;
@@ -257,10 +259,18 @@ public partial class MediaSearchViewModel : ViewModelBase
                 .ToList();
         });
 
+    /// <summary>The title a row's node shows.</summary>
+    private static string NodeTitle(IEntity entity) => entity switch
+    {
+        Track track => TrackTitle(track),
+        TVShow show => show.ReleaseYear > 0 ? $"{show.Name} ({show.ReleaseYear})" : show.Name,
+        _ => entity.Name,
+    };
+
     private static string TrackTitle(Track track) => track.TrackNo > 0 ? $"{track.TrackNo:00}  {track.Name}" : track.Name;
 
     private MediaTreeNode ShowNode(TVShow show, MediaSearchCriteria criteria, HashSet<int> matchedEpisodeIds) =>
-        new(MediaNodeKind.Show, show.ReleaseYear > 0 ? $"{show.Name} ({show.ReleaseYear})" : show.Name, show, async () =>
+        new(MediaNodeKind.Show, NodeTitle(show), show, async () =>
         {
             List<TVShowEpisode> episodes = await Task.Run(() => _searchService.GetShowEpisodesAsync(show.Id, criteria.IncludeDeleted));
             return episodes.GroupBy(e => e.SeasonNo).Select(season =>
@@ -338,6 +348,8 @@ public partial class MediaSearchViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasSelection));
         OnPropertyChanged(nameof(SelectedPath));
         OpenFolderCommand.NotifyCanExecuteChanged();
+        RenameItemCommand.NotifyCanExecuteChanged();
+        TidyNamesInBranchCommand.NotifyCanExecuteChanged();
         if (value == _shownNode) return;
 
         // Unsaved changes on the row shown so far: ask first, then show the new one.
@@ -380,6 +392,7 @@ public partial class MediaSearchViewModel : ViewModelBase
         if (e.PropertyName != nameof(MediaItemEditor.HasChanges)) return;
         SaveChangesCommand.NotifyCanExecuteChanged();
         DiscardChangesCommand.NotifyCanExecuteChanged();
+        RenameItemCommand.NotifyCanExecuteChanged();
     }
 
     private static string Describe(MediaTreeNode node)
@@ -578,6 +591,61 @@ public partial class MediaSearchViewModel : ViewModelBase
         {
             StatusText = $"Couldn't open the folder: {ex.GetBaseException().Message}";
         }
+    }
+
+    // Rename and Tidy names.
+    // ==================================================================================================
+
+    /// <summary>The Rename panel, while it is open.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasRename))]
+    public partial MediaRenameViewModel? Rename { get; set; }
+
+    public bool HasRename => Rename != null;
+
+    /// <summary>The Tidy names panel, while it is open.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasTidyNames))]
+    public partial TidyNamesViewModel? TidyNames { get; set; }
+
+    public bool HasTidyNames => TidyNames != null;
+
+    /// <summary>Renaming needs the rename service, a row that isn't deleted, and no unsaved edits (save or discard them first).</summary>
+    private bool CanRename() => _renameService != null && SelectedNode?.Entity != null && !SelectedNode.IsDeleted && Editor is not { HasChanges: true };
+
+    [RelayCommand(CanExecute = nameof(CanRename))]
+    private void RenameItem()
+    {
+        MediaTreeNode node = SelectedNode!;
+        Rename = new MediaRenameViewModel(_renameService!, node.Entity!, result => _ = RenamedAsync(node, result), () => Rename = null);
+        _ = Rename.PreviewCommand.ExecuteAsync(null);
+    }
+
+    /// <summary>After a rename: the node shows the row as stored now, and its children are read again (their folders may have moved).</summary>
+    private async Task RenamedAsync(MediaTreeNode node, MediaRenameResult result)
+    {
+        Rename = null;
+        StatusText = result.Message;
+        IEntity? current = await Task.Run(() => _renameService!.GetCurrentAsync(node.Entity!));
+        if (current == null) return;
+        node.Entity = current;
+        node.Title = NodeTitle(current);
+        node.ResetChildren();
+        if (_shownNode == node) ShowDetails(node);
+    }
+
+    private bool CanTidyNames() => _renameService != null && SelectedNode != null && !SelectedNode.IsMessage;
+
+    /// <summary>Opens the batch Tidy names panel for the selected branch (and looks for names to tidy under it).</summary>
+    [RelayCommand(CanExecute = nameof(CanTidyNames))]
+    private void TidyNamesInBranch()
+    {
+        TidyNames = new TidyNamesViewModel(_renameService!, SelectedNode!, renamedAny =>
+        {
+            TidyNames = null;
+            if (renamedAny) _ = SearchCommand.ExecuteAsync(null);
+        });
+        _ = TidyNames.LoadCommand.ExecuteAsync(null);
     }
 
     // Confirmations and closing.

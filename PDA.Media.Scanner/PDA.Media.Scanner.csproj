@@ -12,6 +12,10 @@
     </ItemGroup>
 
     <ItemGroup>
+      <InternalsVisibleTo Include="PDA.Media.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
       <ProjectReference Include="..\PDA.Media.Data\PDA.Media.Data.csproj" />
     </ItemGroup>
 

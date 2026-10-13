@@ -41,6 +41,7 @@ public static class DataServiceCollectionExtensions
         services.AddSingleton<ArtistService>();
         services.AddSingleton<MediaCategoryService>();
         services.AddSingleton<MediaCacheService>();
+        services.AddSingleton<MediaPathService>();
         services.AddSingleton<MediaSearchService>();
         services.AddSingleton<MovieService>();
         services.AddSingleton<MovieTypeService>();
