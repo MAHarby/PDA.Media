@@ -72,7 +72,9 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   a preview of every disk step and database change that refreshes as you type, Apply; it needs no unsaved edits). **Tidy names...** (`TidyNamesViewModel`)
   works on the selected branch: every item under it (up to 1000) whose `MediaNameTidy` suggestion differs, each checked first (problems unticked),
   editable `TidyRow`s, then Apply renames the ticked rows one at a time, deepest first, each re-planned and with its own rollback; closing after any
-  renames runs the search again.
+  renames runs the search again. The details panel's play row (`MediaPlayerService`): **Play** the row or everything under the selected branch in tree
+  order (opening branches; deleted rows skipped; up to 2000 files), **Play from here** (an episode or track and the rest of its season or album),
+  **Shuffle**, and **Add to VLC playlist**.
 - **Scanner tab** (`MediaScannerView` / `MediaScannerViewModel`): on the left, the media categories (ticked: the ones ticked last time, else the
   active ones; ones that can't be scanned are disabled; each shows its last scan), the options (dry run, hold back deletions over a % of a category's
   rows, clear all media data first: only with every active category ticked, never in a dry run, asked first and not kept) and this run's results per
@@ -104,6 +106,11 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
     encoded) isn't encoded: it is copied unchanged, keeping its own extension, when it isn't at the destination yet
     (status `Copied`), and skipped when it is. It never modifies the source, writes `<output>.partial` and only replaces
     (overwrites) the real output on success.
+  - `MediaPlayerService` plays files in an external player: VLC for video, Windows Media Player (`wmplayer.exe`) for music (VLC without it), else the
+    file type's default app. Several files or a shuffle go into a temporary playlist in `%TEMP%/PDA.Media/Playlists` (`.m3u8`, or `.wpl` for Windows
+    Media Player; older than a day are removed); enqueue is VLC's `--one-instance --playlist-enqueue`. Players come from `UserSettings.VideoPlayerPath` /
+    `MusicPlayerPath`, the App Paths registration or Program Files. `FileExists`, `AppPath`, `Launch` and `Random` can be replaced in tests
+    (`MediaPlayerServiceTests`, `MediaPlayViewModelTests`), so no player is started.
   - `MediaNameTidy` (static, pure) suggests tidy names: `PlexNaming.CleanMovieName` for movies and shows (`Title (Year)`; dots kept when the name
     already has spaces), `CleanEpisodeTitle` for episodes, and for music only technical tags (`[FLAC]`, `(Remastered 2011)`, ...) removed; always
     `PlexNaming.SafeName`. Covered by `MediaNameTidyTests`.

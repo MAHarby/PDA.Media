@@ -26,6 +26,10 @@ public class UserSettings
     public bool MediaScanLimitDeletions { get; set; } = true;
     public int MediaScanMaxDeletePercent { get; set; } = 25;
 
+    /// <summary>Players for Play in Media Library Services; null finds them (VLC for video, Windows Media Player for music).</summary>
+    public string? VideoPlayerPath { get; set; }
+    public string? MusicPlayerPath { get; set; }
+
     [JsonIgnore]
     public string ConnectionString => DataConnection.BuildConnectionString(DatabaseServer, DatabaseName);
 }

@@ -17,6 +17,7 @@ using PDA.Media.Data.Entities;
 using PDA.Media.Data.Services;
 using PDA.Media.Scanner.Services;
 using PDA.Media.Utils.Models;
+using PDA.Media.Utils.Services;
 
 namespace PDA.Media.Utils.ViewModels;
 
@@ -36,6 +37,7 @@ public partial class MediaSearchViewModel : ViewModelBase
     private readonly MovieTypeService _movieTypeService;
     private readonly TVShowTypeService _tvShowTypeService;
     private readonly MediaRenameService? _renameService;
+    private readonly MediaPlayerService? _playerService;
     private readonly ILogger<MediaSearchViewModel> _logger;
     private Dictionary<Type, IReadOnlyList<LookupOption>>? _typeOptions;
     private CancellationTokenSource? _detailsLoad;
@@ -44,8 +46,10 @@ public partial class MediaSearchViewModel : ViewModelBase
     private bool _closeWhenDone;
 
     public MediaSearchViewModel(MediaScanner scanner, MediaSearchService searchService, AlbumTypeService albumTypeService, MovieTypeService movieTypeService,
-        TVShowTypeService tvShowTypeService, ILogger<MediaSearchViewModel>? logger = null, MediaRenameService? renameService = null)
+        TVShowTypeService tvShowTypeService, ILogger<MediaSearchViewModel>? logger = null, MediaRenameService? renameService = null,
+        MediaPlayerService? playerService = null)
     {
+        _playerService = playerService;
         _renameService = renameService;
         _scanner = scanner;
         _searchService = searchService;
@@ -350,6 +354,7 @@ public partial class MediaSearchViewModel : ViewModelBase
         OpenFolderCommand.NotifyCanExecuteChanged();
         RenameItemCommand.NotifyCanExecuteChanged();
         TidyNamesInBranchCommand.NotifyCanExecuteChanged();
+        NotifyPlayCommands();
         if (value == _shownNode) return;
 
         // Unsaved changes on the row shown so far: ask first, then show the new one.
@@ -646,6 +651,94 @@ public partial class MediaSearchViewModel : ViewModelBase
             if (renamedAny) _ = SearchCommand.ExecuteAsync(null);
         });
         _ = TidyNames.LoadCommand.ExecuteAsync(null);
+    }
+
+    // Play.
+    // ==================================================================================================
+
+    /// <summary>The most files put in one playlist.</summary>
+    public const int MaxPlayFiles = 2000;
+
+    public bool CanPlayFromHere => SelectedNode?.Kind is MediaNodeKind.Episode or MediaNodeKind.Track;
+
+    private bool CanPlay() => _playerService != null && SelectedNode is { IsMessage: false, IsDeleted: false } && !IsStartingPlayer;
+    private bool CanPlayFromHereNow() => CanPlay() && CanPlayFromHere;
+
+    [ObservableProperty] public partial bool IsStartingPlayer { get; set; }
+
+    partial void OnIsStartingPlayerChanged(bool value) => NotifyPlayCommands();
+
+    private void NotifyPlayCommands()
+    {
+        OnPropertyChanged(nameof(CanPlayFromHere));
+        PlayCommand.NotifyCanExecuteChanged();
+        PlayFromHereCommand.NotifyCanExecuteChanged();
+        ShuffleCommand.NotifyCanExecuteChanged();
+        EnqueueCommand.NotifyCanExecuteChanged();
+    }
+
+    /// <summary>Plays the selected row, or everything under the selected branch in order (VLC for video, Windows Media Player for music).</summary>
+    [RelayCommand(CanExecute = nameof(CanPlay))]
+    private Task PlayAsync() => PlaySelectionAsync(shuffle: false, enqueue: false, fromHere: false);
+
+    /// <summary>Plays the selected episode or track and the ones after it in its season or album.</summary>
+    [RelayCommand(CanExecute = nameof(CanPlayFromHereNow))]
+    private Task PlayFromHereAsync() => PlaySelectionAsync(shuffle: false, enqueue: false, fromHere: true);
+
+    [RelayCommand(CanExecute = nameof(CanPlay))]
+    private Task ShuffleAsync() => PlaySelectionAsync(shuffle: true, enqueue: false, fromHere: false);
+
+    /// <summary>Adds the selection to the running VLC's playlist.</summary>
+    [RelayCommand(CanExecute = nameof(CanPlay))]
+    private Task EnqueueAsync() => PlaySelectionAsync(shuffle: false, enqueue: true, fromHere: false);
+
+    private async Task PlaySelectionAsync(bool shuffle, bool enqueue, bool fromHere)
+    {
+        MediaTreeNode? node = SelectedNode;
+        if (node == null || _playerService == null) return;
+        IsStartingPlayer = true;
+        try
+        {
+            List<MediaTreeNode> playable = [];
+            if (fromHere && node.Parent != null)
+            {
+                foreach (MediaTreeNode sibling in node.Parent.Children.SkipWhile(n => n != node)) await CollectPlayableAsync(sibling, playable);
+            }
+            else
+            {
+                await CollectPlayableAsync(node, playable);
+            }
+
+            List<string> files = playable.Select(n => MediaEntityInfo.Path(n.Entity)!).ToList();
+            MediaPlayKind kind = playable.Any(n => n.Entity is Track) ? MediaPlayKind.Music : MediaPlayKind.Video;
+            string title = string.Join(" - ", node.Path().Where(n => n.Kind != MediaNodeKind.Group).Select(n => n.Title).TakeLast(2));
+            var request = new MediaPlayRequest(files, kind, title, shuffle, enqueue);
+            MediaPlayResult result = files.Count == 0 ? new MediaPlayResult(false, $"Nothing to play in {node.Title}")
+                : await Task.Run(() => _playerService.Play(request));
+            StatusText = result.Message + (playable.Count >= MaxPlayFiles ? $" (the first {MaxPlayFiles})" : "");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Couldn't play {Name}", node.Title);
+            StatusText = $"Couldn't play {node.Title}: {ex.GetBaseException().Message}";
+        }
+        finally
+        {
+            IsStartingPlayer = false;
+        }
+    }
+
+    /// <summary>The rows with a media file at or under <paramref name="node"/>, in tree order (opening branches as needed), without deleted rows.</summary>
+    private static async Task CollectPlayableAsync(MediaTreeNode node, List<MediaTreeNode> playable)
+    {
+        if (playable.Count >= MaxPlayFiles || node.IsMessage || node.IsDeleted) return;
+        if (MediaEntityInfo.FileName(node.Entity) != null)
+        {
+            playable.Add(node);
+            return;
+        }
+        await node.LoadChildrenAsync();
+        foreach (MediaTreeNode child in node.Children.ToList()) await CollectPlayableAsync(child, playable);
     }
 
     // Confirmations and closing.
