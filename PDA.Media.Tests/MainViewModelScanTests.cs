@@ -37,7 +37,7 @@ public sealed class MainViewModelScanTests
         await WaitUntil(() => vm.DatabaseState is not (DatabaseState.Checking or DatabaseState.NotConfigured));
         Assert.AreEqual(DatabaseState.Online, vm.DatabaseState);
         Assert.IsTrue(vm.CanOpenMediaScanner);
-        StringAssert.Contains(vm.ScanMediaToolTip, "Open the media scanner");
+        StringAssert.Contains(vm.ScanMediaToolTip, "Media Library Services");
     }
 
     [TestMethod]

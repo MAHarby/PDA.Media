@@ -70,11 +70,11 @@
 
                 <Border Grid.Column="5" Classes="ToolbarSeparator"/>
 
-                <!-- Media database: open the media scanner (needs the database connected). -->
+                <!-- Media database: open Media Library Services (search and scan; needs the database connected). -->
                 <StackPanel Grid.Column="6" Classes="ToolbarGroup" IsVisible="{Binding IsMediaScannerAvailable}">
-                    <Button Name="ScanMediaButton" Classes="Toolbar" ToolTip.Tip="{Binding ScanMediaToolTip}" ToolTip.ShowOnDisabled="True"
-                            IsEnabled="{Binding CanOpenMediaScanner}" Click="ScanMediaButton_OnClick">
-                        <PathIcon Data="{StaticResource scan_icon}" Classes="Toolbar"/>
+                    <Button Name="MediaLibraryButton" Classes="Toolbar" ToolTip.Tip="{Binding ScanMediaToolTip}" ToolTip.ShowOnDisabled="True"
+                            IsEnabled="{Binding CanOpenMediaScanner}" Click="MediaLibraryButton_OnClick">
+                        <PathIcon Data="{StaticResource library_icon}" Classes="Toolbar"/>
                     </Button>
                 </StackPanel>
 

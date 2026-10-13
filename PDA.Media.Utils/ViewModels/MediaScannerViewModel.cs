@@ -172,7 +172,7 @@ public partial class MediaScannerViewModel : ViewModelBase
     {
         if (ClearData && !DryRun)
         {
-            Ask(new ScanConfirmation("Clear all media data?",
+            Ask(new ConfirmationPrompt("Clear all media data?",
                     "The media cache is emptied for every category before the scan saves anything, and the scan then adds everything again. "
                     + "Favourites, notes and external ids are lost.", "Clear and scan"),
                 () => ScanCommand.ExecuteAsync(null));
@@ -359,11 +359,11 @@ public partial class MediaScannerViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasConfirmation))]
     [NotifyCanExecuteChangedFor(nameof(StartScanCommand))]
-    public partial ScanConfirmation? Confirmation { get; set; }
+    public partial ConfirmationPrompt? Confirmation { get; set; }
 
     public bool HasConfirmation => Confirmation != null;
 
-    private void Ask(ScanConfirmation confirmation, Action onConfirm)
+    private void Ask(ConfirmationPrompt confirmation, Action onConfirm)
     {
         _onConfirm = onConfirm;
         Confirmation = confirmation;
@@ -394,7 +394,7 @@ public partial class MediaScannerViewModel : ViewModelBase
         if (!IsScanning) return true;
         if (Confirmation == null)
         {
-            Ask(new ScanConfirmation("Stop the scan?",
+            Ask(new ConfirmationPrompt("Stop the scan?",
                     "A scan is running. Closing the window cancels it: what was saved so far stays, and the category being saved deletes nothing.",
                     "Cancel scan and close", "Keep scanning"),
                 () =>

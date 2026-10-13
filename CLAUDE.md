@@ -32,12 +32,14 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
     Add new icons here rather than to a view's `Window.Resources`.
   - `CommonStyles.axaml` holds styles used by more than one view: `Grid.WindowContent` (dialog window margin),
     `Button.DialogAction` (Close / Refresh footer buttons), `StackPanel.ButtonContent` / `PathIcon.ButtonIcon`
-    (icon-and-text buttons), `Border.ProfileTag` / `TextBlock.ProfileTag` (category badges) and `ListBox.AuditLog` / `TextBlock.AuditLogEntry`
-    (the console-look log lists of the main window and the media scanner). It is included
+    (icon-and-text buttons), `Border.ProfileTag` / `TextBlock.ProfileTag` (category badges), `ListBox.AuditLog` / `TextBlock.AuditLogEntry`
+    (the console-look log lists of the main window and the media scanner), and the window chrome shared by the profile manager and Media Library
+    Services: `Border.HeaderPanel` (heading: `HeaderTitle`, `HeaderSubtitle`, `HeaderActions`), `Border.ContentPanel` (rounded panel) and `Grid.FooterBar`. It is included
     once in `Application.Styles` in `App.axaml`. Put a style here instead of copying it into a second view file;
     a view file can still override it (e.g. `Button.ListAction` shrinks its `ButtonIcon`), since closer styles win.
   - Each view has its own style file named after it: `MainWindowStyles.axaml`, `EncoderProfilesViewStyles.axaml`
-    (profile manager window), `EncoderProfileViewStyles.axaml` (its editor form), `LogViewerViewStyles.axaml` and `MediaScannerViewStyles.axaml`. A view includes its file with
+    (profile manager window), `EncoderProfileViewStyles.axaml` (its editor form), `LogViewerViewStyles.axaml`, `MediaLibraryViewStyles.axaml` (the window,
+    its tabs, and the section / confirmation styles both tabs use), `MediaSearchViewStyles.axaml` and `MediaScannerViewStyles.axaml` (its two tabs). A view includes its file with
     `<StyleInclude Source="../Styles/<Name>Styles.axaml"/>` in `Window.Styles` / `UserControl.Styles`.
   - Styles are class-based (e.g. `Button.Toolbar`, `Border.EditorSection`, `Label.FieldLabel`) and grouped under
     `<!-- Group. -->` + `<!-- ==== -->` comment headers. Give controls a `Classes` value and put appearance setters
@@ -53,16 +55,26 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   it there. Keep the existing non-DI constructors (they default to `NullLogger`), because tests and the XAML
   previewer use them. The data layer is registered with `services.AddMediaData(...)` (connection string from
   `UserSettings`, CreatedBy/ModifiedBy = the Windows user) and the scanner with `services.AddMediaScanner()`;
-  `MainViewModel` takes an optional `DatabaseStatusService` and `MediaScanner`. The toolbar's Scan button (shown when there is a scanner, enabled once
-  the database indicator is green: `CanOpenMediaScanner`) opens one `MediaScannerView` window (from a `MediaScannerViewModel` factory; a second click
-  brings it to the front), and puts the summary of each scan in the main status bar.
-- **Media scanner window** (`MediaScannerView` / `MediaScannerViewModel`): on the left, the media categories (ticked: the ones ticked last time, else the
+  `MainViewModel` takes an optional `DatabaseStatusService` and `MediaScanner`. The toolbar's Media Library button (shown when there is a scanner,
+  enabled once the database indicator is green: `CanOpenMediaScanner`) opens one `MediaLibraryView` window (from a `MediaLibraryViewModel` factory; a
+  second click brings it to the front), and puts the summary of each scan in the main status bar.
+- **Media Library Services** (`MediaLibraryView` / `MediaLibraryViewModel`): a window styled like the profile manager (heading, rounded panels, footer)
+  with two tabs, each a `UserControl` with its own view model: **Search** (shown first) and **Scanner**. Closing asks first, on the tab concerned, when a
+  scan is running or there are unsaved edits (`CanClose`; `CloseRequested` once answered). It loads both tabs' categories when it opens.
+- **Search tab** (`MediaSearchView` / `MediaSearchViewModel`): search box (`*` wildcard; Enter searches) over Name, Description and Notes; tick boxes for
+  the scannable categories (active ones ticked); Favourites only; Show deleted. Results are a tree of `MediaTreeNode`: Music → Artist → Album → Track,
+  Movies → source folder → Movie, TV shows → Show → Season (with missing episode numbers) → Episode. Branches load when opened
+  (`LoadChildrenAsync`, a "Loading..." child until then); after a search the way down to the matches is opened (up to 50 paths), and matches are bold.
+  The details panel shows cover art (decoded off the UI thread), the read-only fields (`DetailRow`), the file's size / date from disk, Open folder (selects
+  the file in Explorer) and Copy path, and edits the hand-editable fields through `MediaItemEditor` (Save Changes / Discard; selecting another row with
+  unsaved changes asks first). Names, folders, files, numbers and years are read-only: the scan owns them or matches rows by them.
+- **Scanner tab** (`MediaScannerView` / `MediaScannerViewModel`): on the left, the media categories (ticked: the ones ticked last time, else the
   active ones; ones that can't be scanned are disabled; each shows its last scan), the options (dry run, hold back deletions over a % of a category's
   rows, clear all media data first: only with every active category ticked, never in a dry run, asked first and not kept) and this run's results per
   category; on the right, the activity log (the scanner's messages and every changed row, kept until cleared, saved to Downloads as text); at the bottom,
   the progress bar (indeterminate while folders are read, then items saved / total), elapsed time, Start / Cancel / Close. Questions (clear all data,
-  closing during a scan) are shown over the window (`Confirmation`, `ConfirmCommand` / `DismissConfirmationCommand`); closing during a scan cancels it
-  and closes once it has stopped (`CanClose`, `CloseRequested`). Progress comes through `UiProgress<T>` (posts to the UI thread; runs at once in tests).
+  closing during a scan) are shown over the tab (`ConfirmationPrompt` in `Confirmation`, `ConfirmCommand` / `DismissConfirmationCommand`; the Search tab
+  does the same); closing during a scan cancels it and closes once it has stopped (`CanClose`, `CloseRequested`). Progress comes through `UiProgress<T>` (posts to the UI thread; runs at once in tests).
   The ticked categories and options are saved in `UserSettings` (`MediaScan*`).
 - **Logging:** Serilog behind `Microsoft.Extensions.Logging`. Inject `ILogger<T>` and use message templates
   (`_logger.LogInformation("Saved {Count} profiles", n)`); don't reference Serilog outside `Logging/` and `Program`.
@@ -96,7 +108,8 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   `CopySubtitles` (shown as "Include Subtitles") either copies subtitle tracks (`-c:s copy`) or leaves them out (`-sn`);
   never let FFmpeg convert them, because image-based Blu-ray (PGS) subtitles can't be converted and the encode fails. `MediaNode` is a source tree node (selecting a
   folder cascades to its children; folders total their `FileCount` and `Size`, read from the folder listing so no
-  extra network calls are made); `FileSize.Format` gives the "12.5 GB" / "850 MB" text used in both lists; `DestinationItem` is a file queued in the destination list, with its Plex output path and encoding status. Put new model
+  extra network calls are made); `FileSize.Format` gives the "12.5 GB" / "850 MB" text used in both lists; `MediaEntityInfo` reads the fields media
+  rows share without an interface (favourite, folder, file, cover art); `DestinationItem` is a file queued in the destination list, with its Plex output path and encoding status. Put new model
   classes here, not at the bottom of view model files.
 
 ## PDA.Media.Data (EF Core)
@@ -155,6 +168,13 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
     `AlbumTypeService` / `MovieTypeService` / `TVShowTypeService` (name), `SettingService` (key / value, not a
     `DataService`) and `MediaCacheService` (`ClearMediaCache`, which runs `dbo.ClearMediaCache` through
     `Database.SqlQuery<MediaCacheCleared>`; for starting again, since it also loses favourites, notes and external ids).
+  - `MediaSearchService` (not a `DataService`): `Search(Async)(MediaSearchCriteria)` finds the artists, movies and TV shows whose Name, Description or
+    Notes match (or have an album, track or episode that does) under the given category roots (rows belong to a category by folder, so an artist with
+    albums in several music categories is found in each), with favourites-only and include-deleted options and a `MaxResults` cap (`IsTruncated`). It
+    returns the top-level rows plus the matched ids and the path albums, so the tree can open down to each match; `GetArtistAlbums` /
+    `GetAlbumTracks` / `GetShowEpisodes` (and async) load a branch. `SaveEditableFields(Async)` saves only `CopyEditableFields`: Description, Notes,
+    IsFavourite, plus MusicBrainzId, the type, Length and ReleaseDate where the row has them (also on a soft-deleted row). The sync methods run the async
+    core with `isAsync: false`.
 - **Tests:** `DataContextTests` use `SqlCaptureContext`, which captures the SQL a save would run without a database;
   `SchemaTests` read `Media.Master.sql` (copied to the test output folder). Service tests (`AlbumServiceTests`, which also cover
   `DataService` in depth, and `DataServiceTests`) run against a real SQL Server: `SqlServerTestDatabase` creates a throwaway database from `Media.Master.sql` per test and
@@ -180,13 +200,16 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   `MediaScanner.LastScan.<id>`, not for a dry run); `GetCategories(Async)` lists the categories with `CanScan` / `CannotScanReason` and `LastScan`. `MediaKinds.FromMediaClass` picks the layout from `MediaClass` (Music; Movie/Movies/Film; TV/TV Show/Series; anything else is
   skipped): music `Artist/Album/NN - Title.ext` (album type from the category), movies `Source/…` (each folder in the root is a source such as `Compressed Blu-Rays`: a video file directly in it is a movie named after the file; below it, a folder holding a video file is a movie named after the folder, using its largest video file and ignoring extras, and a folder without one is searched further; a duplicate name is logged and the first kept),
   TV `Show (Year)/Season NN/… sNNeNN - Title.ext`. Name parsing is in `MediaFileNames` (pure; `MediaFileNamesTests`).
+- An artist can be in more than one music category but has one row: its folder only moves to the category being scanned when the stored folder isn't
+  another music category's copy that is still there, and an artist is only soft-deleted when it has no albums left anywhere.
 - It is an incremental sync: each item goes through `AddOrRestoreRecordAsync` (restores a soft-deleted match with its id, favourites and notes), only the
   fields the scan owns (folder, file name, cover art, track count, episode title) are updated, and rows under the root (`GetAllRecordsUnderFolder`) that
   weren't seen are soft-deleted. Each category's folders are read completely before anything is written; a root that can't be reached, an unreadable
   folder or a database error skips that category without deleting anything (reporting the innermost exception's message). Hidden / system files and folders starting with `.`, `@` or `#` (Synology
   `@eaDir`, `#recycle`) are ignored. Clearing the cache goes through `MediaCacheService`, after reading and before saving.
 - Tests: `MediaScannerTests` build real folder trees in a temp folder and scan them into `SqlServerTestDatabase` (`ListProgress` keeps the progress reports
-  in order); `MediaScannerViewModelTests` do the same through the window's view model.
+  in order); `MediaScannerViewModelTests` and `MediaSearchViewModelTests` do the same through the Media Library tabs' view models;
+  `MediaSearchServiceTests` cover the search, branches and editable fields.
 
 ## Commands
 

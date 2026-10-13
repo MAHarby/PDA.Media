@@ -49,6 +49,69 @@
         </Style>
 
 
+        <!-- Header Panel (a window's heading: title, subtitle and actions). -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.HeaderPanel">
+            <Setter Property="Background" Value="{DynamicResource SystemChromeMediumLowColor}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16,12"/>
+            <Setter Property="Margin" Value="0,0,0,14"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style Selector="StackPanel.HeaderText">
+            <Setter Property="Orientation" Value="Vertical"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.HeaderTitle">
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseHighColor}"/>
+        </Style>
+        <Style Selector="TextBlock.HeaderSubtitle">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+        </Style>
+        <Style Selector="StackPanel.HeaderActions">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="8"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.HeaderAction">
+            <Setter Property="Padding" Value="10,6"/>
+        </Style>
+
+
+        <!-- Content Panel (a rounded panel in a window, like the profile list and editor). -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.ContentPanel">
+            <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12"/>
+        </Style>
+
+
+        <!-- Footer Bar (a window's bottom row: info on the left, actions on the right). -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Grid.FooterBar">
+            <Setter Property="Margin" Value="0,14,0,0"/>
+        </Style>
+        <Style Selector="StackPanel.FooterInfo">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.FooterText">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+        </Style>
+        <Style Selector="StackPanel.FooterActions">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="8"/>
+        </Style>
+
+
         <!-- Log Lists (console look: the main window's Audit Log and the media scanner's activity log). -->
         <!-- ====================================================================================================== -->
         <Style Selector="ListBox.AuditLog">

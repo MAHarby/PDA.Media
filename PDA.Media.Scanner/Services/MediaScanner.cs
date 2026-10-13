@@ -147,7 +147,10 @@ public partial class MediaScanner
                 }
             }
 
-            var run = new ScanRun(options, progress, cancellationToken);
+            var run = new ScanRun(options, progress, cancellationToken)
+            {
+                MusicRoots = all.Where(c => MediaKinds.FromMediaClass(c.MediaClass) == MediaKind.Music && CannotScanReason(c) == null).Select(c => RootFolderOf(c)!).ToList(),
+            };
             var result = new MediaScanResult { IsDryRun = options.DryRun };
             List<MediaCategory> categories = all.Where(c => ids.Contains(c.Id)).ToList();
             Note(run, LogLevel.Information, null, options.DryRun ? "Dry run of {Count} media categories: nothing will be saved" : "Scanning {Count} media categories",
@@ -345,6 +348,9 @@ public partial class MediaScanner
         private int _lastDryRunId;
 
         public MediaScanOptions Options => options;
+
+        /// <summary>The root folders of every music category (an artist can be in more than one).</summary>
+        public List<string> MusicRoots { get; init; } = [];
         public CancellationToken Token => token;
         public MediaScanPhase Phase { get; set; } = MediaScanPhase.Reading;
         public string? CategoryName { get; set; }
@@ -476,18 +482,34 @@ public partial class MediaScanner
             return record;
         }
 
-        /// <summary>Queues the records stored under the scanned root that the scan didn't see, to be soft-deleted when the category is finished.</summary>
-        public void QueueMissing(List<TEntity> underRoot, ScanRun run)
+        /// <summary>The records the scan didn't see among <paramref name="underRoot"/> (candidates for <see cref="QueueMissing"/>).</summary>
+        public IEnumerable<TEntity> Unseen(IEnumerable<TEntity> underRoot) => underRoot.Where(r => !_seen.Contains(r.Id));
+
+        /// <summary>The ids queued for deletion so far.</summary>
+        public HashSet<int> QueuedIds { get; } = [];
+
+        /// <summary>
+        /// Queues the records stored under the scanned root that the scan didn't see, to be soft-deleted when the category is finished
+        /// (except the ids in <paramref name="keep"/>).
+        /// </summary>
+        public void QueueMissing(List<TEntity> underRoot, ScanRun run, IReadOnlySet<int>? keep = null)
         {
             run.RowsBefore += underRoot.Count(r => !_new.Contains(r.Id));
-            foreach (TEntity record in underRoot.Where(r => !_seen.Contains(r.Id)))
+            foreach (TEntity record in Unseen(underRoot).Where(r => keep == null || !keep.Contains(r.Id)))
             {
                 int id = record.Id;
+                QueuedIds.Add(id);
                 run.Deletions.Add(new PendingDeletion(ct => service.DeleteRecordAsync(id, ct),
                     new MediaScanChange(MediaScanChangeKind.Deleted, entity, record.Name, folderOf(record))));
             }
         }
     }
+
+    /// <summary>True if <paramref name="folder"/> is <paramref name="root"/> or under it.</summary>
+    private static bool IsUnder(string? folder, string root) =>
+        folder != null && (folder.Equals(root, StringComparison.OrdinalIgnoreCase)
+            || folder.StartsWith(root.TrimEnd('\\', '/') + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+            || folder.StartsWith(root.TrimEnd('\\', '/') + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Sets a field to the value found on disk; returns true if it changed.</summary>
     private static bool Set<TValue>(TValue current, TValue found, Action<TValue> set)

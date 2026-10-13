@@ -20,8 +20,8 @@ public partial class MainWindow : Window
     private readonly Func<string?, EncoderProfilesViewModel>? _profilesViewModelFactory;
     private readonly Func<LogViewerViewModel>? _logViewerViewModelFactory;
     private readonly LogFileService? _logFileService;
-    private readonly Func<MediaScannerViewModel>? _mediaScannerViewModelFactory;
-    private MediaScannerView? _mediaScannerWindow;
+    private readonly Func<MediaLibraryViewModel>? _mediaLibraryViewModelFactory;
+    private MediaLibraryView? _mediaLibraryWindow;
     private ObservableCollection<AuditLogEntry>? _auditLogEntries;
 
     // Used by the XAML previewer.
@@ -32,9 +32,9 @@ public partial class MainWindow : Window
 
     public MainWindow(MainViewModel viewModel, Func<string?, EncoderProfilesViewModel> profilesViewModelFactory,
         Func<LogViewerViewModel> logViewerViewModelFactory, LogFileService logFileService,
-        ILogger<MainWindow> logger, Func<MediaScannerViewModel>? mediaScannerViewModelFactory = null) : this()
+        ILogger<MainWindow> logger, Func<MediaLibraryViewModel>? mediaLibraryViewModelFactory = null) : this()
     {
-        _mediaScannerViewModelFactory = mediaScannerViewModelFactory;
+        _mediaLibraryViewModelFactory = mediaLibraryViewModelFactory;
         _logger = logger;
         _profilesViewModelFactory = profilesViewModelFactory;
         _logViewerViewModelFactory = logViewerViewModelFactory;
@@ -99,26 +99,26 @@ public partial class MainWindow : Window
         logViewer.Show();
     }
 
-    // One media scanner window: the Scan button brings it to the front if it is already open.
-    private void ScanMediaButton_OnClick(object? sender, RoutedEventArgs e)
+    // One Media Library Services window: the toolbar button brings it to the front if it is already open.
+    private void MediaLibraryButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        if (_mediaScannerWindow != null)
+        if (_mediaLibraryWindow != null)
         {
-            _mediaScannerWindow.Activate();
+            _mediaLibraryWindow.Activate();
             return;
         }
-        if (_mediaScannerViewModelFactory == null || DataContext is not MainViewModel mainVm) return;
+        if (_mediaLibraryViewModelFactory == null || DataContext is not MainViewModel mainVm) return;
 
-        _logger.LogInformation("Opening the media scanner");
-        MediaScannerViewModel scannerVm = _mediaScannerViewModelFactory();
-        scannerVm.ScanFinished += summary => mainVm.StatusText = summary;
-        _mediaScannerWindow = new MediaScannerView { DataContext = scannerVm };
-        _mediaScannerWindow.Closed += (_, _) =>
+        _logger.LogInformation("Opening Media Library Services");
+        MediaLibraryViewModel libraryVm = _mediaLibraryViewModelFactory();
+        libraryVm.Scanner.ScanFinished += summary => mainVm.StatusText = summary;
+        _mediaLibraryWindow = new MediaLibraryView { DataContext = libraryVm };
+        _mediaLibraryWindow.Closed += (_, _) =>
         {
-            _mediaScannerWindow = null;
-            _logger.LogInformation("Media scanner closed");
+            _mediaLibraryWindow = null;
+            _logger.LogInformation("Media Library Services closed");
         };
-        _mediaScannerWindow.Show();
+        _mediaLibraryWindow.Show();
     }
 
     private async void SaveLogButton_OnClick(object? sender, RoutedEventArgs e)
