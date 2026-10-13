@@ -122,6 +122,27 @@ public sealed class DataServiceTests
     [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
+    public async Task TestFindSameRecord(bool async)
+    {
+        using var db = new SqlServerTestDatabase();
+        var service = new ArtistService(db.ContextFactory);
+        Artist abba = service.AddRecord(new Artist { Name = "ABBA" });
+        Artist bjork = service.AddRecord(new Artist { Name = "Björk" });
+        service.DeleteRecord(bjork.Id);
+
+        Artist? live = async ? await service.FindSameRecordAsync(new Artist { Name = "abba" }) : service.FindSameRecord(new Artist { Name = "abba" });
+        Artist? deleted = async ? await service.FindSameRecordAsync(new Artist { Name = "Björk" }) : service.FindSameRecord(new Artist { Name = "Björk" });
+        Artist? none = async ? await service.FindSameRecordAsync(new Artist { Name = "Sigur Rós" }) : service.FindSameRecord(new Artist { Name = "Sigur Rós" });
+
+        Assert.AreEqual((abba.Id, false), (live!.Id, live.IsDeleted));
+        Assert.AreEqual((bjork.Id, true), (deleted!.Id, deleted.IsDeleted));
+        Assert.IsNull(none);
+        Assert.IsNull(service.GetRecordById(bjork.Id), "finding it doesn't restore it");
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
     public async Task TestGetAllRecordsUnderFolder(bool async)
     {
         using var db = new SqlServerTestDatabase();

@@ -1,0 +1,190 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Design.PreviewWith>
+        <Border Padding="20">
+            <!-- Add Controls for Previewer Here -->
+        </Border>
+    </Design.PreviewWith>
+
+        <!-- Settings Column (categories, options, results). -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="ScrollViewer.ScannerSettings">
+            <Setter Property="Margin" Value="0,0,12,0"/>
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
+        </Style>
+        <Style Selector="StackPanel.ScannerSettings">
+            <Setter Property="Spacing" Value="10"/>
+        </Style>
+        <Style Selector="Border.ScannerSection">
+            <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemBaseLowColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="10"/>
+        </Style>
+        <Style Selector="StackPanel.SectionContent">
+            <Setter Property="Spacing" Value="6"/>
+        </Style>
+        <Style Selector="TextBlock.SectionHeading">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="StackPanel.SectionActions">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="4"/>
+        </Style>
+        <Style Selector="Button.SectionAction">
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="ProgressBar.Loading">
+            <Setter Property="MinHeight" Value="3"/>
+        </Style>
+
+
+        <!-- Category List. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="CheckBox.Category">
+            <Setter Property="VerticalContentAlignment" Value="Top"/>
+            <Setter Property="Margin" Value="0,2"/>
+        </Style>
+        <Style Selector="StackPanel.CategoryText">
+            <Setter Property="Spacing" Value="1"/>
+        </Style>
+        <Style Selector="TextBlock.CategoryName">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.CategoryDetail, TextBlock.CategoryLastScan">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style Selector="TextBlock.CategoryLastScan.Problem">
+            <Setter Property="Foreground" Value="#D19A2E"/>
+        </Style>
+
+
+        <!-- Options. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="CheckBox.Option">
+            <Setter Property="VerticalContentAlignment" Value="Top"/>
+        </Style>
+        <Style Selector="StackPanel.OptionText">
+            <Setter Property="Spacing" Value="1"/>
+        </Style>
+        <Style Selector="TextBlock.OptionHint">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+        </Style>
+        <Style Selector="TextBlock.OptionHint.Warning">
+            <Setter Property="Foreground" Value="#D19A2E"/>
+        </Style>
+        <Style Selector="NumericUpDown.Percent">
+            <Setter Property="Width" Value="96"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+
+        <!-- Results. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Grid.ResultsHeader > TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+        </Style>
+        <Style Selector="Grid.ResultsHeader TextBlock.Number, Grid.ResultRow TextBlock.Number">
+            <Setter Property="TextAlignment" Value="Right"/>
+        </Style>
+        <Style Selector="Grid.ResultRow">
+            <Setter Property="Margin" Value="0,2"/>
+        </Style>
+        <Style Selector="TextBlock.ResultName">
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style Selector="TextBlock.ResultStatus">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#D19A2E"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="TextBlock.ResultsEmpty">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+        </Style>
+
+
+        <!-- Activity Log. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Grid.Activity">
+            <Setter Property="RowSpacing" Value="8"/>
+        </Style>
+        <Style Selector="TextBlock.AuditLogEntry.Added">
+            <Setter Property="Foreground" Value="#89D185"/>
+        </Style>
+        <Style Selector="TextBlock.AuditLogEntry.Deleted">
+            <Setter Property="Foreground" Value="#E8A0A0"/>
+        </Style>
+
+
+        <!-- Footer (progress and actions). -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Grid.ScannerFooter">
+            <Setter Property="Margin" Value="0,12,0,0"/>
+            <Setter Property="ColumnSpacing" Value="8"/>
+            <Setter Property="RowSpacing" Value="4"/>
+        </Style>
+        <Style Selector="ProgressBar.ScanProgress">
+            <Setter Property="MinHeight" Value="8"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.Elapsed">
+            <Setter Property="FontFamily" Value="Consolas,Menlo,monospace"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="MinWidth" Value="50"/>
+            <Setter Property="TextAlignment" Value="Right"/>
+        </Style>
+        <Style Selector="TextBlock.ProgressText">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+        </Style>
+        <Style Selector="TextBlock.ScannerStatus">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+
+
+        <!-- Confirmation (shown over the window). -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.ConfirmationOverlay">
+            <Setter Property="Background" Value="#80000000"/>
+        </Style>
+        <Style Selector="Border.ConfirmationCard">
+            <Setter Property="Background" Value="{DynamicResource SystemChromeMediumLowColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemBaseLowColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="20"/>
+            <Setter Property="MaxWidth" Value="460"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="StackPanel.ConfirmationContent">
+            <Setter Property="Spacing" Value="12"/>
+        </Style>
+        <Style Selector="TextBlock.ConfirmationTitle">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.ConfirmationMessage">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="StackPanel.ConfirmationActions">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="8"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+        </Style>
+
+</Styles>

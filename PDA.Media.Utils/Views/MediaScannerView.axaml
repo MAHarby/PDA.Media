@@ -1,0 +1,195 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PDA.Media.Utils.ViewModels"
+        xmlns:models="using:PDA.Media.Utils.Models"
+        xmlns:scanner="using:PDA.Media.Scanner.Services"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="720"
+        Width="1150" Height="740" MinWidth="820" MinHeight="520"
+        WindowStartupLocation="CenterScreen"
+        x:Class="PDA.Media.Utils.Views.MediaScannerView"
+        x:DataType="vm:MediaScannerViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        FontFamily="Inter" FontSize="13"
+        Title="Media Scanner">
+
+    <Window.Styles>
+        <StyleInclude Source="../Styles/MediaScannerViewStyles.axaml"/>
+    </Window.Styles>
+
+    <Panel>
+        <Grid RowDefinitions="*,Auto" ColumnDefinitions="380,*" Classes="WindowContent">
+
+            <!-- Left: categories, options and results. -->
+            <!-- ============================================================================================================== -->
+            <ScrollViewer Grid.Row="0" Grid.Column="0" Classes="ScannerSettings">
+                <StackPanel Classes="ScannerSettings">
+
+                    <!-- Media categories. -->
+                    <Border Classes="ScannerSection">
+                        <StackPanel Classes="SectionContent">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="Media categories" Classes="SectionHeading"/>
+                                <StackPanel Grid.Column="1" Classes="SectionActions">
+                                    <Button Content="All" Command="{Binding SelectAllCommand}" IsEnabled="{Binding !IsScanning}" Classes="SectionAction"
+                                            ToolTip.Tip="Tick every category that can be scanned"/>
+                                    <Button Content="None" Command="{Binding SelectNoneCommand}" IsEnabled="{Binding !IsScanning}" Classes="SectionAction"/>
+                                    <Button Command="{Binding LoadCategoriesCommand}" IsEnabled="{Binding !IsScanning}" Classes="SectionAction"
+                                            ToolTip.Tip="Load the categories and their last scans again">
+                                        <PathIcon Data="{StaticResource reset_icon}" Classes="ButtonIcon"/>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" Classes="Loading"/>
+                            <ItemsControl ItemsSource="{Binding Categories}" IsEnabled="{Binding !IsScanning}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:MediaScanCategoryItem">
+                                        <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="{Binding CanScan}" Classes="Category">
+                                            <StackPanel Classes="CategoryText">
+                                                <TextBlock Text="{Binding Name}" Classes="CategoryName"/>
+                                                <TextBlock Text="{Binding DetailText}" ToolTip.Tip="{Binding DetailText}" Classes="CategoryDetail"/>
+                                                <TextBlock Text="{Binding LastScanText}" ToolTip.Tip="{Binding LastScanText}" Classes="CategoryLastScan"
+                                                           Classes.Problem="{Binding IsLastScanProblem}"/>
+                                            </StackPanel>
+                                        </CheckBox>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Options. -->
+                    <Border Classes="ScannerSection">
+                        <StackPanel Classes="SectionContent" IsEnabled="{Binding !IsScanning}">
+                            <TextBlock Text="Options" Classes="SectionHeading"/>
+                            <CheckBox IsChecked="{Binding DryRun}" Classes="Option"
+                                      ToolTip.Tip="Read the folders and show what would change in the activity log, without saving anything">
+                                <StackPanel Classes="OptionText">
+                                    <TextBlock Text="Dry run" Classes="OptionName"/>
+                                    <TextBlock Text="Show what would change; nothing is saved" Classes="OptionHint"/>
+                                </StackPanel>
+                            </CheckBox>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <CheckBox Grid.Column="0" IsChecked="{Binding LimitDeletions}" Classes="Option"
+                                          ToolTip.Tip="If a category would delete more than this share of its rows (a share that is offline or a renamed folder), its deletions are held back and reported; the rest of its scan is saved">
+                                    <StackPanel Classes="OptionText">
+                                        <TextBlock Text="Hold back large deletions" Classes="OptionName"/>
+                                        <TextBlock Text="Over this % of a category's rows" Classes="OptionHint"/>
+                                    </StackPanel>
+                                </CheckBox>
+                                <NumericUpDown Grid.Column="1" Value="{Binding MaxDeletePercent}" IsEnabled="{Binding LimitDeletions}"
+                                               Minimum="1" Maximum="100" Increment="5" FormatString="0" Classes="Percent"/>
+                            </Grid>
+                            <CheckBox IsChecked="{Binding ClearData}" IsEnabled="{Binding CanClearData}" Classes="Option Danger"
+                                      ToolTip.Tip="{Binding ClearDataToolTip}" ToolTip.ShowOnDisabled="True">
+                                <StackPanel Classes="OptionText">
+                                    <TextBlock Text="Clear all media data first" Classes="OptionName"/>
+                                    <TextBlock Text="Loses favourites, notes and external ids" Classes="OptionHint Warning"/>
+                                </StackPanel>
+                            </CheckBox>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Results of this run. -->
+                    <Border Classes="ScannerSection">
+                        <StackPanel Classes="SectionContent">
+                            <TextBlock Text="Results" Classes="SectionHeading"/>
+                            <Grid ColumnDefinitions="*,52,52,52,52" Classes="ResultsHeader">
+                                <TextBlock Grid.Column="0" Text="Category"/>
+                                <TextBlock Grid.Column="1" Text="Added" Classes="Number"/>
+                                <TextBlock Grid.Column="2" Text="Restored" Classes="Number"/>
+                                <TextBlock Grid.Column="3" Text="Updated" Classes="Number"/>
+                                <TextBlock Grid.Column="4" Text="Deleted" Classes="Number"/>
+                            </Grid>
+                            <TextBlock Text="Nothing scanned yet" IsVisible="{Binding !HasResults}" Classes="ResultsEmpty"/>
+                            <ItemsControl ItemsSource="{Binding Results}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="scanner:MediaCategoryScanResult">
+                                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,52,52,52,52" Classes="ResultRow" ToolTip.Tip="{Binding SummaryText}">
+                                            <TextBlock Grid.Column="0" Text="{Binding CategoryName}" Classes="ResultName"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Added}" Classes="Number"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding Restored}" Classes="Number"/>
+                                            <TextBlock Grid.Column="3" Text="{Binding Updated}" Classes="Number"/>
+                                            <TextBlock Grid.Column="4" Text="{Binding Deleted}" Classes="Number"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="5" Text="{Binding Message}" Classes="ResultStatus"
+                                                       IsVisible="{Binding Message, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Right: the live activity log. -->
+            <!-- ============================================================================================================== -->
+            <Grid Grid.Row="0" Grid.Column="1" RowDefinitions="Auto,*" Classes="Activity">
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="Activity" Classes="SectionHeading"/>
+                    <StackPanel Grid.Column="1" Classes="SectionActions">
+                        <Button Command="{Binding ClearActivityCommand}" ToolTip.Tip="Clear the activity log" Classes="SectionAction">
+                            <PathIcon Data="{StaticResource trash_icon}" Classes="ButtonIcon"/>
+                        </Button>
+                        <Button Click="SaveActivityButton_OnClick" ToolTip.Tip="Save the activity log to the Downloads folder" Classes="SectionAction">
+                            <PathIcon Data="{StaticResource download_icon}" Classes="ButtonIcon"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+                <ListBox Grid.Row="1" Name="ActivityListBox" ItemsSource="{Binding ActivityEntries}" Classes="AuditLog">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:ScanActivityEntry">
+                            <TextBlock Text="{Binding DisplayText}" ToolTip.Tip="{Binding Folder}" Classes="AuditLogEntry"
+                                       Classes.Warning="{Binding IsWarning}" Classes.Error="{Binding IsError}"
+                                       Classes.Added="{Binding IsAdded}" Classes.Deleted="{Binding IsDeleted}"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+
+            <!-- Footer: progress and actions. -->
+            <!-- ============================================================================================================== -->
+            <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto,Auto,Auto,Auto" Classes="ScannerFooter">
+                <ProgressBar Grid.Row="0" Grid.Column="0" Value="{Binding ProgressValue}" Maximum="{Binding ProgressMaximum}"
+                             IsIndeterminate="{Binding IsProgressIndeterminate}" Classes="ScanProgress"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ElapsedText}" Classes="Elapsed"/>
+                <Button Grid.Row="0" Grid.Column="2" Command="{Binding StartScanCommand}" Classes="DialogAction accent"
+                        IsVisible="{Binding !IsScanning}">
+                    <StackPanel Classes="ButtonContent">
+                        <PathIcon Data="{StaticResource play_icon}" Classes="ButtonIcon"/>
+                        <TextBlock Text="Start scan"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Row="0" Grid.Column="3" Command="{Binding ScanCancelCommand}" Classes="DialogAction" IsVisible="{Binding IsScanning}"
+                        ToolTip.Tip="Cancel the scan: what was saved so far stays, and the category being saved deletes nothing">
+                    <StackPanel Classes="ButtonContent">
+                        <PathIcon Data="{StaticResource stop_icon}" Classes="ButtonIcon"/>
+                        <TextBlock Text="Cancel"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Row="0" Grid.Column="4" Content="Close" Click="CloseButton_OnClick" Classes="DialogAction"/>
+                <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="5" ColumnDefinitions="Auto,*">
+                    <TextBlock Grid.Column="0" Text="{Binding ProgressText}" Classes="ProgressText"/>
+                    <TextBlock Grid.Column="1" Text="{Binding StatusText}" ToolTip.Tip="{Binding StatusText}" Classes="ScannerStatus"/>
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <!-- A question over the whole window (clear all data, close during a scan). -->
+        <!-- ============================================================================================================== -->
+        <Border IsVisible="{Binding HasConfirmation}" Classes="ConfirmationOverlay">
+            <Border Classes="ConfirmationCard">
+                <StackPanel Classes="ConfirmationContent">
+                    <TextBlock Text="{Binding Confirmation.Title, FallbackValue=''}" Classes="ConfirmationTitle"/>
+                    <TextBlock Text="{Binding Confirmation.Message, FallbackValue=''}" Classes="ConfirmationMessage"/>
+                    <StackPanel Classes="ConfirmationActions">
+                        <Button Command="{Binding DismissConfirmationCommand}" Content="{Binding Confirmation.BackText, FallbackValue=''}" Classes="DialogAction"/>
+                        <Button Command="{Binding ConfirmCommand}" Content="{Binding Confirmation.ConfirmText, FallbackValue=''}" Classes="DialogAction accent"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Panel>
+</Window>

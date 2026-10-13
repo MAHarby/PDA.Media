@@ -32,11 +32,12 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
     Add new icons here rather than to a view's `Window.Resources`.
   - `CommonStyles.axaml` holds styles used by more than one view: `Grid.WindowContent` (dialog window margin),
     `Button.DialogAction` (Close / Refresh footer buttons), `StackPanel.ButtonContent` / `PathIcon.ButtonIcon`
-    (icon-and-text buttons) and `Border.ProfileTag` / `TextBlock.ProfileTag` (category badges). It is included
+    (icon-and-text buttons), `Border.ProfileTag` / `TextBlock.ProfileTag` (category badges) and `ListBox.AuditLog` / `TextBlock.AuditLogEntry`
+    (the console-look log lists of the main window and the media scanner). It is included
     once in `Application.Styles` in `App.axaml`. Put a style here instead of copying it into a second view file;
     a view file can still override it (e.g. `Button.ListAction` shrinks its `ButtonIcon`), since closer styles win.
   - Each view has its own style file named after it: `MainWindowStyles.axaml`, `EncoderProfilesViewStyles.axaml`
-    (profile manager window), `EncoderProfileViewStyles.axaml` (its editor form) and `LogViewerViewStyles.axaml`. A view includes its file with
+    (profile manager window), `EncoderProfileViewStyles.axaml` (its editor form), `LogViewerViewStyles.axaml` and `MediaScannerViewStyles.axaml`. A view includes its file with
     `<StyleInclude Source="../Styles/<Name>Styles.axaml"/>` in `Window.Styles` / `UserControl.Styles`.
   - Styles are class-based (e.g. `Button.Toolbar`, `Border.EditorSection`, `Label.FieldLabel`) and grouped under
     `<!-- Group. -->` + `<!-- ==== -->` comment headers. Give controls a `Classes` value and put appearance setters
@@ -52,9 +53,17 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   it there. Keep the existing non-DI constructors (they default to `NullLogger`), because tests and the XAML
   previewer use them. The data layer is registered with `services.AddMediaData(...)` (connection string from
   `UserSettings`, CreatedBy/ModifiedBy = the Windows user) and the scanner with `services.AddMediaScanner()`;
-  `MainViewModel` takes an optional `DatabaseStatusService` and `MediaScanner`. The toolbar's media database group (shown when there is a
-  scanner) has Scan (`ScanMediaCommand`: enabled once the database indicator is green, runs `ScanAllMediaCategoriesAsync` off the UI thread and puts the
-  result in the status bar) and a cancel button shown while `IsScanning` (`ScanMediaCancelCommand`).
+  `MainViewModel` takes an optional `DatabaseStatusService` and `MediaScanner`. The toolbar's Scan button (shown when there is a scanner, enabled once
+  the database indicator is green: `CanOpenMediaScanner`) opens one `MediaScannerView` window (from a `MediaScannerViewModel` factory; a second click
+  brings it to the front), and puts the summary of each scan in the main status bar.
+- **Media scanner window** (`MediaScannerView` / `MediaScannerViewModel`): on the left, the media categories (ticked: the ones ticked last time, else the
+  active ones; ones that can't be scanned are disabled; each shows its last scan), the options (dry run, hold back deletions over a % of a category's
+  rows, clear all media data first: only with every active category ticked, never in a dry run, asked first and not kept) and this run's results per
+  category; on the right, the activity log (the scanner's messages and every changed row, kept until cleared, saved to Downloads as text); at the bottom,
+  the progress bar (indeterminate while folders are read, then items saved / total), elapsed time, Start / Cancel / Close. Questions (clear all data,
+  closing during a scan) are shown over the window (`Confirmation`, `ConfirmCommand` / `DismissConfirmationCommand`); closing during a scan cancels it
+  and closes once it has stopped (`CanClose`, `CloseRequested`). Progress comes through `UiProgress<T>` (posts to the UI thread; runs at once in tests).
+  The ticked categories and options are saved in `UserSettings` (`MediaScan*`).
 - **Logging:** Serilog behind `Microsoft.Extensions.Logging`. Inject `ILogger<T>` and use message templates
   (`_logger.LogInformation("Saved {Count} profiles", n)`); don't reference Serilog outside `Logging/` and `Program`.
   The minimum level is Information, except `Microsoft.EntityFrameworkCore` at Warning (`MinimumLevel.Override` in
@@ -67,8 +76,8 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   redirect storage.
   - `AppSettingsService` stores `UserSettings` as JSON in `%APPDATA%/PDA.Media/settings.json`, including
     `DatabaseServer` / `DatabaseName` (default `PDA-Main` / `Media.Master`, read at startup; restart after changing).
-    `MainViewModel` keeps the loaded `UserSettings` and updates only its own fields when saving, so other settings
-    survive; do the same in any other view model that saves settings.
+    A view model that saves settings loads them again, changes only its own fields and saves (as `MainViewModel` and
+    `MediaScannerViewModel` do), so settings saved by another window survive.
   - `EncoderProfileService` stores `List<EncodeProfile>` in `%APPDATA%/PDA.Media/profiles.json` and
     provides the built-in defaults (`GetDefaultProfiles`).
   - `FFmpegService` finds `ffmpeg`/`ffprobe` in the app's `bin` folder (`<exe folder>/bin`), then on the PATH, and
@@ -135,7 +144,8 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
     search by name (`*` wildcard, turned into an escaped SQL `LIKE` pattern), add (returns the existing record when
     `IsSameAs` matches, also after a unique-index clash), update (loads the row and copies every column onto it,
     keeping the key and Created fields) and delete (soft for `ISoftDeletable`, otherwise the row is removed). Reads use
-    `AsNoTracking()`.
+    `AsNoTracking()`. `AddOrRestoreRecord(Async)` restores a soft-deleted match; `FindSameRecord(Async)` finds the live or soft-deleted match without
+    changing anything. Row changes are logged at Debug (the scanner reports them itself).
   - A service derives from it and supplies `IsSameAs` (its natural key), optionally `DefaultOrder` and `IsProtected`
     (rows that can't be deleted: Artist 0, AlbumType 1, MovieType 0, TVShowType 0, which foreign keys fall back to), and
     its own queries as one-liners over the `List` / `First` helpers (and their async versions).
@@ -156,19 +166,27 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
 
 ## PDA.Media.Scanner
 
-- `MediaScanner` gets the data services it needs and an `ILogger<MediaScanner>` through its constructor (logger optional, defaulting to `NullLogger`).
+- `MediaScanner` gets the data services it needs (and `SettingService`, for the last scans) and an `ILogger<MediaScanner>` through its constructor (logger optional, defaulting to `NullLogger`).
   Register it with `AddMediaScanner()` (`ScannerServiceCollectionExtensions`) after `AddMediaData(...)`; when it needs another service, add a constructor
   parameter (every data service is already registered).
-- `ScanAllMediaCategories` / `ScanAllMediaCategoriesAsync` scan each active `MediaCategory`'s `RootFolder` and return a `MediaScanResult` (rows added, restored,
-  updated, unchanged, deleted). `MediaKinds.FromMediaClass` picks the layout from `MediaClass` (Music; Movie/Movies/Film; TV/TV Show/Series; anything else is
+- `ScanMediaCategories(Async)(categoryIds, MediaScanOptions, IProgress<MediaScanProgress>)` scans the given categories (active or not) and returns a
+  `MediaScanResult` (rows added, restored, updated, unchanged, deleted, and a `MediaCategoryScanResult` per category: Scanned, DeletionsHeld, Skipped or
+  Failed). `ScanAllMediaCategories(Async)(clearData)` scans the active ones with no deletion limit. Only one scan runs at a time (`IsScanning`; a second
+  throws). It runs in two phases: every category's folders are read, then each is saved; progress reports carry the phase, folders read, items saved /
+  total, each changed row (`MediaScanChange`) and each message (also logged; row changes are not logged: the data services log rows at Debug).
+  Options: `DryRun` (compares through `FindSameRecord(Async)` and saves nothing), `MaxDeletePercent` (more deletions than this % of the rows that were
+  under the root before the scan are held back and reported; the rest is saved) and `ClearData` (only with every active, scannable category selected,
+  else InvalidOperationException; not done when a category couldn't be read). Each category's result is stored as its last scan (JSON in Settings,
+  `MediaScanner.LastScan.<id>`, not for a dry run); `GetCategories(Async)` lists the categories with `CanScan` / `CannotScanReason` and `LastScan`. `MediaKinds.FromMediaClass` picks the layout from `MediaClass` (Music; Movie/Movies/Film; TV/TV Show/Series; anything else is
   skipped): music `Artist/Album/NN - Title.ext` (album type from the category), movies `Source/…` (each folder in the root is a source such as `Compressed Blu-Rays`: a video file directly in it is a movie named after the file; below it, a folder holding a video file is a movie named after the folder, using its largest video file and ignoring extras, and a folder without one is searched further; a duplicate name is logged and the first kept),
   TV `Show (Year)/Season NN/… sNNeNN - Title.ext`. Name parsing is in `MediaFileNames` (pure; `MediaFileNamesTests`).
 - It is an incremental sync: each item goes through `AddOrRestoreRecordAsync` (restores a soft-deleted match with its id, favourites and notes), only the
   fields the scan owns (folder, file name, cover art, track count, episode title) are updated, and rows under the root (`GetAllRecordsUnderFolder`) that
   weren't seen are soft-deleted. Each category's folders are read completely before anything is written; a root that can't be reached, an unreadable
-  folder or a database error skips that category without deleting anything. Hidden / system files and folders starting with `.`, `@` or `#` (Synology
-  `@eaDir`, `#recycle`) are ignored. `clearData: true` empties the cache first through `MediaCacheService`.
-- Tests: `MediaScannerTests` build real folder trees in a temp folder and scan them into `SqlServerTestDatabase`.
+  folder or a database error skips that category without deleting anything (reporting the innermost exception's message). Hidden / system files and folders starting with `.`, `@` or `#` (Synology
+  `@eaDir`, `#recycle`) are ignored. Clearing the cache goes through `MediaCacheService`, after reading and before saving.
+- Tests: `MediaScannerTests` build real folder trees in a temp folder and scan them into `SqlServerTestDatabase` (`ListProgress` keeps the progress reports
+  in order); `MediaScannerViewModelTests` do the same through the window's view model.
 
 ## Commands
 

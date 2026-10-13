@@ -153,7 +153,7 @@ public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity
             return added;
         }
 
-        Logger.LogInformation("Added {Entity} {Id} {Name}", EntityName, record.Id, record.Name);
+        Logger.LogDebug("Added {Entity} {Id} {Name}", EntityName, record.Id, record.Name);
         return record;
     }
 
@@ -177,8 +177,34 @@ public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity
             return added;
         }
 
-        Logger.LogInformation("Added {Entity} {Id} {Name}", EntityName, record.Id, record.Name);
+        Logger.LogDebug("Added {Entity} {Id} {Name}", EntityName, record.Id, record.Name);
         return record;
+    }
+
+    /// <summary>
+    /// The stored record with the same natural key as <paramref name="record"/> (see <see cref="IsSameAs"/>), changing nothing: the live one if there is one,
+    /// otherwise a soft-deleted one (its IsDeleted is true), otherwise null.
+    /// This is the record <see cref="AddOrRestoreRecord"/> would return or restore, so it can preview what that would do.
+    /// </summary>
+    public TEntity? FindSameRecord(TEntity record)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        TEntity? existing = First(IsSameAs(record));
+        if (existing != null || record is not ISoftDeletable) return existing;
+
+        using var context = ContextFactory.CreateDbContext();
+        return context.Set<TEntity>().IgnoreQueryFilters([DataContext.SoftDeleteFilter]).AsNoTracking().FirstOrDefault(IsSameAs(record));
+    }
+
+    public async Task<TEntity?> FindSameRecordAsync(TEntity record, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        TEntity? existing = await FirstAsync(IsSameAs(record), cancellationToken).ConfigureAwait(false);
+        if (existing != null || record is not ISoftDeletable) return existing;
+
+        await using var context = await ContextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        return await context.Set<TEntity>().IgnoreQueryFilters([DataContext.SoftDeleteFilter]).AsNoTracking()
+            .FirstOrDefaultAsync(IsSameAs(record), cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -200,7 +226,7 @@ public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity
             {
                 ((ISoftDeletable)deleted).IsDeleted = false;
                 context.SaveChanges();
-                Logger.LogInformation("Restored {Entity} {Id} {Name}", EntityName, deleted.Id, deleted.Name);
+                Logger.LogDebug("Restored {Entity} {Id} {Name}", EntityName, deleted.Id, deleted.Name);
                 return (deleted, AddOutcome.Restored);
             }
         }
@@ -224,7 +250,7 @@ public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity
             {
                 ((ISoftDeletable)deleted).IsDeleted = false;
                 await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                Logger.LogInformation("Restored {Entity} {Id} {Name}", EntityName, deleted.Id, deleted.Name);
+                Logger.LogDebug("Restored {Entity} {Id} {Name}", EntityName, deleted.Id, deleted.Name);
                 return (deleted, AddOutcome.Restored);
             }
         }
@@ -249,7 +275,7 @@ public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity
         CopyValues(context, entity, record);
         context.SaveChanges();
 
-        Logger.LogInformation("Updated {Entity} {Id} {Name}", EntityName, entity.Id, entity.Name);
+        Logger.LogDebug("Updated {Entity} {Id} {Name}", EntityName, entity.Id, entity.Name);
         return entity;
     }
 
@@ -264,7 +290,7 @@ public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity
         CopyValues(context, entity, record);
         await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        Logger.LogInformation("Updated {Entity} {Id} {Name}", EntityName, entity.Id, entity.Name);
+        Logger.LogDebug("Updated {Entity} {Id} {Name}", EntityName, entity.Id, entity.Name);
         return entity;
     }
 
@@ -299,7 +325,7 @@ public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity
         Delete(context, entity);
         context.SaveChanges();
 
-        Logger.LogInformation("Deleted {Entity} {Id} {Name}", EntityName, entity.Id, entity.Name);
+        Logger.LogDebug("Deleted {Entity} {Id} {Name}", EntityName, entity.Id, entity.Name);
         return true;
     }
 
@@ -314,7 +340,7 @@ public abstract class DataService<TEntity> : IDataService<TEntity> where TEntity
         Delete(context, entity);
         await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        Logger.LogInformation("Deleted {Entity} {Id} {Name}", EntityName, entity.Id, entity.Name);
+        Logger.LogDebug("Deleted {Entity} {Id} {Name}", EntityName, entity.Id, entity.Name);
         return true;
     }
 

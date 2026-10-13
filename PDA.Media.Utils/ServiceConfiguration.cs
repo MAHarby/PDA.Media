@@ -53,6 +53,8 @@ public static class ServiceConfiguration
                 selectedProfileName));
         services.AddTransient<LogViewerViewModel>();
         services.AddTransient<Func<LogViewerViewModel>>(sp => sp.GetRequiredService<LogViewerViewModel>);
+        services.AddTransient<MediaScannerViewModel>();
+        services.AddTransient<Func<MediaScannerViewModel>>(sp => sp.GetRequiredService<MediaScannerViewModel>);
 
         // Views.
         services.AddTransient<MainWindow>();

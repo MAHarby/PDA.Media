@@ -11,43 +11,49 @@ public partial class MediaScanner
     /// Below a source folder, a folder holding a video file is a movie named after the folder: its largest video file is the movie (smaller ones are samples or
     /// extras) and nothing under it is searched; a folder without a video file is a group of movies, searched the same way.
     /// </summary>
-    private async Task ScanMoviesAsync(string root, MediaScanResult counts, CancellationToken cancellationToken)
+    private CategoryPlan ReadMovies(MediaCategory category, string root, ScanRun run)
     {
-        // Read every folder first: if one can't be read, the scan stops here, before anything is written.
         var movies = new List<Movie>();
-        AddLooseMovies(root, movies);
-        foreach (string sourceFolder in SubFolders(root))
+        AddLooseMovies(root, movies, run);
+        foreach (string sourceFolder in run.SubFolders(root))
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            AddLooseMovies(sourceFolder, movies);
-            foreach (string folder in SubFolders(sourceFolder)) FindMovies(folder, movies, cancellationToken);
+            AddLooseMovies(sourceFolder, movies, run);
+            foreach (string folder in run.SubFolders(sourceFolder)) FindMovies(folder, movies, run);
         }
 
         // There shouldn't be two movies with the same name; if there are, the first one found is kept and the other is reported.
-        HashSet<int> seen = [];
+        var unique = new List<Movie>();
         foreach (IGrouping<string, Movie> sameName in movies.GroupBy(m => m.Name.ToUpperInvariant()))
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            Movie found = sameName.First();
+            Movie first = sameName.First();
+            unique.Add(first);
             foreach (Movie duplicate in sameName.Skip(1))
             {
-                _logger.LogWarning("Movie {Name} is in {Folder} and {OtherFolder}; only the first is kept", found.Name, found.Folder, duplicate.Folder);
+                Note(run, LogLevel.Warning, null, "Movie {Name} is in {Folder} and {OtherFolder}; only the first is kept", first.Name, first.Folder, duplicate.Folder);
             }
-
-            await SyncAsync(_movieService, found,
-                (stored, f) => Set(stored.Folder, f.Folder, v => stored.Folder = v)
-                    | Set(stored.OriginalFilename, f.OriginalFilename, v => stored.OriginalFilename = v)
-                    | Set(stored.CoverArtFilename, f.CoverArtFilename, v => stored.CoverArtFilename = v),
-                seen, counts, cancellationToken).ConfigureAwait(false);
         }
 
-        await DeleteMissingAsync(_movieService, await _movieService.GetAllRecordsUnderFolderAsync(root, cancellationToken).ConfigureAwait(false), seen, counts, cancellationToken).ConfigureAwait(false);
+        return new CategoryPlan(category, unique.Count, run => SaveMoviesAsync(root, unique, run));
+    }
+
+    private async Task SaveMoviesAsync(string root, List<Movie> movies, ScanRun run)
+    {
+        var movieSync = new EntitySync<Movie>(_movieService, "movie", m => m.Folder,
+            (stored, found) => Set(stored.Folder, found.Folder, v => stored.Folder = v)
+                | Set(stored.OriginalFilename, found.OriginalFilename, v => stored.OriginalFilename = v)
+                | Set(stored.CoverArtFilename, found.CoverArtFilename, v => stored.CoverArtFilename = v));
+        foreach (Movie found in movies)
+        {
+            await movieSync.SyncAsync(found, run).ConfigureAwait(false);
+        }
+
+        movieSync.QueueMissing(await _movieService.GetAllRecordsUnderFolderAsync(root, run.Token).ConfigureAwait(false), run);
     }
 
     /// <summary>Adds each video file directly in <paramref name="folder"/> as a movie named after the file.</summary>
-    private static void AddLooseMovies(string folder, List<Movie> movies)
+    private static void AddLooseMovies(string folder, List<Movie> movies, ScanRun run)
     {
-        foreach (FileInfo file in FilesIn(folder).Where(f => MediaFileNames.IsVideoFile(f.Name)))
+        foreach (FileInfo file in run.FilesIn(folder).Where(f => MediaFileNames.IsVideoFile(f.Name)))
         {
             movies.Add(new Movie { Name = Path.GetFileNameWithoutExtension(file.Name), Folder = folder, OriginalFilename = file.Name });
         }
@@ -56,10 +62,9 @@ public partial class MediaScanner
     /// <summary>
     /// Adds <paramref name="folder"/> as a movie if it holds a video file (the largest one), otherwise searches the folders in it.
     /// </summary>
-    private static void FindMovies(string folder, List<Movie> movies, CancellationToken cancellationToken)
+    private static void FindMovies(string folder, List<Movie> movies, ScanRun run)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        List<FileInfo> files = FilesIn(folder);
+        List<FileInfo> files = run.FilesIn(folder);
         FileInfo? main = files.Where(f => MediaFileNames.IsVideoFile(f.Name)).MaxBy(f => f.Length);
         if (main != null)
         {
@@ -73,6 +78,6 @@ public partial class MediaScanner
             return;
         }
 
-        foreach (string subFolder in SubFolders(folder)) FindMovies(subFolder, movies, cancellationToken);
+        foreach (string subFolder in run.SubFolders(folder)) FindMovies(subFolder, movies, run);
     }
 }

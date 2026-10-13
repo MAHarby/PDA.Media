@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -18,6 +19,12 @@ public class UserSettings
     /// <summary>SQL Server holding the media database (Windows authentication). Read when the app starts.</summary>
     public string DatabaseServer { get; set; } = DataConnection.DefaultServer;
     public string DatabaseName { get; set; } = DataConnection.DefaultDatabase;
+
+    /// <summary>The media scanner window's options (MediaScannerViewModel). Null category ids: the active categories.</summary>
+    public List<int>? MediaScanCategoryIds { get; set; }
+    public bool MediaScanDryRun { get; set; }
+    public bool MediaScanLimitDeletions { get; set; } = true;
+    public int MediaScanMaxDeletePercent { get; set; } = 25;
 
     [JsonIgnore]
     public string ConnectionString => DataConnection.BuildConnectionString(DatabaseServer, DatabaseName);

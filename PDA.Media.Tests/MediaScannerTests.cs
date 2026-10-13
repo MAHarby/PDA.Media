@@ -269,13 +269,202 @@ public sealed class MediaScannerTests
         Assert.AreNotEqual(firstId, albums.GetAllRecords().Single().Id);
     }
 
+    // Options: selected categories, progress, dry run, deletion limit, clearing, last scan.
+    // ==================================================================================================
+
+    [TestMethod]
+    public void TestOnlyTheSelectedCategoriesAreScanned()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        disk.File("Music", "ABBA", "Gold", "01 - Dancing Queen.flac");
+        disk.File("Movies", "Raw Blu-Rays", "Alien (1979)", "Alien (1979).mkv");
+        AddCategory(db, "Music", "Music", disk.Path("Music"));
+        MediaCategory movies = AddCategory(db, "Movies", "Movie", disk.Path("Movies"));
+        movies.IsActive = false;
+        new MediaCategoryService(db.ContextFactory).UpdateRecord(movies.Id, movies);
+
+        MediaScanResult result = Scanner(db).ScanMediaCategories([movies.Id]);
+
+        Assert.AreEqual(1, result.Added, "the movie only, though its category isn't active");
+        Assert.AreEqual("Movies", result.Categories.Single().CategoryName);
+        Assert.AreEqual(0, new ArtistService(db.ContextFactory).GetAllRecords().Count(a => a.Id != 0));
+    }
+
+    [TestMethod]
+    public void TestProgressIsReported()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        disk.File("Music", "ABBA", "Gold", "01 - Dancing Queen.flac");
+        disk.File("Music", "ABBA", "Gold", "02 - Waterloo.flac");
+        disk.File("Movies", "Raw Blu-Rays", "Alien (1979)", "Alien (1979).mkv");
+        int music = AddCategory(db, "Music", "Music", disk.Path("Music")).Id;
+        int movies = AddCategory(db, "Movies", "Movie", disk.Path("Movies")).Id;
+        var progress = new ListProgress();
+
+        Scanner(db).ScanMediaCategories([music, movies], progress: progress);
+
+        List<MediaScanProgress> reports = progress.Reports;
+        // Reading, then saving, in order; the total is known once reading has finished.
+        int firstSave = reports.FindIndex(r => r.Phase == MediaScanPhase.Saving);
+        Assert.IsTrue(reports.Take(firstSave).All(r => r.Phase == MediaScanPhase.Reading && r.ItemsTotal == 0));
+        Assert.AreEqual(6, reports.Max(r => r.FoldersRead), "Music, ABBA, Gold, Movies, Raw Blu-Rays and Alien, each counted once");
+        Assert.IsTrue(reports.Skip(firstSave).All(r => r.ItemsTotal == 5), "1 artist, 1 album, 2 tracks, 1 movie");
+        Assert.AreEqual(5, reports.Last(r => r.Phase == MediaScanPhase.Saving).ItemsDone);
+        Assert.AreEqual(MediaScanPhase.Finished, reports.Last().Phase);
+        CollectionAssert.IsSubsetOf(new[] { "Added artist ABBA", "Added album Gold", "Added track Waterloo", "Added movie Alien (1979)" },
+            reports.Where(r => r.Change != null).Select(r => r.Change!.ToString()).ToList());
+        CollectionAssert.AreEqual(new[] { "Movies", "Music" }, reports.Where(r => r.CategoryResult != null).Select(r => r.CategoryResult!.CategoryName).ToList());
+        Assert.IsTrue(reports.Any(r => r.Message == "Scanned media category Movies: 1 added, 0 restored, 0 updated, 0 unchanged, 0 deleted"),
+            string.Join("\n", reports.Select(r => r.Message)));
+    }
+
+    [TestMethod]
+    public void TestDryRunSavesNothing()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        disk.File("Music", "ABBA", "Gold", "01 - Dancing Queen.flac");
+        disk.File("Music", "ABBA", "Gold", "02 - Waterloo.flac");
+        disk.File("Music", "ABBA", "Arrival", "01 - When I Kissed The Teacher.flac");
+        int music = AddCategory(db, "Music", "Music", disk.Path("Music")).Id;
+        Scanner(db).ScanAllMediaCategories();
+        var tracks = new TrackService(db.ContextFactory);
+        int waterloo = tracks.GetAllRecords("Waterloo").Single().Id;
+        // On disk now: Waterloo has gone, Dancing Queen is an mp3, and there is a new artist.
+        File.Delete(disk.Path("Music", "ABBA", "Gold", "02 - Waterloo.flac"));
+        File.Move(disk.Path("Music", "ABBA", "Gold", "01 - Dancing Queen.flac"), disk.Path("Music", "ABBA", "Gold", "01 - Dancing Queen.mp3"));
+        disk.File("Music", "Björk", "Homogenic", "05 - Jóga.mp3");
+        var progress = new ListProgress();
+
+        MediaScanResult result = Scanner(db).ScanMediaCategories([music], new MediaScanOptions { DryRun = true }, progress);
+
+        Assert.IsTrue(result.IsDryRun);
+        Assert.AreEqual((3, 0, 2, 1), (result.Added, result.Restored, result.Updated, result.Deleted), "Björk, Homogenic, Jóga; Gold's track count, Dancing Queen's file; Waterloo");
+        CollectionAssert.IsSubsetOf(new[] { "Added artist Björk", "Added album Homogenic", "Added track Jóga", "Updated album Gold", "Updated track Dancing Queen", "Deleted track Waterloo" },
+            progress.Reports.Where(r => r.Change != null).Select(r => r.Change!.ToString()).ToList());
+        Assert.IsNotNull(tracks.GetRecordById(waterloo), "not deleted");
+        Assert.AreEqual("01 - Dancing Queen.flac", tracks.GetAllRecords("Dancing Queen").Single().OriginalFilename, "not updated");
+        Assert.IsEmpty(new ArtistService(db.ContextFactory).GetAllRecords("Björk"), "not added");
+        Assert.AreEqual(6, Scanner(db).GetCategories().Single().LastScan!.Added, "the last scan is still the first one: a dry run isn't recorded");
+
+        // A dry run also sees what would be restored.
+        Scanner(db).ScanAllMediaCategories();
+        disk.File("Music", "ABBA", "Gold", "02 - Waterloo.flac");
+        MediaScanResult again = Scanner(db).ScanMediaCategories([music], new MediaScanOptions { DryRun = true });
+        Assert.AreEqual((0, 1, 1, 0), (again.Added, again.Restored, again.Updated, again.Deleted), "Waterloo restored, Gold back to 2 tracks");
+        Assert.IsNull(tracks.GetRecordById(waterloo), "still deleted");
+    }
+
+    [TestMethod]
+    public void TestDeletionLimitHoldsBackLargeDeletions()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        foreach (string name in new[] { "Alien", "Heat", "Ronin", "Up" }) disk.File("Movies", "Raw Blu-Rays", name, name + ".mkv");
+        int movies = AddCategory(db, "Movies", "Movie", disk.Path("Movies")).Id;
+        Scanner(db).ScanAllMediaCategories();
+        Directory.Delete(disk.Path("Movies", "Raw Blu-Rays", "Heat"), true);
+        Directory.Delete(disk.Path("Movies", "Raw Blu-Rays", "Ronin"), true);
+        disk.File("Movies", "Raw Blu-Rays", "Zulu", "Zulu.mkv");
+        var logger = new CapturingLogger<MediaScanner>();
+
+        // 2 of the 4 movies there before the scan would go (the new one doesn't count): 50%, over a 25% limit.
+        MediaScanResult held = Scanner(db, logger).ScanMediaCategories([movies], new MediaScanOptions { MaxDeletePercent = 25 });
+
+        MediaCategoryScanResult category = held.Categories.Single();
+        Assert.AreEqual(MediaCategoryScanStatus.DeletionsHeld, category.Status);
+        Assert.AreEqual((1, 0, 2), (held.Added, held.Deleted, category.DeletionsHeld), "Zulu is still added");
+        Assert.AreEqual(1, held.CategoriesScanned);
+        StringAssert.Contains(category.Message, "2 of 4 rows (50%)");
+        Assert.IsNotNull(new MovieService(db.ContextFactory).GetRecordByName("Heat"));
+        Assert.IsTrue(logger.Messages.Any(m => m.Contains("over the 25% limit")), string.Join("\n", logger.Messages));
+        Assert.AreEqual(MediaCategoryScanStatus.DeletionsHeld, Scanner(db).GetCategories().Single().LastScan!.Status);
+
+        // At the limit, they go.
+        MediaScanResult deleted = Scanner(db).ScanMediaCategories([movies], new MediaScanOptions { MaxDeletePercent = 40 });
+        Assert.AreEqual(MediaCategoryScanStatus.Scanned, deleted.Categories.Single().Status, "2 of 5 rows = 40%");
+        Assert.AreEqual(2, deleted.Deleted);
+        Assert.IsNull(new MovieService(db.ContextFactory).GetRecordByName("Heat"));
+    }
+
+    [TestMethod]
+    public void TestClearDataNeedsEveryActiveCategory()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        disk.File("Music", "ABBA", "Gold", "01 - Dancing Queen.flac");
+        Directory.CreateDirectory(disk.Path("Movies"));
+        int music = AddCategory(db, "Music", "Music", disk.Path("Music")).Id;
+        AddCategory(db, "Movies", "Movie", disk.Path("Movies"));
+        AddCategory(db, "Books", "Audiobooks", disk.Path("Books"));
+        Scanner(db).ScanAllMediaCategories();
+
+        var error = Assert.ThrowsExactly<InvalidOperationException>(() => Scanner(db).ScanMediaCategories([music], new MediaScanOptions { ClearData = true }));
+
+        StringAssert.Contains(error.Message, "not selected: Movies", "Books can't be scanned, so it isn't needed");
+        Assert.HasCount(1, new TrackService(db.ContextFactory).GetAllRecords(), "nothing was cleared");
+        // A dry run ignores ClearData.
+        Assert.AreEqual(0, Scanner(db).ScanMediaCategories([music], new MediaScanOptions { ClearData = true, DryRun = true }).Added);
+    }
+
+    [TestMethod]
+    public void TestGetCategoriesWithTheirLastScan()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        disk.File("Movies", "Raw Blu-Rays", "Alien (1979)", "Alien (1979).mkv");
+        int movies = AddCategory(db, "Movies", "Movie", disk.Path("Movies")).Id;
+        int books = AddCategory(db, "Books", "Audiobooks", disk.Path("Books")).Id;
+        int offline = AddCategory(db, "Offline", "TV", disk.Path("Not There")).Id;
+
+        Scanner(db).ScanAllMediaCategories();
+        List<MediaScanCategory> categories = Scanner(db).GetCategories();
+
+        MediaScanCategory movieCategory = categories.Single(c => c.Id == movies);
+        Assert.IsTrue(movieCategory.CanScan);
+        Assert.AreEqual(MediaKind.Movie, movieCategory.Kind);
+        Assert.AreEqual((MediaCategoryScanStatus.Scanned, 1), (movieCategory.LastScan!.Status, movieCategory.LastScan.Added));
+        Assert.AreEqual(DateTime.Today, movieCategory.LastScan.FinishedOn.Date);
+        MediaScanCategory bookCategory = categories.Single(c => c.Id == books);
+        Assert.IsFalse(bookCategory.CanScan);
+        StringAssert.Contains(bookCategory.CannotScanReason, "isn't Music, Movie or TV");
+        MediaScanCategory offlineCategory = categories.Single(c => c.Id == offline);
+        Assert.IsTrue(offlineCategory.CanScan, "whether the folder is there is found out when it is scanned");
+        Assert.AreEqual(MediaCategoryScanStatus.Skipped, offlineCategory.LastScan!.Status);
+        StringAssert.Contains(offlineCategory.LastScan.Message, "can't be reached");
+    }
+
+    [TestMethod]
+    public void TestOnlyOneScanAtATime()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        disk.File("Movies", "Raw Blu-Rays", "Alien (1979)", "Alien (1979).mkv");
+        int movies = AddCategory(db, "Movies", "Movie", disk.Path("Movies")).Id;
+        MediaScanner scanner = Scanner(db);
+        Exception? second = null;
+        var progress = new ListProgress(_ =>
+        {
+            if (second != null || !scanner.IsScanning) return;
+            second = Assert.ThrowsExactly<InvalidOperationException>(() => scanner.ScanMediaCategories([movies]));
+        });
+
+        scanner.ScanMediaCategories([movies], progress: progress);
+
+        StringAssert.Contains(second!.Message, "already running");
+        Assert.IsFalse(scanner.IsScanning);
+        Assert.AreEqual(0, scanner.ScanMediaCategories([movies]).Added, "and it can run again afterwards");
+    }
+
     // Helpers.
     // ==================================================================================================
 
     private static MediaScanner Scanner(SqlServerTestDatabase db, ILogger<MediaScanner>? logger = null) =>
         new(new MediaCategoryService(db.ContextFactory), new ArtistService(db.ContextFactory), new AlbumService(db.ContextFactory),
             new AlbumTypeService(db.ContextFactory), new TrackService(db.ContextFactory), new MovieService(db.ContextFactory),
-            new TVShowService(db.ContextFactory), new TVShowEpisodeService(db.ContextFactory), new MediaCacheService(db.ContextFactory), logger);
+            new TVShowService(db.ContextFactory), new TVShowEpisodeService(db.ContextFactory), new MediaCacheService(db.ContextFactory), new SettingService(db.ContextFactory), logger);
 
     private static MediaCategory AddCategory(SqlServerTestDatabase db, string name, string mediaClass, string rootFolder, int albumTypeId = 5) =>
         new MediaCategoryService(db.ContextFactory).AddRecord(new MediaCategory { Name = name, MediaClass = mediaClass, RootFolder = rootFolder, AlbumTypeId = albumTypeId });
@@ -303,6 +492,18 @@ public sealed class MediaScannerTests
         public void Dispose()
         {
             if (Directory.Exists(_root)) Directory.Delete(_root, true);
+        }
+    }
+
+    /// <summary>Keeps every progress report, in order, as it is made (Progress&lt;T&gt; would post them to the thread pool).</summary>
+    private sealed class ListProgress(Action<MediaScanProgress>? onReport = null) : IProgress<MediaScanProgress>
+    {
+        public List<MediaScanProgress> Reports { get; } = [];
+
+        public void Report(MediaScanProgress value)
+        {
+            Reports.Add(value);
+            onReport?.Invoke(value);
         }
     }
 
