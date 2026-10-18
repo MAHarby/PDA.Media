@@ -11,6 +11,8 @@
         <entry key="PDA.Media.Utils/Views/EncoderProfilesView.axaml" value="PDA.Media.Tests/PDA.Media.Tests.csproj" />
         <entry key="PDA.Media.Utils/Views/LogViewerView.axaml" value="PDA.Media.Tests/PDA.Media.Tests.csproj" />
         <entry key="PDA.Media.Utils/Views/MainWindow.axaml" value="PDA.Media.Utils/PDA.Media.Utils.csproj" />
+        <entry key="PDA.Media.Utils/Views/MediaScannerView.axaml" value="PDA.Media.Tests/PDA.Media.Tests.csproj" />
+        <entry key="PDA.Media.Utils/Views/MediaSearchView.axaml" value="PDA.Media.Tests/PDA.Media.Tests.csproj" />
       </map>
     </option>
   </component>
