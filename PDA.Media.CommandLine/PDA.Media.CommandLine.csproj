@@ -1,10 +1,28 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <RootNamespace>PDA.Media.CommandLine</RootNamespace>
+        <!-- The command is "pda-media" (pda-media.exe on Windows). -->
+        <AssemblyName>pda-media</AssemblyName>
+        <!-- Published as one self-contained file per OS (no .NET install needed) by the profiles in Properties/PublishProfiles: see README.md. -->
     </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Spectre.Console" Version="0.57.2" />
+      <PackageReference Include="System.CommandLine" Version="2.0.13" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\PDA.Media.Data\PDA.Media.Data.csproj" />
+      <ProjectReference Include="..\PDA.Media.Scanner\PDA.Media.Scanner.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <InternalsVisibleTo Include="PDA.Media.Tests" />
+    </ItemGroup>
 
 </Project>

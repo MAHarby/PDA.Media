@@ -17,6 +17,18 @@ public sealed record MediaSearchCriteria
     public IReadOnlyList<string> MovieRoots { get; init; } = [];
     public IReadOnlyList<string> TVRoots { get; init; } = [];
 
+    /// <summary>
+    /// Only albums of these album types (and their artists and tracks); null for any type. Like <see cref="MovieTypeIds"/> and <see cref="TVShowTypeIds"/>,
+    /// it narrows its own kind of media only: to leave a kind out, give it no roots.
+    /// </summary>
+    public IReadOnlyCollection<int>? AlbumTypeIds { get; init; }
+
+    /// <summary>Only movies of these movie types; null for any type.</summary>
+    public IReadOnlyCollection<int>? MovieTypeIds { get; init; }
+
+    /// <summary>Only TV shows of these show types (and their episodes); null for any type.</summary>
+    public IReadOnlyCollection<int>? TVShowTypeIds { get; init; }
+
     /// <summary>Only rows marked as favourites match.</summary>
     public bool FavouritesOnly { get; init; }
 

@@ -18,6 +18,7 @@
         <ProjectReference Include="..\PDA.Media.Utils\PDA.Media.Utils.csproj" />
         <ProjectReference Include="..\PDA.Media.Data\PDA.Media.Data.csproj" />
         <ProjectReference Include="..\PDA.Media.Scanner\PDA.Media.Scanner.csproj" />
+        <ProjectReference Include="..\PDA.Media.CommandLine\PDA.Media.CommandLine.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -52,12 +52,15 @@ public class MediaSearchService
         if (criteria.MusicRoots.Count > 0)
         {
             IQueryable<Artist> artists = Rows<Artist>(context, criteria.IncludeDeleted);
-            IQueryable<Album> albums = Rows<Album>(context, criteria.IncludeDeleted).Where(UnderAny<Album>(nameof(Album.Folder), criteria.MusicRoots));
+            IQueryable<Album> albums = OfTypes(Rows<Album>(context, criteria.IncludeDeleted).Where(UnderAny<Album>(nameof(Album.Folder), criteria.MusicRoots)),
+                criteria.AlbumTypeIds);
             IQueryable<Track> tracks = Rows<Track>(context, criteria.IncludeDeleted).Where(UnderAny<Track>(nameof(Track.Folder), criteria.MusicRoots));
+            if (criteria.AlbumTypeIds != null) tracks = tracks.Where(t => albums.Select(a => a.Id).Contains(t.AlbumId));
 
-            // An artist is in the chosen categories when its folder is under one of their roots, or it has an album there.
-            IQueryable<int> artistIdsInRoots = artists.Where(UnderAny<Artist>(nameof(Artist.Folder), criteria.MusicRoots)).Select(a => a.Id)
-                .Union(albums.Select(a => a.ArtistId));
+            // An artist is in the chosen categories when its folder is under one of their roots, or it has an album there
+            // (only the album when album types are chosen: an artist has no type of its own).
+            IQueryable<int> artistIdsInRoots = criteria.AlbumTypeIds != null ? albums.Select(a => a.ArtistId)
+                : artists.Where(UnderAny<Artist>(nameof(Artist.Folder), criteria.MusicRoots)).Select(a => a.Id).Union(albums.Select(a => a.ArtistId));
             IQueryable<Artist> artistsInRoots = artists.Where(a => artistIdsInRoots.Contains(a.Id));
 
             HashSet<int> topIds;
@@ -90,6 +93,7 @@ public class MediaSearchService
         if (criteria.MovieRoots.Count > 0)
         {
             IQueryable<Movie> movies = Rows<Movie>(context, criteria.IncludeDeleted).Where(UnderAny<Movie>(nameof(Movie.Folder), criteria.MovieRoots));
+            if (criteria.MovieTypeIds is { } movieTypes) movies = movies.Where(m => movieTypes.Contains(m.MovieTypeId));
             if (!result.IsBrowse) movies = Matching(movies, pattern, criteria);
             List<Movie> found = await ToListAsync(movies.OrderBy(m => m.Name).Take(max + 1), isAsync, cancellationToken).ConfigureAwait(false);
             result.IsTruncated |= Trim(found, max);
@@ -99,8 +103,10 @@ public class MediaSearchService
         if (criteria.TVRoots.Count > 0)
         {
             IQueryable<TVShow> shows = Rows<TVShow>(context, criteria.IncludeDeleted).Where(UnderAny<TVShow>(nameof(TVShow.Folder), criteria.TVRoots));
+            if (criteria.TVShowTypeIds is { } showTypes) shows = shows.Where(s => showTypes.Contains(s.TVShowTypeId));
             IQueryable<TVShowEpisode> episodes = Rows<TVShowEpisode>(context, criteria.IncludeDeleted)
                 .Where(UnderAny<TVShowEpisode>(nameof(TVShowEpisode.Folder), criteria.TVRoots));
+            if (criteria.TVShowTypeIds != null) episodes = episodes.Where(e => shows.Select(s => s.Id).Contains(e.TVShowId));
 
             HashSet<int> topIds;
             if (result.IsBrowse)
@@ -131,19 +137,23 @@ public class MediaSearchService
     // Children (loaded when a branch is opened).
     // ==================================================================================================
 
-    /// <summary>An artist's albums by name, only those under <paramref name="musicRoots"/> (all of them if it is empty).</summary>
-    public List<Album> GetArtistAlbums(int artistId, IReadOnlyList<string> musicRoots, bool includeDeleted = false)
-        => GetArtistAlbumsCoreAsync(artistId, musicRoots, includeDeleted, false, CancellationToken.None).GetAwaiter().GetResult();
+    /// <summary>
+    /// An artist's albums by name, only those under <paramref name="musicRoots"/> (all of them if it is empty) and of <paramref name="albumTypeIds"/>
+    /// (any type if null).
+    /// </summary>
+    public List<Album> GetArtistAlbums(int artistId, IReadOnlyList<string> musicRoots, bool includeDeleted = false, IReadOnlyCollection<int>? albumTypeIds = null)
+        => GetArtistAlbumsCoreAsync(artistId, musicRoots, includeDeleted, albumTypeIds, false, CancellationToken.None).GetAwaiter().GetResult();
 
     /// <inheritdoc cref="GetArtistAlbums"/>
-    public Task<List<Album>> GetArtistAlbumsAsync(int artistId, IReadOnlyList<string> musicRoots, bool includeDeleted = false, CancellationToken cancellationToken = default)
-        => GetArtistAlbumsCoreAsync(artistId, musicRoots, includeDeleted, true, cancellationToken);
+    public Task<List<Album>> GetArtistAlbumsAsync(int artistId, IReadOnlyList<string> musicRoots, bool includeDeleted = false, IReadOnlyCollection<int>? albumTypeIds = null,
+        CancellationToken cancellationToken = default)
+        => GetArtistAlbumsCoreAsync(artistId, musicRoots, includeDeleted, albumTypeIds, true, cancellationToken);
 
-    private async Task<List<Album>> GetArtistAlbumsCoreAsync(int artistId, IReadOnlyList<string> musicRoots, bool includeDeleted, bool isAsync,
-        CancellationToken cancellationToken)
+    private async Task<List<Album>> GetArtistAlbumsCoreAsync(int artistId, IReadOnlyList<string> musicRoots, bool includeDeleted,
+        IReadOnlyCollection<int>? albumTypeIds, bool isAsync, CancellationToken cancellationToken)
     {
         await using DataContext context = await CreateContextAsync(isAsync, cancellationToken).ConfigureAwait(false);
-        IQueryable<Album> albums = Rows<Album>(context, includeDeleted).Where(a => a.ArtistId == artistId);
+        IQueryable<Album> albums = OfTypes(Rows<Album>(context, includeDeleted).Where(a => a.ArtistId == artistId), albumTypeIds);
         if (musicRoots.Count > 0) albums = albums.Where(UnderAny<Album>(nameof(Album.Folder), musicRoots));
         return await ToListAsync(albums.OrderBy(a => a.Name), isAsync, cancellationToken).ConfigureAwait(false);
     }
@@ -253,6 +263,10 @@ public class MediaSearchService
     /// <summary>A table without tracking; soft-deleted rows included or not.</summary>
     private static IQueryable<T> Rows<T>(DataContext context, bool includeDeleted) where T : class =>
         includeDeleted ? context.Set<T>().IgnoreQueryFilters([DataContext.SoftDeleteFilter]).AsNoTracking() : context.Set<T>().AsNoTracking();
+
+    /// <summary>The albums of the given types (all of them when null).</summary>
+    private static IQueryable<Album> OfTypes(IQueryable<Album> albums, IReadOnlyCollection<int>? albumTypeIds) =>
+        albumTypeIds == null ? albums : albums.Where(a => albumTypeIds.Contains(a.AlbumTypeId));
 
     /// <summary>Removes the items over <paramref name="max"/>; true if there were any.</summary>
     private static bool Trim<T>(List<T> list, int max)
