@@ -95,6 +95,41 @@ public sealed class MediaSearchServiceTests
     }
 
     [TestMethod]
+    public void TestTypesNarrowEachKindOfMedia()
+    {
+        using var db = new SqlServerTestDatabase();
+        Library lib = Library.Add(db);
+        var f = db.ContextFactory;
+        int live = new AlbumTypeService(f).AddRecord(new AlbumType { Name = "Live" }).Id;
+        int compilation = new AlbumTypeService(f).AddRecord(new AlbumType { Name = "Compilation" }).Id;
+        var albums = new AlbumService(f);
+        Album killers = albums.GetAllRecords("Live Killers").Single();
+        (killers.AlbumTypeId, lib.Gold.AlbumTypeId) = (live, compilation);
+        albums.UpdateRecord(killers.Id, killers);
+        albums.UpdateRecord(lib.Gold.Id, lib.Gold);
+        int concert = new MovieTypeService(f).AddRecord(new MovieType { Name = "Concert" }).Id;
+        Movie heat = new MovieService(f).GetRecordByName("Heat (1995)")!;
+        heat.MovieTypeId = concert;
+        new MovieService(f).UpdateRecord(heat.Id, heat);
+        int drama = new TVShowTypeService(f).AddRecord(new TVShowType { Name = "Drama" }).Id;
+        var service = new MediaSearchService(f);
+
+        // Browse: only the artists with a live album, and only that album below them.
+        MediaSearchResult liveAlbums = service.Search(new MediaSearchCriteria { Text = "*", MusicRoots = [Music, Live], AlbumTypeIds = [live] });
+        Assert.AreEqual("Queen", liveAlbums.Artists.Single().Name);
+        Assert.AreEqual("Live Killers", service.GetArtistAlbums(lib.Queen.Id, [Music, Live], albumTypeIds: [live]).Single().Name);
+
+        // A track only matches in an album of the type.
+        Assert.IsEmpty(service.Search(new MediaSearchCriteria { Text = "bohemian", MusicRoots = [Music, Live], AlbumTypeIds = [live] }).MatchedTracks);
+        Assert.HasCount(1, service.Search(new MediaSearchCriteria { Text = "waterloo", MusicRoots = [Music], AlbumTypeIds = [compilation] }).MatchedTracks);
+
+        Assert.AreEqual("Heat (1995)", service.Search(new MediaSearchCriteria { Text = "*", MovieRoots = [Movies], MovieTypeIds = [concert] }).Movies.Single().Name);
+        MediaSearchResult dramas = service.Search(new MediaSearchCriteria { Text = "serenity", TVRoots = [TV], TVShowTypeIds = [drama] });
+        Assert.IsEmpty(dramas.Shows, "Firefly is of type 0, not Drama, so its episodes don't match either");
+        Assert.IsEmpty(dramas.MatchedEpisodes);
+    }
+
+    [TestMethod]
     public void TestMaxResults()
     {
         using var db = new SqlServerTestDatabase();

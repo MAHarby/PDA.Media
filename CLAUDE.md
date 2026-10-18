@@ -13,7 +13,8 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
 | `PDA.Media.BatchConverter` | Console app (`net10.0`) | Command-line batch encoder; input/output folders are hard-coded (see TODOs in `Program.cs`). |
 | `PDA.Media.Data` | Class library (`net10.0`) | EF Core 10 data layer over an existing SQL Server database (see below). Used by `PDA.Media.Utils`. |
 | `PDA.Media.Scanner` | Class library (`net10.0`) | Scans the media folders into the database (`MediaScanner`). Uses `PDA.Media.Data`; used by `PDA.Media.Utils`. |
-| `PDA.Media.Tests` | MSTest 4 (`net10.0`) | References `PDA.Media.Utils`, `PDA.Media.Data` and `PDA.Media.Scanner`. Method-level parallelization is on (`MSTestSettings.cs`). |
+| `PDA.Media.CommandLine` | Console app (`net10.0`), command `pda-media` | Cross-platform search of the media library (Windows and Linux). Uses `PDA.Media.Data` and `PDA.Media.Scanner`. See below and its `README.md`. |
+| `PDA.Media.Tests` | MSTest 4 (`net10.0`) | References `PDA.Media.Utils`, `PDA.Media.Data`, `PDA.Media.Scanner` and `PDA.Media.CommandLine`. Method-level parallelization is on (`MSTestSettings.cs`). |
 
 ## PDA.Media.Utils (Avalonia) architecture
 
@@ -187,7 +188,8 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
     Notes match (or have an album, track or episode that does) under the given category roots (rows belong to a category by folder, so an artist with
     albums in several music categories is found in each), with favourites-only and include-deleted options and a `MaxResults` cap (`IsTruncated`). It
     returns the top-level rows plus the matched ids and the path albums, so the tree can open down to each match; `GetArtistAlbums` /
-    `GetAlbumTracks` / `GetShowEpisodes` (and async) load a branch. `SaveEditableFields(Async)` saves only `CopyEditableFields`: Description, Notes,
+    `GetAlbumTracks` / `GetShowEpisodes` (and async) load a branch. `AlbumTypeIds` / `MovieTypeIds` / `TVShowTypeIds` narrow each kind to those
+    types (an artist only through its albums; tracks and episodes through their album or show). `SaveEditableFields(Async)` saves only `CopyEditableFields`: Description, Notes,
     IsFavourite, plus MusicBrainzId, the type, Length and ReleaseDate where the row has them (also on a soft-deleted row). The sync methods run the async
     core with `isAsync: false`.
   - `MediaPathService.ApplyRename(Async)(MediaRenameChanges)`: the database side of a rename, in one SaveChanges: the row's new Name (and a show's
@@ -238,6 +240,27 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   in order); `MediaScannerViewModelTests` and `MediaSearchViewModelTests` do the same through the Media Library tabs' view models;
   `MediaSearchServiceTests` cover the search, branches and editable fields.
 
+## PDA.Media.CommandLine (`pda-media`)
+
+- `pda-media search <text> [--category Music,Movies] [--type Single,Live] [--favourites] [--deleted] [--max n] [--expand] [--paths]` and
+  `pda-media config [--init | --test]`. Parsed by **System.CommandLine** 2.0 (`PdaMediaCli` builds the commands; `--config` works on every command);
+  output by **Spectre.Console** (a coloured `Tree`: Music → Artist → Album → Track, Movies → source folder → Movie, TV shows → Show → Season → Episode).
+  Exit codes: 0 found, 1 nothing found, 2 an error. The commands write through `CliContext` (Out / Error consoles and writers, the settings store),
+  so tests capture the output; piped output gets a width of `$COLUMNS` or 200 (Spectre.Console would otherwise cut every line).
+- The search is `MediaSearchService` with the categories' root folders (default: every active, scannable category) and `AlbumTypeIds` /
+  `MovieTypeIds` / `TVShowTypeIds` from `--type` (naming types leaves out the kinds of media with none named). Unknown names are errors that list
+  the valid ones.
+- **Config file** (`CliSettings`, `CliSettingsStore`): `~/.config/pda-media/config.json` (or `$XDG_CONFIG_HOME/...`) on Linux,
+  `%APPDATA%\PDA.Media\pda-media.json` on Windows; `--config` or `PDA_MEDIA_CONFIG` override it. It sets the server, database, a SQL Server
+  login (Linux has no Windows authentication; `DataConnection.BuildConnectionString(server, database, userId, password)`) or a full connection
+  string, and `PathMappings`. `PathMapper` turns the database's Windows paths into this computer's paths. Without a file: PDA-Main / Media.Master
+  with Windows authentication. `--init` writes a template, chmod 600 on Linux; the password is never shown.
+- **Publishing:** one self-contained single file per OS through `Properties/PublishProfiles/win-x64.pubxml` and `linux-x64.pubxml`
+  (`dotnet publish PDA.Media.CommandLine -p:PublishProfile=linux-x64`, output in `bin/publish/<rid>/`). Normal builds stay framework-dependent.
+  Install steps are in the project's `README.md`.
+- Tests: `CommandLineTests` (path mappings, config location and loading, connection strings, help, config --init / --test, search output, errors)
+  run the commands through `PdaMediaCli.RunAsync` with captured consoles against `SqlServerTestDatabase`.
+
 ## Commands
 
 ```bash
@@ -246,6 +269,8 @@ dotnet test PDA.Media.Tests/PDA.Media.Tests.csproj
 dotnet test PDA.Media.Tests/PDA.Media.Tests.csproj --filter "FullyQualifiedName~EncodeProfileTests"
 dotnet format PDA.Media.slnx --verify-no-changes     # style check
 dotnet run --project PDA.Media.Utils                 # needs a desktop/display (Windows)
+dotnet run --project PDA.Media.CommandLine -- search queen
+dotnet publish PDA.Media.CommandLine -p:PublishProfile=linux-x64   # or win-x64: one self-contained pda-media file
 ```
 
 ## Conventions

@@ -28,6 +28,23 @@ public static class DataConnection
     }.ConnectionString;
 
     /// <summary>
+    /// A connection string with a SQL Server login (user name and password), for where Windows authentication isn't available (e.g. Linux);
+    /// otherwise as <see cref="BuildConnectionString(string, string)"/>.
+    /// </summary>
+    public static string BuildConnectionString(string server, string database, string userId, string password, string applicationName = "PDA.Media") =>
+        new SqlConnectionStringBuilder
+        {
+            DataSource = server,
+            InitialCatalog = database,
+            IntegratedSecurity = false,
+            UserID = userId,
+            Password = password,
+            TrustServerCertificate = true,
+            ConnectTimeout = 5,
+            ApplicationName = applicationName,
+        }.ConnectionString;
+
+    /// <summary>
     /// SQL Server with retries for brief network drops. Because of the retries, a transaction started in code must
     /// run inside <c>context.Database.CreateExecutionStrategy().Execute(...)</c>.
     /// </summary>

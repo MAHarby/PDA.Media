@@ -3,3 +3,9 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+# Per-user Rider / ReSharper files
+*.DotSettings.user
+.idea/**/avalonia.xml
+.idea/**/dataSources.xml
+.idea/**/dataSources.local.xml
+.idea/**/dataSources/
