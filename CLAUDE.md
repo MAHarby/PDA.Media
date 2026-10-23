@@ -66,7 +66,8 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   opens. A finished scan marks the Analysis figures as stale (`MarkStale`); the Analysis tab's Show in Search switches to the Search tab and searches for the
   row in its category (`MediaSearchViewModel.ShowInSearchAsync`).
 - **Search tab** (`MediaSearchView` / `MediaSearchViewModel`): search box (`*` wildcard; Enter searches) over Name, Description and Notes; tick boxes for
-  the scannable categories (active ones ticked); Favourites only; Show deleted. Results are a tree of `MediaTreeNode`: Music → Artist → Album → Track,
+  the scannable categories (active ones ticked) in groups by media class, Music and Video (`SearchCategoryGroup`: its own tick box ticks or clears the
+  group, and shows in between when some are ticked); Favourites only; Show deleted. Results are a tree of `MediaTreeNode`: Music → Artist → Album → Track,
   Movies → source folder → Movie, TV shows → Show → Season (with missing episode numbers) → Episode. Branches load when opened
   (`LoadChildrenAsync`, a "Loading..." child until then); after a search the way down to the matches is opened (up to 50 paths), and matches are bold.
   The details panel shows cover art (decoded off the UI thread), the read-only fields (`DetailRow`), the file's size / date from disk, Open folder (selects

@@ -36,15 +36,26 @@
                         </Button>
                     </Grid>
 
-                    <ItemsControl Grid.Row="1" ItemsSource="{Binding Categories}" Classes="SearchCategories">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
+                    <!-- Categories in groups (Music, Video): a group's tick box ticks or clears everything in it. -->
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding CategoryGroups}" Classes="SearchCategories">
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="models:SearchCategoryItem">
-                                <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected}" ToolTip.Tip="{Binding RootFolder}" Classes="SearchCategory"/>
+                            <DataTemplate x:DataType="models:SearchCategoryGroup">
+                                <Grid ColumnDefinitions="80,*" Classes="SearchCategoryGroup">
+                                    <CheckBox Grid.Column="0" Content="{Binding Name}" IsChecked="{Binding IsSelected}" Classes="SearchCategoryGroup"
+                                              ToolTip.Tip="Tick or clear every category in the group"/>
+                                    <ItemsControl Grid.Column="1" ItemsSource="{Binding Categories}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="models:SearchCategoryItem">
+                                                <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected}" ToolTip.Tip="{Binding RootFolder}" Classes="SearchCategory"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
