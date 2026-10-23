@@ -18,6 +18,9 @@ public enum MediaNodeKind
 
     /// <summary>A movie source folder (e.g. "Compressed Blu-Rays").</summary>
     Source,
+
+    /// <summary>A folder holding several movies' files (e.g. "Star Trek").</summary>
+    Collection,
     Movie,
     Show,
     Season,
@@ -76,6 +79,7 @@ public partial class MediaTreeNode : ObservableObject
     public bool IsAlbum => Kind == MediaNodeKind.Album;
     public bool IsTrack => Kind == MediaNodeKind.Track;
     public bool IsSource => Kind == MediaNodeKind.Source;
+    public bool IsCollection => Kind == MediaNodeKind.Collection;
     public bool IsMovie => Kind == MediaNodeKind.Movie;
     public bool IsShow => Kind == MediaNodeKind.Show;
     public bool IsSeason => Kind == MediaNodeKind.Season;

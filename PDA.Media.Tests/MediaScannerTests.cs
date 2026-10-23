@@ -178,6 +178,56 @@ public sealed class MediaScannerTests
     }
 
     [TestMethod]
+    public void TestScanMovieCollectionFolder()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        // A collection: films named with different years (sizes as they come), a sample and a trailer.
+        disk.File(4000, "Movies", "Compressed Blu-Rays", "Star Trek", "Star Trek - First Contact (1996).m4v");
+        disk.File(7000, "Movies", "Compressed Blu-Rays", "Star Trek", "Star Trek (2009).m4v");
+        disk.File(1500, "Movies", "Compressed Blu-Rays", "Star Trek", "Star Trek II - The Wrath of Khan (1982).m4v");
+        disk.File(50, "Movies", "Compressed Blu-Rays", "Star Trek", "Star Trek (2009) - Sample.m4v");
+        disk.File(60, "Movies", "Compressed Blu-Rays", "Star Trek", "Trailer.m4v");
+        // A collection without years: two films of about the same size.
+        disk.File(3000, "Movies", "Raw Blu-Rays", "Kill Bill", "Kill Bill Vol 1.mkv");
+        disk.File(2800, "Movies", "Raw Blu-Rays", "Kill Bill", "Kill Bill Vol 2.mkv");
+        // Not a collection: one film, an extra of the same year and a small bonus title.
+        disk.File(5000, "Movies", "Raw Blu-Rays", "Alien (1979)", "Title_t00.mkv");
+        disk.File(400, "Movies", "Raw Blu-Rays", "Alien (1979)", "Title_t01.mkv");
+        disk.File(300, "Movies", "Raw Blu-Rays", "Alien (1979)", "Alien - Deleted Scenes (1979).mkv");
+        AddCategory(db, "Movies", "Movie", disk.Path("Movies"));
+
+        Scanner(db).ScanAllMediaCategories();
+
+        var movies = new MovieService(db.ContextFactory);
+        CollectionAssert.AreEquivalent(
+            new[] { "Star Trek - First Contact (1996)", "Star Trek (2009)", "Star Trek II - The Wrath of Khan (1982)", "Kill Bill Vol 1", "Kill Bill Vol 2", "Alien (1979)" },
+            movies.GetAllRecords().Select(m => m.Name).ToList());
+        Movie khan = movies.GetRecordByName("Star Trek II - The Wrath of Khan (1982)")!;
+        Assert.AreEqual((disk.Path("Movies", "Compressed Blu-Rays", "Star Trek"), "Star Trek II - The Wrath of Khan (1982).m4v", 1500L),
+            (khan.Folder, khan.OriginalFilename, khan.FileSize));
+        Assert.AreEqual("Title_t00.mkv", movies.GetRecordByName("Alien (1979)")!.OriginalFilename);
+    }
+
+    [TestMethod]
+    public void TestFolderBecomingACollectionReplacesItsMovie()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        disk.File(7000, "Movies", "Compressed Blu-Rays", "Star Trek", "Star Trek (2009).m4v");
+        AddCategory(db, "Movies", "Movie", disk.Path("Movies"));
+        Scanner(db).ScanAllMediaCategories();
+        Assert.IsNotNull(new MovieService(db.ContextFactory).GetRecordByName("Star Trek"), "one file: a movie named after its folder");
+
+        disk.File(4000, "Movies", "Compressed Blu-Rays", "Star Trek", "Star Trek - Generations (1994).m4v");
+        MediaScanResult result = Scanner(db).ScanAllMediaCategories();
+
+        Assert.AreEqual((2, 1), (result.Added, result.Deleted), "the two films added, the folder's movie soft-deleted");
+        CollectionAssert.AreEquivalent(new[] { "Star Trek (2009)", "Star Trek - Generations (1994)" },
+            new MovieService(db.ContextFactory).GetAllRecords().Select(m => m.Name).ToList());
+    }
+
+    [TestMethod]
     public void TestMovieMovedToAnotherSourceFolderIsUpdated()
     {
         using var db = new SqlServerTestDatabase();

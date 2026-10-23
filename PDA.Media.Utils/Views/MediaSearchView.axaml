@@ -77,7 +77,7 @@
                                 <StackPanel Classes="NodeContent">
                                     <PathIcon Classes="NodeIcon" IsVisible="{Binding !IsMessage}"
                                               Classes.Group="{Binding IsGroup}" Classes.Artist="{Binding IsArtist}" Classes.Album="{Binding IsAlbum}"
-                                              Classes.Track="{Binding IsTrack}" Classes.Source="{Binding IsSource}" Classes.Movie="{Binding IsMovie}"
+                                              Classes.Track="{Binding IsTrack}" Classes.Source="{Binding IsSource}" Classes.Collection="{Binding IsCollection}" Classes.Movie="{Binding IsMovie}"
                                               Classes.Show="{Binding IsShow}" Classes.Season="{Binding IsSeason}" Classes.Episode="{Binding IsEpisode}"/>
                                     <TextBlock Text="{Binding Title}" Classes="NodeTitle" Classes.Match="{Binding IsMatch}" Classes.Deleted="{Binding IsDeleted}"
                                                Classes.Message="{Binding IsMessage}" Classes.Group="{Binding IsGroup}"/>

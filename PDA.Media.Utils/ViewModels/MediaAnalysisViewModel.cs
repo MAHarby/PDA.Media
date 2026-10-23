@@ -306,6 +306,7 @@ public partial class MediaAnalysisViewModel : ViewModelBase
     {
         AnalysisNodeKind.Category => "Category",
         AnalysisNodeKind.Source => "Source folder",
+        AnalysisNodeKind.Collection => "Movie collection",
         _ => kind.ToString(),
     };
 

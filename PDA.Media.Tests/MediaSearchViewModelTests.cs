@@ -55,6 +55,30 @@ public sealed class MediaSearchViewModelTests
     }
 
     [TestMethod]
+    public async Task TestMovieCollectionHasItsOwnBranch()
+    {
+        using var setup = await Setup.CreateAsync();
+        setup.File("Movies", "Compressed Blu-Rays", "Star Trek", "Star Trek (2009).m4v");
+        setup.File("Movies", "Compressed Blu-Rays", "Star Trek", "Star Trek - Generations (1994).m4v");
+        await setup.Scanner().ScanAllMediaCategoriesAsync();
+        MediaSearchViewModel vm = await setup.LoadedSearchAsync();
+
+        vm.SearchText = "star trek";
+        await vm.SearchCommand.ExecuteAsync(null);
+
+        MediaTreeNode source = vm.Results.Single().Children.Single();
+        Assert.AreEqual("Compressed Blu-Rays", source.Title);
+        MediaTreeNode collection = source.Children.Single();
+        Assert.AreEqual((MediaNodeKind.Collection, "Star Trek", "2 movies"), (collection.Kind, collection.Title, collection.Subtitle));
+        CollectionAssert.AreEquivalent(new[] { "Star Trek (2009)", "Star Trek - Generations (1994)" }, collection.Children.Select(c => c.Title).ToArray());
+
+        vm.SearchText = "*";
+        await vm.SearchCommand.ExecuteAsync(null);
+        CollectionAssert.AreEqual(new[] { "Star Trek", "Heat (1995)" }, vm.Results[1].Children[0].Children.Select(c => c.Title).ToArray(),
+            "the collection first, then the movies with folders of their own");
+    }
+
+    [TestMethod]
     public async Task TestSearchOpensTheWayToTheMatches()
     {
         using var setup = await Setup.CreateAsync();
@@ -227,7 +251,7 @@ public sealed class MediaSearchViewModelTests
 
         public string Path(params string[] parts) => System.IO.Path.Combine([Temp.SourceFolder, .. parts]);
 
-        private void File(params string[] parts)
+        public void File(params string[] parts)
         {
             string path = Path(parts);
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);

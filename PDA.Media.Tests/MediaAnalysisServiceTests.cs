@@ -102,6 +102,40 @@ public sealed class MediaAnalysisServiceTests
     }
 
     [TestMethod]
+    public void TestMovieCollectionBranch()
+    {
+        using var db = new SqlServerTestDatabase();
+        var movies = new MovieService(db.ContextFactory);
+        string source = Path.Combine(MovieRoot, "Compressed Blu-Rays");
+        string collection = Path.Combine(source, "Star Trek");
+        movies.AddRecord(new Movie { Name = "Star Trek (2009)", Folder = collection, OriginalFilename = "Star Trek (2009).m4v", FileSize = 7000 });
+        movies.AddRecord(new Movie { Name = "Star Trek - Generations (1994)", Folder = collection, OriginalFilename = "Star Trek - Generations (1994).m4v", FileSize = 4000 });
+        movies.AddRecord(new Movie { Name = "Up (2009)", Folder = Path.Combine(source, "Up (2009)"), OriginalFilename = "Up (2009).mkv", FileSize = 3000 });
+        movies.AddRecord(new Movie { Name = "Loose", Folder = source, OriginalFilename = "Loose.mkv", FileSize = 100 });
+        var service = new MediaAnalysisService(db.ContextFactory);
+        MediaAnalysisNode sourceNode = service.GetChildren(new MediaAnalysisScope(MediaAnalysisKind.Movies, MovieRoot)).Single();
+
+        List<MediaAnalysisNode> children = service.GetChildren(sourceNode.Scope);
+
+        CollectionAssert.AreEqual(new[] { "Star Trek", "Loose", "Up (2009)" }, children.Select(c => c.Name).ToArray(), "the collection first, then the movies");
+        Assert.AreEqual((MediaAnalysisLevel.Collection, collection, 2, 11000L),
+            (children[0].Scope.Level, children[0].Folder, children[0].Stats.Items, children[0].Stats.Size));
+        CollectionAssert.AreEquivalent(new[] { "Star Trek (2009)", "Star Trek - Generations (1994)" }, service.GetChildren(children[0].Scope).Select(m => m.Name).ToArray());
+        Assert.AreEqual(11000L, service.GetStats(children[0].Scope).Size);
+        Assert.AreEqual("Star Trek (2009)", service.GetLargest(children[0].Scope, 1)[0].Name);
+        CollectionAssert.AreEqual(new[] { "Loose" }, service.GetChecks(sourceNode.Scope).Single(c => c.Title == "Movies without their own folder").Rows
+            .Select(r => r.Name).ToArray(), "collection movies aren't reported");
+    }
+
+    [TestMethod]
+    [DataRow(@"C:\Movies", @"C:\Movies\Raw\Star Trek", "Star Trek (2009)", @"C:\Movies\Raw\Star Trek")]
+    [DataRow(@"C:\Movies", @"C:\Movies\Raw\Alien (1979)", "Alien (1979)", null)]
+    [DataRow(@"C:\Movies", @"C:\Movies\Raw", "Loose", null)]
+    [DataRow(@"C:\Movies", @"C:\Movies", "Root Movie", null)]
+    public void TestCollectionFolderOf(string root, string folder, string name, string? expected) =>
+        Assert.AreEqual(expected, MediaAnalysisService.CollectionFolderOf(root, folder, name));
+
+    [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
     public async Task TestLargestAndFileTypes(bool async)

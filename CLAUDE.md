@@ -68,7 +68,8 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
 - **Search tab** (`MediaSearchView` / `MediaSearchViewModel`): search box (`*` wildcard; Enter searches) over Name, Description and Notes; tick boxes for
   the scannable categories (active ones ticked) in groups by media class, Music and Video (`SearchCategoryGroup`: its own tick box ticks or clears the
   group, and shows in between when some are ticked); Favourites only; Show deleted. Results are a tree of `MediaTreeNode`: Music → Artist → Album → Track,
-  Movies → source folder → Movie, TV shows → Show → Season (with missing episode numbers) → Episode. Branches load when opened
+  Movies → source folder → (collection →) Movie, TV shows → Show → Season (with missing episode numbers) → Episode
+  (a collection is a folder of several films, `MediaAnalysisService.CollectionFolderOf`: a movie's folder below a source folder that isn't named like it). Branches load when opened
   (`LoadChildrenAsync`, a "Loading..." child until then); after a search the way down to the matches is opened (up to 50 paths), and matches are bold.
   The details panel shows cover art (decoded off the UI thread), the read-only fields (`DetailRow`), the file's size / date from disk, Open folder (selects
   the file in Explorer) and Copy path, and edits the hand-editable fields through `MediaItemEditor` (Save Changes / Discard; selecting another row with
@@ -82,7 +83,7 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   **Shuffle**, and **Add to VLC playlist**.
 - **Analysis tab** (`MediaAnalysisView` / `MediaAnalysisViewModel`), from the sizes and dates the scan stores (`MediaAnalysisService`): summary cards (the
   library, then each category: counts, size, last scan, files without a size / deleted rows); a tree of `AnalysisTreeNode` (category → Artist → Album →
-  Track, → source folder → Movie, → Show → Season → Episode; branches load when opened) with Files, Folders, Size and a share-of-parent bar per node
+  Track, → source folder → (collection →) Movie, → Show → Season → Episode; branches load when opened) with Files, Folders, Size and a share-of-parent bar per node
   (Largest first re-sorts loaded branches; Include deleted reads it again); and for the selected node its totals, **Top 20 by size** (files, or albums /
   shows), file types and housekeeping checks (`AnalysisCheckItem` expanders). Actions: **Read folder from disk** (`MediaDiskCheckService`: the folder
   now against the database, cancellable), Show in Search, Open folder, Export CSV (every file under the node, to Downloads, with a BOM for Excel).
@@ -236,7 +237,10 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
   under the root before the scan are held back and reported; the rest is saved) and `ClearData` (only with every active, scannable category selected,
   else InvalidOperationException; not done when a category couldn't be read). Each category's result is stored as its last scan (JSON in Settings,
   `MediaScanner.LastScan.<id>`, not for a dry run); `GetCategories(Async)` lists the categories with `CanScan` / `CannotScanReason` and `LastScan`. `MediaKinds.FromMediaClass` picks the layout from `MediaClass` (Music; Movie/Movies/Film; TV/TV Show/Series; anything else is
-  skipped): music `Artist/Album/NN - Title.ext` (album type from the category), movies `Source/…` (each folder in the root is a source such as `Compressed Blu-Rays`: a video file directly in it is a movie named after the file; below it, a folder holding a video file is a movie named after the folder, using its largest video file and ignoring extras, and a folder without one is searched further; a duplicate name is logged and the first kept),
+  skipped): music `Artist/Album/NN - Title.ext` (album type from the category), movies `Source/…` (each folder in the root is a source such as `Compressed Blu-Rays`: a video file directly in it is a movie named after the file; below it, a folder holding a video file is a movie named after the folder, using its largest video file and ignoring extras, and a folder without one is searched further; a duplicate name is logged and the first kept;
+  a folder holding several films is a collection, e.g. `Star Trek/`, and gives a movie per file, named after the file: `MediaScanner.CollectionFiles`
+  takes every video file at least half the size of the largest and, when the file names carry two or more different `(Year)`s, the largest file of each
+  year),
   TV `Show (Year)/Season NN/… sNNeNN - Title.ext`. Name parsing is in `MediaFileNames` (pure; `MediaFileNamesTests`).
 - `MediaRenameService` renames an item on disk and in the database together, so the next scan finds the same row: `PlanAsync(MediaRenameRequest)`
   reads the row again and works out every step (`MediaRenamePlan`: steps, database changes, problems, warnings) without changing anything;
