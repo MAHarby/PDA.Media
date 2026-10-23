@@ -27,6 +27,34 @@ public sealed class MediaSearchViewModelTests
     }
 
     [TestMethod]
+    public async Task TestCategoryGroups()
+    {
+        using var setup = await Setup.CreateAsync();
+        MediaSearchViewModel vm = await setup.LoadedSearchAsync();
+
+        CollectionAssert.AreEqual(new[] { "Music", "Video" }, vm.CategoryGroups.Select(g => g.Name).ToArray());
+        CollectionAssert.AreEqual(new[] { "Movies", "TV" }, vm.CategoryGroups[1].Categories.Select(c => c.Name).ToArray());
+        SearchCategoryGroup video = vm.CategoryGroups[1];
+        Assert.IsTrue(video.IsSelected);
+
+        video.IsSelected = false;
+        Assert.IsFalse(vm.Categories.Single(c => c.Name == "Movies").IsSelected);
+        Assert.IsFalse(vm.Categories.Single(c => c.Name == "TV").IsSelected);
+        Assert.IsTrue(vm.CategoryGroups[0].IsSelected, "the other group is left alone");
+
+        var changes = new List<string?>();
+        video.PropertyChanged += (_, e) => changes.Add(e.PropertyName);
+        vm.Categories.Single(c => c.Name == "TV").IsSelected = true;
+        Assert.IsNull(video.IsSelected, "some ticked");
+        CollectionAssert.Contains(changes, nameof(SearchCategoryGroup.IsSelected));
+
+        // Clicking a group that is in between ticks everything in it (a two-state tick box asks for false then).
+        video.IsSelected = false;
+        Assert.IsTrue(video.IsSelected);
+        Assert.IsTrue(vm.Categories.Single(c => c.Name == "Movies").IsSelected);
+    }
+
+    [TestMethod]
     public async Task TestSearchOpensTheWayToTheMatches()
     {
         using var setup = await Setup.CreateAsync();

@@ -68,6 +68,9 @@ public partial class MediaSearchViewModel : ViewModelBase
     /// <summary>The media categories that can be searched (known media class and a root folder); the active ones are ticked to start with.</summary>
     public ObservableCollection<SearchCategoryItem> Categories { get; } = [];
 
+    /// <summary>The same categories in groups with a tick box each: Music (music categories) and Video (movies and TV).</summary>
+    public ObservableCollection<SearchCategoryGroup> CategoryGroups { get; } = [];
+
     [ObservableProperty] public partial string SearchText { get; set; } = "";
     [ObservableProperty] public partial bool FavouritesOnly { get; set; }
     [ObservableProperty] public partial bool ShowDeleted { get; set; }
@@ -84,6 +87,12 @@ public partial class MediaSearchViewModel : ViewModelBase
             foreach (MediaScanCategory category in categories.Where(c => c.CanScan))
             {
                 Categories.Add(new SearchCategoryItem(category.Name, category.Kind, category.Category.RootFolder!.Trim().TrimEnd('\\', '/'), category.Category.IsActive));
+            }
+
+            CategoryGroups.Clear();
+            foreach (IGrouping<string, SearchCategoryItem> group in Categories.GroupBy(c => c.Kind == MediaKind.Music ? "Music" : "Video").OrderBy(g => g.Key))
+            {
+                CategoryGroups.Add(new SearchCategoryGroup(group.Key, group.ToList()));
             }
         }
         catch (Exception ex)

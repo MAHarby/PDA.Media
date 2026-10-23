@@ -29,6 +29,13 @@
         <Style Selector="CheckBox.SearchCategory">
             <Setter Property="Margin" Value="0,0,12,0"/>
         </Style>
+        <Style Selector="Grid.SearchCategoryGroup">
+            <Setter Property="Margin" Value="0,0,0,2"/>
+        </Style>
+        <Style Selector="CheckBox.SearchCategoryGroup">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+        </Style>
         <Style Selector="StackPanel.SearchFilters">
             <Setter Property="Orientation" Value="Horizontal"/>
             <Setter Property="Spacing" Value="12"/>
