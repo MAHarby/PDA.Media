@@ -10,7 +10,7 @@ public enum MediaAnalysisKind
 
 /// <summary>
 /// A node of the Analysis tree, as the media files under it: every track, movie or episode under <see cref="Root"/> (a category's root folder), narrowed by
-/// the most specific of the optional fields. Music: <see cref="ArtistId"/>, then <see cref="AlbumId"/>; movies: <see cref="SourceFolder"/>; TV:
+/// the most specific of the optional fields. Music: <see cref="ArtistId"/>, then <see cref="AlbumId"/>; movies: <see cref="SourceFolder"/>, then <see cref="CollectionFolder"/>; TV:
 /// <see cref="ShowId"/>, then <see cref="SeasonNo"/>; any kind: <see cref="ItemId"/> (one file's row).
 /// </summary>
 public sealed record MediaAnalysisScope(MediaAnalysisKind Kind, string Root)
@@ -20,6 +20,9 @@ public sealed record MediaAnalysisScope(MediaAnalysisKind Kind, string Root)
 
     /// <summary>A movie source folder (e.g. "Compressed Blu-Rays") under the root.</summary>
     public string? SourceFolder { get; init; }
+
+    /// <summary>A collection folder in <see cref="SourceFolder"/> (several films in one folder, e.g. "Star Trek"): the movies straight in it.</summary>
+    public string? CollectionFolder { get; init; }
 
     public int? ShowId { get; init; }
 
@@ -36,7 +39,8 @@ public sealed record MediaAnalysisScope(MediaAnalysisKind Kind, string Root)
         : Kind switch
         {
             MediaAnalysisKind.Music => AlbumId != null ? MediaAnalysisLevel.Album : ArtistId != null ? MediaAnalysisLevel.Artist : MediaAnalysisLevel.Root,
-            MediaAnalysisKind.Movies => SourceFolder != null ? MediaAnalysisLevel.Source : MediaAnalysisLevel.Root,
+            MediaAnalysisKind.Movies => CollectionFolder != null ? MediaAnalysisLevel.Collection
+                : SourceFolder != null ? MediaAnalysisLevel.Source : MediaAnalysisLevel.Root,
             _ => SeasonNo != null ? MediaAnalysisLevel.Season : ShowId != null ? MediaAnalysisLevel.Show : MediaAnalysisLevel.Root,
         };
 }
@@ -48,6 +52,7 @@ public enum MediaAnalysisLevel
     Artist,
     Album,
     Source,
+    Collection,
     Show,
     Season,
     Item,

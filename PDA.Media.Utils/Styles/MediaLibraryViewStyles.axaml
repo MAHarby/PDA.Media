@@ -89,6 +89,9 @@
         <Style Selector="PathIcon.NodeIcon.Source">
             <Setter Property="Data" Value="{StaticResource folder_open}"/>
         </Style>
+        <Style Selector="PathIcon.NodeIcon.Collection">
+            <Setter Property="Data" Value="{StaticResource library_icon}"/>
+        </Style>
         <Style Selector="PathIcon.NodeIcon.Movie">
             <Setter Property="Data" Value="{StaticResource film_icon}"/>
         </Style>

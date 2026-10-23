@@ -150,7 +150,22 @@ public class MediaAnalysisService
                     return groups.OrderBy(g => g.Key)
                         .Select(g => new MediaAnalysisNode(scope with { SeasonNo = g.Key }, SeasonName(g.Key), g.FirstFolder, null, g.ToStats(), false)).ToList();
                 }
-            case (_, MediaAnalysisLevel.Album or MediaAnalysisLevel.Source or MediaAnalysisLevel.Season):
+            case (MediaAnalysisKind.Movies, MediaAnalysisLevel.Source):
+                {
+                    // Movies in a collection folder (several films in one folder) are grouped under it, before the other movies.
+                    List<FileRow> movies = await ToListAsync(files, isAsync, cancellationToken).ConfigureAwait(false);
+                    var nodes = new List<MediaAnalysisNode>();
+                    foreach (IGrouping<string, FileRow> collection in movies.Where(m => CollectionFolderOf(scope.Root, m.Folder, m.Name) != null)
+                                 .GroupBy(m => m.Folder!, StringComparer.OrdinalIgnoreCase).OrderBy(g => LastSegment(g.Key), StringComparer.CurrentCultureIgnoreCase))
+                    {
+                        nodes.Add(new MediaAnalysisNode(scope with { CollectionFolder = collection.Key }, LastSegment(collection.Key), collection.Key, null,
+                            StatsOf(collection), false));
+                    }
+                    nodes.AddRange(movies.Where(m => CollectionFolderOf(scope.Root, m.Folder, m.Name) == null)
+                        .OrderBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase).Select(m => Leaf(scope, m)));
+                    return nodes;
+                }
+            case (_, MediaAnalysisLevel.Album or MediaAnalysisLevel.Collection or MediaAnalysisLevel.Season):
                 {
                     List<FileRow> leaves = await ToListAsync(files, isAsync, cancellationToken).ConfigureAwait(false);
                     return leaves.OrderBy(f => f.SeasonNo).ThenBy(f => f.Number == 0 ? int.MaxValue : f.Number).ThenBy(f => f.Name, StringComparer.CurrentCultureIgnoreCase)
@@ -485,6 +500,17 @@ public class MediaAnalysisService
         return end < 0 ? folder : folder[..end];
     }
 
+    /// <summary>
+    /// The collection folder a movie is in (e.g. "Movies/Compressed Blu-Rays/Star Trek", holding every Star Trek film): its folder, when that is below a source
+    /// folder and not named like the movie. Null for a movie in a folder of its own, or straight in a source folder or the root.
+    /// </summary>
+    public static string? CollectionFolderOf(string root, string? folder, string movieName)
+    {
+        string? source = SourceFolderOf(root, folder);
+        if (source == null || SameFolder(source, folder)) return null;
+        return string.Equals(LastSegment(folder!), movieName, StringComparison.OrdinalIgnoreCase) ? null : folder;
+    }
+
     private static string? ParentFolder(string? folder)
     {
         int end = folder?.TrimEnd('\\', '/').LastIndexOfAny(['\\', '/']) ?? -1;
@@ -560,6 +586,7 @@ public class MediaAnalysisService
                 {
                     IQueryable<Movie> movies = Rows<Movie>(context, scope.IncludeDeleted).Where(FolderQueries.UnderAny<Movie>(nameof(Movie.Folder), roots));
                     if (scope.SourceFolder != null) movies = movies.Where(FolderQueries.UnderAny<Movie>(nameof(Movie.Folder), [scope.SourceFolder]));
+                    if (scope.CollectionFolder is { } collection) movies = movies.Where(m => m.Folder == collection);
                     if (itemId != null) movies = movies.Where(m => m.Id == itemId);
                     return movies.Select(m => new FileRow
                     {

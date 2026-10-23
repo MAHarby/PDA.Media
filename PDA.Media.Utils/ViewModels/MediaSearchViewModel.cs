@@ -224,7 +224,25 @@ public partial class MediaSearchViewModel : ViewModelBase
                     Subtitle = Count(source.Count(), "movie") + (severalCategories ? $" · {source.Key.Category}" : ""),
                     IsExpanded = !result.IsBrowse,
                 };
-                foreach (Movie movie in source) sourceNode.AddChild(new MediaTreeNode(MediaNodeKind.Movie, movie.Name, movie) { IsMatch = !result.IsBrowse });
+                // Movies in a collection folder (several films in one folder) go under a branch of their own, before the other movies.
+                var collections = new Dictionary<string, MediaTreeNode>(StringComparer.OrdinalIgnoreCase);
+                foreach (Movie movie in source.OrderBy(m => CollectionOf(m, ticked) == null))
+                {
+                    var movieNode = new MediaTreeNode(MediaNodeKind.Movie, movie.Name, movie) { IsMatch = !result.IsBrowse };
+                    if (CollectionOf(movie, ticked) is not { } collection)
+                    {
+                        sourceNode.AddChild(movieNode);
+                        continue;
+                    }
+                    if (!collections.TryGetValue(collection, out MediaTreeNode? collectionNode))
+                    {
+                        collectionNode = new MediaTreeNode(MediaNodeKind.Collection, Path.GetFileName(collection)) { IsExpanded = !result.IsBrowse };
+                        collections.Add(collection, collectionNode);
+                        sourceNode.AddChild(collectionNode);
+                    }
+                    collectionNode.AddChild(movieNode);
+                }
+                foreach (MediaTreeNode collectionNode in collections.Values) collectionNode.Subtitle = Count(collectionNode.Children.Count, "movie");
                 movies.AddChild(sourceNode);
             }
             Results.Add(movies);
@@ -258,6 +276,10 @@ public partial class MediaSearchViewModel : ViewModelBase
     }
 
     /// <summary>The movie source folder a movie is in (the first folder under its category's root) and that category's name.</summary>
+    /// <summary>The collection folder the movie is in (several films in one folder), or null.</summary>
+    private static string? CollectionOf(Movie movie, IEnumerable<SearchCategoryItem> categories) => categories.Where(c => c.Kind == MediaKind.Movie)
+        .Select(c => MediaAnalysisService.CollectionFolderOf(c.RootFolder, movie.Folder, movie.Name)).FirstOrDefault(f => f != null);
+
     private static (string Name, string Category) SourceOf(Movie movie, IEnumerable<SearchCategoryItem> categories)
     {
         foreach (SearchCategoryItem category in categories.Where(c => c.Kind == MediaKind.Movie))
@@ -441,6 +463,7 @@ public partial class MediaSearchViewModel : ViewModelBase
             MediaNodeKind.Episode => "Episode",
             MediaNodeKind.Season => "Season",
             MediaNodeKind.Source => "Movie source folder",
+            MediaNodeKind.Collection => "Movie collection",
             _ => "Group",
         };
         // "Album · Queen", "Episode · Firefly · Season 1"

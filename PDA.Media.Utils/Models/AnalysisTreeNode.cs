@@ -17,6 +17,9 @@ public enum AnalysisNodeKind
     Album,
     Track,
     Source,
+
+    /// <summary>A folder holding several movies' files (e.g. "Star Trek").</summary>
+    Collection,
     Movie,
     Show,
     Season,
@@ -65,6 +68,7 @@ public partial class AnalysisTreeNode : ObservableObject
         MediaAnalysisLevel.Artist => AnalysisNodeKind.Artist,
         MediaAnalysisLevel.Album => AnalysisNodeKind.Album,
         MediaAnalysisLevel.Source => AnalysisNodeKind.Source,
+        MediaAnalysisLevel.Collection => AnalysisNodeKind.Collection,
         MediaAnalysisLevel.Show => AnalysisNodeKind.Show,
         MediaAnalysisLevel.Season => AnalysisNodeKind.Season,
         _ => scope.Kind switch
@@ -127,6 +131,7 @@ public partial class AnalysisTreeNode : ObservableObject
     public bool IsAlbum => Kind == AnalysisNodeKind.Album;
     public bool IsTrack => Kind == AnalysisNodeKind.Track;
     public bool IsSource => Kind == AnalysisNodeKind.Source;
+    public bool IsCollection => Kind == AnalysisNodeKind.Collection;
     public bool IsMovie => Kind == AnalysisNodeKind.Movie;
     public bool IsShow => Kind == AnalysisNodeKind.Show;
     public bool IsSeason => Kind == AnalysisNodeKind.Season;
