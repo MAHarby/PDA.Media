@@ -270,7 +270,7 @@ The main development target is the **Avalonia** app in `PDA.Media.Utils`. The de
 
 - `pda-media search <text> [--category Music,Movies] [--type Single,Live] [--favourites] [--deleted] [--max n] [--expand] [--paths]` and
   `pda-media config [--init | --test]`. Parsed by **System.CommandLine** 2.0 (`PdaMediaCli` builds the commands; `--config` works on every command);
-  output by **Spectre.Console** (a coloured `Tree`: Music → Artist → Album → Track, Movies → source folder → Movie, TV shows → Show → Season → Episode).
+  output by **Spectre.Console** (a coloured `Tree`: Music → Artist → Album → Track, Movies → source folder → (collection →) Movie, TV shows → Show → Season → Episode).
   Exit codes: 0 found, 1 nothing found, 2 an error. The commands write through `CliContext` (Out / Error consoles and writers, the settings store),
   so tests capture the output; piped output gets a width of `$COLUMNS` or 200 (Spectre.Console would otherwise cut every line).
 - The search is `MediaSearchService` with the categories' root folders (default: every active, scannable category) and `AlbumTypeIds` /

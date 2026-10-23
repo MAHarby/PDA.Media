@@ -251,13 +251,34 @@ internal static class SearchCommand
             {
                 string info = Count(source.Count(), "movie") + (severalCategories ? $" · {source.Key.Category}" : "");
                 TreeNode sourceNode = tree.AddNode($"[blue]{Markup.Escape(source.Key.Name)}[/] [grey]({Markup.Escape(info)})[/]");
-                foreach (Movie movie in source)
+
+                // Movies in a collection folder (several films in one folder, e.g. Star Trek) go under a branch of their own, before the other movies.
+                foreach (var collection in source.Where(m => CollectionOf(m) != null).GroupBy(m => CollectionOf(m)!, StringComparer.OrdinalIgnoreCase)
+                             .OrderBy(g => LastSegment(g.Key), StringComparer.CurrentCultureIgnoreCase))
                 {
-                    string? type = movie.MovieTypeId != 0 ? _movieTypes.GetValueOrDefault(movie.MovieTypeId) : null;
-                    sourceNode.AddNode(Label(movie.Name, !result.IsBrowse, movie.IsFavourite, movie.IsDeleted, type, FilePath(movie.Folder, movie.OriginalFilename)));
+                    TreeNode collectionNode = sourceNode.AddNode($"[blue]{Markup.Escape(LastSegment(collection.Key))}[/] [grey]({Count(collection.Count(), "movie")})[/]");
+                    foreach (Movie movie in collection) collectionNode.AddNode(MovieLabel(movie, result));
                 }
+                foreach (Movie movie in source.Where(m => CollectionOf(m) == null)) sourceNode.AddNode(MovieLabel(movie, result));
             }
             return tree;
+        }
+
+        private string MovieLabel(Movie movie, MediaSearchResult result)
+        {
+            string? type = movie.MovieTypeId != 0 ? _movieTypes.GetValueOrDefault(movie.MovieTypeId) : null;
+            return Label(movie.Name, !result.IsBrowse, movie.IsFavourite, movie.IsDeleted, type, FilePath(movie.Folder, movie.OriginalFilename));
+        }
+
+        /// <summary>The collection folder a movie is in (several films in one folder), or null.</summary>
+        private string? CollectionOf(Movie movie) =>
+            _movieCategories.Select(c => MediaAnalysisService.CollectionFolderOf(c.Root, movie.Folder, movie.Name)).FirstOrDefault(f => f != null);
+
+        /// <summary>The last folder of a path stored with either separator (the database holds Windows paths, also when read on Linux).</summary>
+        private static string LastSegment(string folder)
+        {
+            string trimmed = folder.TrimEnd('\\', '/');
+            return trimmed[(trimmed.LastIndexOfAny(['\\', '/']) + 1)..];
         }
 
         /// <summary>The source folder a movie is in (the first folder under its category's root), and the category.</summary>
