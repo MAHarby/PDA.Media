@@ -146,8 +146,12 @@ public sealed class CommandLineTests
 
         // Categories and types; paths through the mapping.
         Assert.AreEqual(0, await cli.RunAsync("search", "*", "--category:Movies", "--paths", "--config", config));
-        StringAssert.Contains(cli.Output, "Raw Blu-Rays (1 movie)");
+        StringAssert.Contains(cli.Output, "Raw Blu-Rays (3 movies)");
         StringAssert.Contains(cli.Output, "/mnt/nas/Movies/Raw Blu-Rays/Heat (1995)/Heat (1995).mkv");
+        StringAssert.Contains(cli.Output, "Star Trek (2 movies)", "a collection folder is its own branch");
+        StringAssert.Contains(cli.Output, "/mnt/nas/Movies/Raw Blu-Rays/Star Trek/Star Trek (2009).m4v");
+        Assert.IsLessThan(cli.Output.IndexOf("Heat (1995)", StringComparison.Ordinal), cli.Output.IndexOf("Star Trek (2 movies)", StringComparison.Ordinal),
+            "the collection comes before the other movies");
         Assert.DoesNotContain("Music", cli.Output);
 
         Assert.AreEqual(0, await cli.RunAsync("search", "*", "-t", "Live", "-e", "--config", config));
@@ -182,7 +186,7 @@ public sealed class CommandLineTests
         StringAssert.Contains(cli.Errors, "pda-media config --test");
     }
 
-    /// <summary>ABBA (Gold: Live, Arrival: Album), a movie and Firefly scanned from folders under <paramref name="root"/>.</summary>
+    /// <summary>ABBA (Gold: Live, Arrival: Album), a movie, a Star Trek collection and Firefly scanned from folders under <paramref name="root"/>.</summary>
     private static async Task ScanLibraryAsync(SqlServerTestDatabase db, string root)
     {
         void File(params string[] parts)
@@ -194,6 +198,8 @@ public sealed class CommandLineTests
         File("Music", "ABBA", "Gold", "01 - Dancing Queen.flac");
         File("Music", "ABBA", "Arrival", "01 - When I Kissed the Teacher.flac");
         File("Movies", "Raw Blu-Rays", "Heat (1995)", "Heat (1995).mkv");
+        File("Movies", "Raw Blu-Rays", "Star Trek", "Star Trek (2009).m4v");
+        File("Movies", "Raw Blu-Rays", "Star Trek", "Star Trek - Generations (1994).m4v");
         File("TV", "Firefly (2002)", "Season 01", "Firefly (2002) - s01e01 - Serenity.mkv");
         File("TV", "Firefly (2002)", "Season 01", "Firefly (2002) - s01e03 - Our Mrs. Reynolds.mkv");
         var f = db.ContextFactory;
