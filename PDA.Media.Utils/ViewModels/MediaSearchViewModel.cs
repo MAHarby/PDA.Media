@@ -148,6 +148,26 @@ public partial class MediaSearchViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// Searches for a row shown on the Analysis tab: its name, in its category only (and with deleted rows when it is deleted). Asks first if there are
+    /// unsaved edits, as selecting another row does.
+    /// </summary>
+    public async Task ShowInSearchAsync(AnalysisSearchRequest request)
+    {
+        if (Categories.Count == 0) await LoadCategoriesAsync();
+        string root = request.Root.Trim().TrimEnd('\\', '/');
+        if (!Categories.Any(c => string.Equals(c.RootFolder, root, StringComparison.OrdinalIgnoreCase)))
+        {
+            StatusText = $"{request.Text} is in a category the Search tab doesn't offer";
+            return;
+        }
+        foreach (SearchCategoryItem category in Categories) category.IsSelected = string.Equals(category.RootFolder, root, StringComparison.OrdinalIgnoreCase);
+        SearchText = request.Text;
+        FavouritesOnly = false;
+        if (request.IncludeDeleted) ShowDeleted = true;
+        await SearchCommand.ExecuteAsync(null);
+    }
+
     private static List<string> Roots(IEnumerable<SearchCategoryItem> categories, MediaKind kind) =>
         categories.Where(c => c.Kind == kind).Select(c => c.RootFolder).ToList();
 

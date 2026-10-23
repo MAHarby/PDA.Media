@@ -43,6 +43,7 @@ public static class DataServiceCollectionExtensions
         services.AddSingleton<MediaCacheService>();
         services.AddSingleton<MediaPathService>();
         services.AddSingleton<MediaSearchService>();
+        services.AddSingleton<MediaAnalysisService>();
         services.AddSingleton<MovieService>();
         services.AddSingleton<MovieTypeService>();
         services.AddSingleton<SettingService>();

@@ -24,7 +24,7 @@
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <StackPanel Grid.Column="0" Classes="HeaderText">
                     <TextBlock Text="Media Library Services" Classes="HeaderTitle"/>
-                    <TextBlock Text="Search, browse and edit the media database, and scan the media folders into it" Classes="HeaderSubtitle"/>
+                    <TextBlock Text="Search, browse and edit the media database, analyse the library, and scan the media folders into it" Classes="HeaderSubtitle"/>
                 </StackPanel>
                 <StackPanel Grid.Column="2" Classes="HeaderActions">
                     <TextBlock Text="{Binding DatabaseText}" Classes="HeaderInfo"/>
@@ -32,7 +32,7 @@
             </Grid>
         </Border>
 
-        <!-- Search (first) and Scanner tabs. -->
+        <!-- Search (first), Analysis and Scanner tabs. -->
         <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}" Classes="LibraryTabs">
             <TabItem>
                 <TabItem.Header>
@@ -42,6 +42,15 @@
                     </StackPanel>
                 </TabItem.Header>
                 <views:MediaSearchView DataContext="{Binding Search}"/>
+            </TabItem>
+            <TabItem IsVisible="{Binding HasAnalysis}">
+                <TabItem.Header>
+                    <StackPanel Classes="TabHeader">
+                        <PathIcon Data="{StaticResource chart_icon}" Classes="TabIcon"/>
+                        <TextBlock Text="Analysis"/>
+                    </StackPanel>
+                </TabItem.Header>
+                <views:MediaAnalysisView DataContext="{Binding Analysis}"/>
             </TabItem>
             <TabItem>
                 <TabItem.Header>

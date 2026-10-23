@@ -489,6 +489,60 @@ public sealed class MediaScannerTests
         Assert.AreEqual(0, scanner.ScanMediaCategories([movies]).Added, "and it can run again afterwards");
     }
 
+    [TestMethod]
+    public void TestScanSavesFileSizesAndDates()
+    {
+        using var db = new SqlServerTestDatabase();
+        using var disk = new TempMedia();
+        disk.File(300, "Music", "ABBA", "Gold", "01 - Dancing Queen.flac");
+        disk.File(5000, "Movies", "Raw Blu-Rays", "Alien (1979)", "Alien (1979).mkv");
+        disk.File(70, "Movies", "Raw Blu-Rays", "Alien (1979)", "Sample.mkv");
+        disk.File(1200, "TV", "Firefly (2002)", "Season 01", "Firefly (2002) - s01e01 - Serenity.mkv");
+        var modified = new DateTime(2024, 5, 6, 7, 8, 9);
+        System.IO.File.SetLastWriteTime(disk.Path("Movies", "Raw Blu-Rays", "Alien (1979)", "Alien (1979).mkv"), modified);
+        AddCategory(db, "Music", "Music", disk.Path("Music"));
+        AddCategory(db, "Movies", "Movie", disk.Path("Movies"));
+        AddCategory(db, "TV", "TV", disk.Path("TV"));
+
+        Scanner(db).ScanAllMediaCategories();
+
+        Movie alien = new MovieService(db.ContextFactory).GetRecordByName("Alien (1979)")!;
+        Assert.AreEqual(5000L, alien.FileSize, "the largest video file's size");
+        Assert.AreEqual(modified, alien.FileDate);
+        Assert.AreEqual(300L, new TrackService(db.ContextFactory).GetAllRecords("Dancing Queen").Single().FileSize);
+        Assert.AreEqual(1200L, new TVShowEpisodeService(db.ContextFactory).GetAllRecords("Serenity").Single().FileSize);
+
+        // A file that changes (e.g. re-encoded) is updated by the next scan; nothing else is.
+        disk.File(2000, "Movies", "Raw Blu-Rays", "Alien (1979)", "Alien (1979).mkv");
+        MediaScanResult rescan = Scanner(db).ScanAllMediaCategories();
+
+        Assert.AreEqual(1, rescan.Updated);
+        Assert.AreEqual(2000L, new MovieService(db.ContextFactory).GetRecordByName("Alien (1979)")!.FileSize);
+    }
+
+    [TestMethod]
+    public void TestUpgradeScriptAddsTheFileColumns()
+    {
+        using var db = new SqlServerTestDatabase();
+        const string columns = "SELECT COUNT(*) FROM sys.columns WHERE name IN ('FileSize', 'FileDate') AND object_id IN "
+            + "(OBJECT_ID('dbo.Tracks'), OBJECT_ID('dbo.Movies'), OBJECT_ID('dbo.TVShowEpisodes'))";
+        db.Execute("INSERT INTO Movies (Name) VALUES ('Alien (1979)')");
+        db.Execute("""
+            ALTER TABLE Tracks DROP COLUMN FileSize, FileDate;
+            ALTER TABLE Movies DROP COLUMN FileSize, FileDate;
+            ALTER TABLE TVShowEpisodes DROP COLUMN FileSize, FileDate;
+            """);
+
+        List<string> firstRun = db.ExecuteScript(Path.Combine("Schema", "Upgrades", "003-File-size-and-date.sql"));
+        List<string> secondRun = db.ExecuteScript(Path.Combine("Schema", "Upgrades", "003-File-size-and-date.sql"));
+
+        Assert.IsEmpty(firstRun, string.Join("\n", firstRun));
+        Assert.AreEqual(6, db.Scalar<int>(columns));
+        Assert.AreEqual(1, db.Scalar<int>("SELECT COUNT(*) FROM Movies WHERE FileSize IS NULL"), "existing rows are kept");
+        Assert.HasCount(1, secondRun);
+        StringAssert.Contains(secondRun[0], "already been applied");
+    }
+
     // Helpers.
     // ==================================================================================================
 

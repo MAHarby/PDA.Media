@@ -1,0 +1,320 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PDA.Media.Utils.ViewModels"
+             xmlns:models="using:PDA.Media.Utils.Models"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1150" d:DesignHeight="640"
+             x:Class="PDA.Media.Utils.Views.MediaAnalysisView"
+             x:DataType="vm:MediaAnalysisViewModel">
+
+    <UserControl.Styles>
+        <StyleInclude Source="../Styles/MediaAnalysisViewStyles.axaml"/>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,*" Classes="AnalysisContent">
+
+        <!-- Summary: the whole library, then a card per category. -->
+        <!-- ============================================================================================================== -->
+        <ItemsControl Grid.Row="0" ItemsSource="{Binding Summaries}" Classes="SummaryCards">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:AnalysisSummaryItem">
+                    <Border Classes="SummaryCard" Classes.Total="{Binding IsTotal}">
+                        <StackPanel Classes="SummaryCardContent">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="{Binding Name}" Classes="SummaryName"/>
+                                <TextBlock Grid.Column="1" Text="{Binding SizeText}" Classes="SummarySize"/>
+                            </Grid>
+                            <TextBlock Text="{Binding Counts}" Classes="SummaryCounts"/>
+                            <TextBlock Text="{Binding LastScan}" Classes="SummaryScan"
+                                       IsVisible="{Binding LastScan, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            <TextBlock Text="{Binding Warning}" Classes="SummaryWarning" IsVisible="{Binding HasWarning}"/>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,12,470">
+
+            <!-- Left: the tree, with each node's files, folders, size and share of its parent. -->
+            <!-- ============================================================================================================== -->
+            <Border Grid.Column="0" Classes="ContentPanel">
+                <Grid RowDefinitions="Auto,Auto,*,Auto">
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Classes="TreeToolbar">
+                        <TextBlock Grid.Column="0" Text="Library" Classes="SectionHeading"/>
+                        <StackPanel Grid.Column="1" Classes="TreeOptions">
+                            <CheckBox Content="Largest first" IsChecked="{Binding SortBySize}" ToolTip.Tip="List each branch's children by size instead of by name"/>
+                            <CheckBox Content="Include deleted" IsChecked="{Binding IncludeDeleted}"
+                                      ToolTip.Tip="Count rows a scan has soft-deleted (no longer in the media folders) too"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" Command="{Binding LoadCommand}" Classes="SectionAction" ToolTip.Tip="Read the figures again (e.g. after a scan)">
+                            <StackPanel Classes="ButtonContent">
+                                <PathIcon Data="{StaticResource reset_icon}" Classes="ButtonIcon"/>
+                                <TextBlock Text="Refresh"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <Grid Grid.Row="1" ColumnDefinitions="*,70,60,80,96" Classes="TreeColumns">
+                        <TextBlock Grid.Column="0" Text="Name"/>
+                        <TextBlock Grid.Column="1" Text="Files" Classes="Number"/>
+                        <TextBlock Grid.Column="2" Text="Folders" Classes="Number"/>
+                        <TextBlock Grid.Column="3" Text="Size" Classes="Number"/>
+                        <TextBlock Grid.Column="4" Text="Share" Classes="Number"/>
+                    </Grid>
+
+                    <TreeView Grid.Row="2" ItemsSource="{Binding Roots}" SelectedItem="{Binding SelectedNode, Mode=TwoWay}" Classes="MediaTree AnalysisTree">
+                        <TreeView.Styles>
+                            <Style Selector="TreeViewItem" x:DataType="models:AnalysisTreeNode">
+                                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                            </Style>
+                        </TreeView.Styles>
+                        <TreeView.ItemTemplate>
+                            <TreeDataTemplate x:DataType="models:AnalysisTreeNode" ItemsSource="{Binding Children}">
+                                <Grid ColumnDefinitions="*,70,60,80,96" Classes="AnalysisRow" ToolTip.Tip="{Binding ToolTip}">
+                                    <StackPanel Grid.Column="0" Classes="NodeContent">
+                                        <PathIcon Classes="NodeIcon" IsVisible="{Binding !IsMessage}"
+                                                  Classes.Group="{Binding IsCategory}" Classes.Artist="{Binding IsArtist}" Classes.Album="{Binding IsAlbum}"
+                                                  Classes.Track="{Binding IsTrack}" Classes.Source="{Binding IsSource}" Classes.Movie="{Binding IsMovie}"
+                                                  Classes.Show="{Binding IsShow}" Classes.Season="{Binding IsSeason}" Classes.Episode="{Binding IsEpisode}"/>
+                                        <TextBlock Text="{Binding Title}" Classes="NodeTitle" Classes.Group="{Binding IsCategory}"
+                                                   Classes.Deleted="{Binding IsDeleted}" Classes.Message="{Binding IsMessage}"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="{Binding ItemsText}" Classes="Number"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding FoldersText}" Classes="Number"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding SizeText}" Classes="Number Size"/>
+                                    <Grid Grid.Column="4" ColumnDefinitions="*,34" Classes="ShareCell" IsVisible="{Binding !IsCategory}">
+                                        <ProgressBar Grid.Column="0" Value="{Binding SharePercent}" Classes="ShareBar" IsVisible="{Binding !IsMessage}"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ShareText}" Classes="Number"/>
+                                    </Grid>
+                                </Grid>
+                            </TreeDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+
+                    <Grid Grid.Row="3" RowDefinitions="Auto,Auto" Classes="AnalysisStatus">
+                        <ProgressBar Grid.Row="0" IsIndeterminate="True" IsVisible="{Binding IsLoading}" Classes="Busy"/>
+                        <TextBlock Grid.Row="1" Text="{Binding StatusText}" ToolTip.Tip="{Binding StatusText}" Classes="AnalysisStatusText"
+                                   Classes.Stale="{Binding IsStale}"/>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- Right: the selected node's totals, largest items, file types, checks and live disk check. -->
+            <!-- ============================================================================================================== -->
+            <Border Grid.Column="2" Classes="ContentPanel">
+                <Panel>
+                    <TextBlock Text="Select a category, folder or item to see its figures" IsVisible="{Binding !HasSelection}" Classes="DetailsEmpty"/>
+
+                    <Grid RowDefinitions="Auto,Auto,*" IsVisible="{Binding HasSelection}">
+                        <StackPanel Grid.Row="0" Classes="DetailsHeading">
+                            <SelectableTextBlock Text="{Binding DetailsTitle}" Classes="DetailsTitle"/>
+                            <TextBlock Text="{Binding DetailsSubtitle}" ToolTip.Tip="{Binding DetailsSubtitle}" Classes="DetailsSubtitle PathText"/>
+                        </StackPanel>
+
+                        <WrapPanel Grid.Row="1" Classes="AnalysisActions">
+                            <Button Command="{Binding CheckDiskCommand}" IsVisible="{Binding CanCheckDiskAtAll}" Classes="AnalysisAction accent"
+                                    ToolTip.Tip="Read this folder from disk now and compare it with the database (nothing is changed)">
+                                <StackPanel Classes="ButtonContent">
+                                    <PathIcon Data="{StaticResource disk_icon}" Classes="ButtonIcon"/>
+                                    <TextBlock Text="Read folder from disk"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding CancelDiskCheckCommand}" IsVisible="{Binding IsCheckingDisk}" Classes="AnalysisAction">
+                                <StackPanel Classes="ButtonContent">
+                                    <PathIcon Data="{StaticResource stop_icon}" Classes="ButtonIcon"/>
+                                    <TextBlock Text="Stop"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding ShowNodeInSearchCommand}" Classes="AnalysisAction" ToolTip.Tip="Find it on the Search tab (to edit, rename or play it)">
+                                <StackPanel Classes="ButtonContent">
+                                    <PathIcon Data="{StaticResource scan_icon}" Classes="ButtonIcon"/>
+                                    <TextBlock Text="Show in Search"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding OpenFolderCommand}" Classes="AnalysisAction" ToolTip.Tip="Open the folder in Explorer">
+                                <StackPanel Classes="ButtonContent">
+                                    <PathIcon Data="{StaticResource folder_open}" Classes="ButtonIcon"/>
+                                    <TextBlock Text="Open folder"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Click="ExportButton_OnClick" Classes="AnalysisAction" ToolTip.Tip="Save every file under it as a CSV file in Downloads (opens in Excel)">
+                                <StackPanel Classes="ButtonContent">
+                                    <PathIcon Data="{StaticResource save_icon}" Classes="ButtonIcon"/>
+                                    <TextBlock Text="Export CSV"/>
+                                </StackPanel>
+                            </Button>
+                        </WrapPanel>
+
+                        <ScrollViewer Grid.Row="2" Classes="Details">
+                            <StackPanel Classes="DetailsContent">
+                                <!-- Totals. -->
+                                <ItemsControl ItemsSource="{Binding DetailRows}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:DetailRow">
+                                            <Grid ColumnDefinitions="120,*" Classes="DetailRow">
+                                                <TextBlock Grid.Column="0" Text="{Binding Label}" Classes="DetailLabel"/>
+                                                <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" Classes="DetailValue"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoadingDetails}" Classes="Busy"/>
+
+                                <!-- Live disk check. -->
+                                <StackPanel Classes="AnalysisSection" IsVisible="{Binding IsCheckingDisk}">
+                                    <TextBlock Text="On disk" Classes="SectionHeading"/>
+                                    <ProgressBar IsIndeterminate="True" Classes="Busy"/>
+                                    <TextBlock Text="{Binding DiskStatusText}" Classes="SectionNote"/>
+                                </StackPanel>
+                                <StackPanel Classes="AnalysisSection" IsVisible="{Binding HasDiskResult}">
+                                    <TextBlock Text="On disk" Classes="SectionHeading"/>
+                                    <TextBlock Text="{Binding DiskStatusText}" Classes="SectionNote"/>
+                                    <ItemsControl ItemsSource="{Binding DiskRows}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="models:DetailRow">
+                                                <Grid ColumnDefinitions="120,*" Classes="DetailRow">
+                                                    <TextBlock Grid.Column="0" Text="{Binding Label}" Classes="DetailLabel"/>
+                                                    <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" Classes="DetailValue"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <ScrollViewer Classes="ItemList">
+                                        <ItemsControl ItemsSource="{Binding DiskIssues}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <VirtualizingStackPanel/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="models:DiskIssueRow">
+                                                    <Grid ColumnDefinitions="88,*" Classes="ItemRow" ToolTip.Tip="{Binding Path}">
+                                                        <Border Grid.Column="0" Classes="IssueKind" Classes.Problem="{Binding IsProblem}">
+                                                            <TextBlock Text="{Binding KindText}" Classes="IssueKind"/>
+                                                        </Border>
+                                                        <StackPanel Grid.Column="1" Classes="ItemText">
+                                                            <SelectableTextBlock Text="{Binding RelativePath}" Classes="ItemPath"/>
+                                                            <TextBlock Text="{Binding Detail}" Classes="ItemDetail"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </StackPanel>
+
+                                <!-- Largest files (or albums / shows). -->
+                                <StackPanel Classes="AnalysisSection">
+                                    <WrapPanel Classes="SectionHeader">
+                                        <CheckBox IsChecked="{Binding ShowLargest}" Classes="SectionToggle">
+                                            <TextBlock Text="Top 20 by size" Classes="SectionHeading"/>
+                                        </CheckBox>
+                                        <CheckBox Content="{Binding RankGroupsText}" IsChecked="{Binding RankGroups}" IsVisible="{Binding CanRankGroups}"
+                                                  ToolTip.Tip="Rank whole albums or shows by the total size of their files"/>
+                                    </WrapPanel>
+                                    <ItemsControl ItemsSource="{Binding Largest}" IsVisible="{Binding ShowLargest}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="models:AnalysisItemRow">
+                                                <Grid ColumnDefinitions="26,*,72,Auto" RowDefinitions="Auto,Auto,Auto" Classes="ItemRow" ToolTip.Tip="{Binding Path}">
+                                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding RankText}" Classes="ItemRank"/>
+                                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Name}" Classes="ItemName" Classes.Deleted="{Binding IsDeleted}"/>
+                                                    <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding SizeText}" Classes="Number Size"/>
+                                                    <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Detail}" Classes="ItemDetail"
+                                                               IsVisible="{Binding Detail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                    <ProgressBar Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Value="{Binding SharePercent}" Classes="ShareBar"/>
+                                                    <Button Grid.Row="0" Grid.RowSpan="3" Grid.Column="3" Classes="RowAction" ToolTip.Tip="Show in Search"
+                                                            Command="{Binding $parent[UserControl].((vm:MediaAnalysisViewModel)DataContext).ShowInSearchCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <PathIcon Data="{StaticResource scan_icon}" Classes="ButtonIcon"/>
+                                                    </Button>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+
+                                <!-- File types. -->
+                                <StackPanel Classes="AnalysisSection">
+                                    <TextBlock Text="File types" Classes="SectionHeading"/>
+                                    <ItemsControl ItemsSource="{Binding FileTypes}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="models:AnalysisFileTypeRow">
+                                                <Grid ColumnDefinitions="70,*,64,72,40" Classes="ItemRow">
+                                                    <TextBlock Grid.Column="0" Text="{Binding Extension}" Classes="ItemName"/>
+                                                    <ProgressBar Grid.Column="1" Value="{Binding SharePercent}" Classes="ShareBar"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding ItemsText}" Classes="Number"/>
+                                                    <TextBlock Grid.Column="3" Text="{Binding SizeText}" Classes="Number Size"/>
+                                                    <TextBlock Grid.Column="4" Text="{Binding ShareText}" Classes="Number"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+
+                                <!-- Housekeeping checks. -->
+                                <StackPanel Classes="AnalysisSection">
+                                    <Grid ColumnDefinitions="Auto,*">
+                                        <TextBlock Grid.Column="0" Text="Housekeeping" Classes="SectionHeading"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ChecksText}" Classes="SectionNote ChecksText"/>
+                                    </Grid>
+                                    <ItemsControl ItemsSource="{Binding Checks}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="models:AnalysisCheckItem">
+                                                <Expander IsExpanded="{Binding IsExpanded}" IsEnabled="{Binding !IsClear}" Classes="Check">
+                                                    <Expander.Header>
+                                                        <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{Binding Description}">
+                                                            <TextBlock Grid.Column="0" Text="{Binding Title}" Classes="CheckTitle"/>
+                                                            <Border Grid.Column="1" Classes="CheckCount" Classes.Clear="{Binding IsClear}">
+                                                                <TextBlock Text="{Binding CountText}" Classes="CheckCount"/>
+                                                            </Border>
+                                                        </Grid>
+                                                    </Expander.Header>
+                                                    <StackPanel Classes="CheckContent">
+                                                        <TextBlock Text="{Binding Description}" Classes="ItemDetail CheckDescription"/>
+                                                        <ScrollViewer Classes="ItemList">
+                                                            <ItemsControl ItemsSource="{Binding Rows}">
+                                                                <ItemsControl.ItemsPanel>
+                                                                    <ItemsPanelTemplate>
+                                                                        <VirtualizingStackPanel/>
+                                                                    </ItemsPanelTemplate>
+                                                                </ItemsControl.ItemsPanel>
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate x:DataType="models:AnalysisItemRow">
+                                                                        <Grid ColumnDefinitions="*,Auto" Classes="ItemRow" ToolTip.Tip="{Binding Path}">
+                                                                            <StackPanel Grid.Column="0" Classes="ItemText">
+                                                                                <TextBlock Text="{Binding Name}" Classes="ItemName" Classes.Deleted="{Binding IsDeleted}"/>
+                                                                                <TextBlock Text="{Binding Detail}" Classes="ItemDetail"
+                                                                                           IsVisible="{Binding Detail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                                            </StackPanel>
+                                                                            <Button Grid.Column="1" Classes="RowAction" ToolTip.Tip="Show in Search"
+                                                                                    Command="{Binding $parent[UserControl].((vm:MediaAnalysisViewModel)DataContext).ShowInSearchCommand}"
+                                                                                    CommandParameter="{Binding}">
+                                                                                <PathIcon Data="{StaticResource scan_icon}" Classes="ButtonIcon"/>
+                                                                            </Button>
+                                                                        </Grid>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </ScrollViewer>
+                                                        <TextBlock Text="{Binding MoreText}" IsVisible="{Binding HasMore}" Classes="ItemDetail"/>
+                                                    </StackPanel>
+                                                </Expander>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </Panel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -56,6 +56,7 @@ public static class ServiceConfiguration
         services.AddTransient<Func<LogViewerViewModel>>(sp => sp.GetRequiredService<LogViewerViewModel>);
         services.AddTransient<MediaScannerViewModel>();
         services.AddTransient<MediaSearchViewModel>();
+        services.AddTransient<MediaAnalysisViewModel>();
         services.AddTransient<MediaLibraryViewModel>();
         services.AddTransient<Func<MediaLibraryViewModel>>(sp => sp.GetRequiredService<MediaLibraryViewModel>);
 

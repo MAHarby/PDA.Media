@@ -27,7 +27,16 @@ public partial class MediaScanner
             {
                 string seasonFolder = folder == showFolder ? "" : Path.GetFileName(folder);
                 (int season, int episode, string title) = MediaFileNames.ParseEpisodeFileName(file.Name, seasonFolder);
-                episodes.Add(new TVShowEpisode { SeasonNo = season, EpisodeNo = episode, Name = title, Folder = folder, OriginalFilename = file.Name });
+                episodes.Add(new TVShowEpisode
+                {
+                    SeasonNo = season,
+                    EpisodeNo = episode,
+                    Name = title,
+                    Folder = folder,
+                    OriginalFilename = file.Name,
+                    FileSize = file.Length,
+                    FileDate = file.LastWriteTime,
+                });
             }
 
             // One record per episode (the first file wins if an episode is there twice); numbered episodes are matched by number, unnumbered ones by name.
@@ -45,7 +54,8 @@ public partial class MediaScanner
         var episodeSync = new EntitySync<TVShowEpisode>(_episodeService, "episode", e => e.Folder,
             (stored, found) => Set(stored.Folder, found.Folder, v => stored.Folder = v)
                 | Set(stored.OriginalFilename, found.OriginalFilename, v => stored.OriginalFilename = v)
-                | (stored.EpisodeNo > 0 && Set(stored.Name, found.Name, v => stored.Name = v)));
+                | (stored.EpisodeNo > 0 && Set(stored.Name, found.Name, v => stored.Name = v))
+                | SetFileDetails(stored, found));
 
         foreach ((TVShow foundShow, List<TVShowEpisode> episodes) in shows)
         {

@@ -121,6 +121,8 @@ CREATE TABLE [dbo].[Tracks] (
     [CreatedBy]         varchar(100)    NOT NULL CONSTRAINT [DF_Tracks_CreatedBy] DEFAULT ('API'),
     [ModifiedOn]        datetime2       NOT NULL CONSTRAINT [DF_Tracks_ModifiedOn] DEFAULT (SYSDATETIME()),
     [ModifiedBy]        varchar(100)    NULL,
+    [FileSize]          bigint          NULL,
+    [FileDate]          datetime2       NULL,
     CONSTRAINT [PK_Tracks] PRIMARY KEY NONCLUSTERED ([Id])
 );
 GO
@@ -141,6 +143,8 @@ CREATE TABLE [dbo].[Movies] (
     [Folder]            nvarchar(1000)  NULL,
     [CoverArtFilename]  nvarchar(500)   NULL,
     [OriginalFilename]  nvarchar(500)   NULL,
+    [FileSize]          bigint          NULL,
+    [FileDate]          datetime2       NULL,
     CONSTRAINT [PK_Movies] PRIMARY KEY NONCLUSTERED ([Id])
 );
 GO
@@ -184,6 +188,8 @@ CREATE TABLE [dbo].[TVShowEpisodes] (
     [Folder]            nvarchar(1000)  NULL,
     [OriginalFilename]  nvarchar(500)   NULL,
     [CoverArtFilename]  nvarchar(500)   NULL,
+    [FileSize]          bigint          NULL,
+    [FileDate]          datetime2       NULL,
     CONSTRAINT [PK_TVShowEpisodes] PRIMARY KEY NONCLUSTERED ([Id])
 );
 GO
