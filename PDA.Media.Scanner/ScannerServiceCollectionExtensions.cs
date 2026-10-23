@@ -13,6 +13,7 @@ public static class ScannerServiceCollectionExtensions
     {
         services.AddSingleton<MediaScanner>();
         services.AddSingleton<MediaRenameService>();
+        services.AddSingleton<MediaDiskCheckService>();
         return services;
     }
 }

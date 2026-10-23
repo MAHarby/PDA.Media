@@ -12,3 +12,15 @@ public interface ISoftDeletable
 {
     bool IsDeleted { get; set; }
 }
+
+/// <summary>
+/// A row for one media file (track, movie, episode): where it is, and its size in bytes and last-modified time as read by the last scan
+/// (null until a scan has read them).
+/// </summary>
+public interface IMediaFile
+{
+    string? Folder { get; set; }
+    string? OriginalFilename { get; set; }
+    long? FileSize { get; set; }
+    DateTime? FileDate { get; set; }
+}

@@ -29,6 +29,7 @@ public partial class MediaLibraryView : Window
         base.OnOpened(e);
         _viewModel?.Search.LoadCategoriesCommand.Execute(null);
         _viewModel?.Scanner.LoadCategoriesCommand.Execute(null);
+        _viewModel?.Analysis?.LoadCommand.Execute(null);
     }
 
     // A running scan or unsaved changes: the view model asks first (on its tab) and raises CloseRequested once answered.

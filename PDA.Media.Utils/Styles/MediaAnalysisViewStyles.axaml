@@ -1,0 +1,238 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Design.PreviewWith>
+        <Border Padding="20">
+            <!-- Add Controls for Previewer Here -->
+        </Border>
+    </Design.PreviewWith>
+
+        <!-- The Analysis tab. The tree icons, details panel and section headings come from MediaLibraryViewStyles. -->
+
+        <!-- Layout. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Grid.AnalysisContent">
+            <Setter Property="Margin" Value="0,12,0,0"/>
+            <Setter Property="RowSpacing" Value="12"/>
+        </Style>
+
+
+        <!-- Summary Cards. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Border.SummaryCard">
+            <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Margin" Value="0,0,10,0"/>
+            <Setter Property="MinWidth" Value="210"/>
+        </Style>
+        <Style Selector="Border.SummaryCard.Total">
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+        <Style Selector="StackPanel.SummaryCardContent">
+            <Setter Property="Spacing" Value="2"/>
+        </Style>
+        <Style Selector="TextBlock.SummaryName">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+        </Style>
+        <Style Selector="TextBlock.SummarySize">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+        <Style Selector="TextBlock.SummaryCounts, TextBlock.SummaryScan">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+        </Style>
+        <Style Selector="TextBlock.SummaryWarning">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#D19A2E"/>
+        </Style>
+
+
+        <!-- Tree. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="Grid.TreeToolbar">
+            <Setter Property="ColumnSpacing" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        <Style Selector="StackPanel.TreeOptions">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="12"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+        </Style>
+        <!-- The column headings line up with the rows: the tree's padding and the scroll bar's width on the right. -->
+        <Style Selector="Grid.TreeColumns">
+            <Setter Property="Margin" Value="12,0,14,4"/>
+        </Style>
+        <Style Selector="Grid.TreeColumns > TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+        </Style>
+        <!-- Each row fills the tree's width, so the figure columns line up whatever the indent. -->
+        <Style Selector="TreeView.AnalysisTree TreeViewItem /template/ ContentPresenter#PART_HeaderPresenter">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <!-- The right margin keeps the figures clear of the tree's scroll bar. -->
+        <Style Selector="Grid.AnalysisRow">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Margin" Value="0,0,14,0"/>
+        </Style>
+        <Style Selector="TextBlock.Number">
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumHighColor}"/>
+        </Style>
+        <Style Selector="TextBlock.Number.Size">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseHighColor}"/>
+        </Style>
+        <Style Selector="Grid.ShareCell">
+            <Setter Property="ColumnSpacing" Value="4"/>
+            <Setter Property="Margin" Value="10,0,0,0"/>
+        </Style>
+        <Style Selector="ProgressBar.ShareBar">
+            <Setter Property="MinWidth" Value="20"/>
+            <Setter Property="MinHeight" Value="4"/>
+            <Setter Property="Height" Value="4"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Maximum" Value="100"/>
+        </Style>
+        <Style Selector="Grid.AnalysisStatus">
+            <Setter Property="Margin" Value="2,8,0,0"/>
+            <Setter Property="RowSpacing" Value="4"/>
+        </Style>
+        <Style Selector="ProgressBar.Busy">
+            <Setter Property="MinHeight" Value="3"/>
+        </Style>
+        <Style Selector="TextBlock.AnalysisStatusText">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style Selector="TextBlock.AnalysisStatusText.Stale">
+            <Setter Property="Foreground" Value="#D19A2E"/>
+        </Style>
+
+
+        <!-- Details Panel. -->
+        <!-- ====================================================================================================== -->
+        <Style Selector="WrapPanel.AnalysisActions">
+            <Setter Property="Margin" Value="0,10,0,10"/>
+        </Style>
+        <Style Selector="Button.AnalysisAction">
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Margin" Value="0,0,8,6"/>
+        </Style>
+        <Style Selector="StackPanel.AnalysisSection">
+            <Setter Property="Spacing" Value="4"/>
+            <Setter Property="Margin" Value="0,14,0,0"/>
+        </Style>
+        <Style Selector="WrapPanel.SectionHeader > CheckBox">
+            <Setter Property="Margin" Value="0,0,16,0"/>
+        </Style>
+        <Style Selector="TextBlock.SectionNote">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.ChecksText">
+            <Setter Property="Margin" Value="10,0,0,0"/>
+        </Style>
+        <!-- A long list (disk issues, a check's rows) scrolls inside the panel. -->
+        <Style Selector="ScrollViewer.ItemList">
+            <Setter Property="MaxHeight" Value="280"/>
+        </Style>
+        <Style Selector="Grid.ItemRow">
+            <Setter Property="ColumnSpacing" Value="8"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="TextBlock.ItemRank">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="Margin" Value="0,1,0,0"/>
+        </Style>
+        <Style Selector="StackPanel.ItemText">
+            <Setter Property="Spacing" Value="1"/>
+        </Style>
+        <Style Selector="Grid.ItemRow > ProgressBar.ShareBar">
+            <Setter Property="Margin" Value="0,3,0,2"/>
+        </Style>
+        <Style Selector="TextBlock.PathText">
+            <Setter Property="TextTrimming" Value="PathSegmentEllipsis"/>
+        </Style>
+        <Style Selector="TextBlock.ItemName">
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.ItemName.Deleted">
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumLowColor}"/>
+            <Setter Property="TextDecorations" Value="Strikethrough"/>
+        </Style>
+        <Style Selector="TextBlock.ItemDetail">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseMediumColor}"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style Selector="SelectableTextBlock.ItemPath">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="Button.RowAction">
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.RowAction > PathIcon.ButtonIcon">
+            <Setter Property="Width" Value="11"/>
+            <Setter Property="Height" Value="11"/>
+        </Style>
+        <Style Selector="Border.IssueKind">
+            <Setter Property="Background" Value="{DynamicResource SystemChromeHighColor}"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Padding" Value="4,1"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+        <Style Selector="Border.IssueKind.Problem">
+            <Setter Property="Background" Value="#D9534F"/>
+        </Style>
+        <Style Selector="TextBlock.IssueKind">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Expander.Check">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+        <Style Selector="TextBlock.CheckTitle">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.CheckCount">
+            <Setter Property="Background" Value="#D19A2E"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Padding" Value="6,1"/>
+            <Setter Property="Margin" Value="8,0,0,0"/>
+        </Style>
+        <Style Selector="Border.CheckCount.Clear">
+            <Setter Property="Background" Value="#4CAF50"/>
+        </Style>
+        <Style Selector="TextBlock.CheckCount">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="StackPanel.CheckContent">
+            <Setter Property="Spacing" Value="6"/>
+        </Style>
+        <Style Selector="TextBlock.CheckDescription">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+</Styles>

@@ -1,6 +1,6 @@
 namespace PDA.Media.Data.Entities;
 
-public class Movie : IEntity, ISoftDeletable, IAuditable
+public class Movie : IEntity, ISoftDeletable, IAuditable, IMediaFile
 {
     public int Id { get; set; }
     public string Name { get; set; } = null!;
@@ -21,6 +21,10 @@ public class Movie : IEntity, ISoftDeletable, IAuditable
     public string? Folder { get; set; }
     public string? OriginalFilename { get; set; }
     public string? CoverArtFilename { get; set; }
+
+    // Read from the media file by the scan (see IMediaFile).
+    public long? FileSize { get; set; }
+    public DateTime? FileDate { get; set; }
 
     public virtual MovieType MovieType { get; set; } = null!;
 }

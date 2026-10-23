@@ -41,7 +41,8 @@ public partial class MediaScanner
         var movieSync = new EntitySync<Movie>(_movieService, "movie", m => m.Folder,
             (stored, found) => Set(stored.Folder, found.Folder, v => stored.Folder = v)
                 | Set(stored.OriginalFilename, found.OriginalFilename, v => stored.OriginalFilename = v)
-                | Set(stored.CoverArtFilename, found.CoverArtFilename, v => stored.CoverArtFilename = v));
+                | Set(stored.CoverArtFilename, found.CoverArtFilename, v => stored.CoverArtFilename = v)
+                | SetFileDetails(stored, found));
         foreach (Movie found in movies)
         {
             await movieSync.SyncAsync(found, run).ConfigureAwait(false);
@@ -55,7 +56,14 @@ public partial class MediaScanner
     {
         foreach (FileInfo file in run.FilesIn(folder).Where(f => MediaFileNames.IsVideoFile(f.Name)))
         {
-            movies.Add(new Movie { Name = Path.GetFileNameWithoutExtension(file.Name), Folder = folder, OriginalFilename = file.Name });
+            movies.Add(new Movie
+            {
+                Name = Path.GetFileNameWithoutExtension(file.Name),
+                Folder = folder,
+                OriginalFilename = file.Name,
+                FileSize = file.Length,
+                FileDate = file.LastWriteTime,
+            });
         }
     }
 
@@ -73,6 +81,8 @@ public partial class MediaScanner
                 Name = Path.GetFileName(folder),
                 Folder = folder,
                 OriginalFilename = main.Name,
+                FileSize = main.Length,
+                FileDate = main.LastWriteTime,
                 CoverArtFilename = MediaFileNames.FindCoverArt(files.Select(f => f.Name)),
             });
             return;

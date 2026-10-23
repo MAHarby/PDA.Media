@@ -5,7 +5,7 @@ namespace PDA.Media.Scanner.Services;
 public partial class MediaScanner
 {
     /// <summary>An album folder as read from disk: its audio files (one per track) and cover art.</summary>
-    private sealed record AlbumOnDisk(string Folder, string? CoverArt, List<(string FileName, int TrackNo, string Title)> Tracks);
+    private sealed record AlbumOnDisk(string Folder, string? CoverArt, List<(FileInfo File, int TrackNo, string Title)> Tracks);
 
     /// <summary>
     /// Music: <c>Root/Artist/Album/NN - Title.ext</c>. Each artist folder is an artist, each album folder holding audio files is an album
@@ -22,9 +22,9 @@ public partial class MediaScanner
                 List<FileInfo> files = run.FilesIn(albumFolder);
                 // One track per number and title (the first file wins if an album holds the same track twice, e.g. as .flac and .mp3).
                 var tracks = files.Where(f => MediaFileNames.IsAudioFile(f.Name))
-                    .Select(f => (FileName: f.Name, Parsed: MediaFileNames.ParseTrackFileName(f.Name)))
+                    .Select(f => (File: f, Parsed: MediaFileNames.ParseTrackFileName(f.Name)))
                     .DistinctBy(t => (t.Parsed.TrackNo, t.Parsed.Title.ToUpperInvariant()))
-                    .Select(t => (t.FileName, t.Parsed.TrackNo, t.Parsed.Title))
+                    .Select(t => (t.File, t.Parsed.TrackNo, t.Parsed.Title))
                     .ToList();
                 if (tracks.Count > 0) albums.Add(new AlbumOnDisk(albumFolder, MediaFileNames.FindCoverArt(files.Select(f => f.Name)), tracks));
             }
@@ -54,7 +54,8 @@ public partial class MediaScanner
         var trackSync = new EntitySync<Track>(_trackService, "track", t => t.Folder,
             (stored, found) => Set(stored.Folder, found.Folder, v => stored.Folder = v)
                 | Set(stored.OriginalFilename, found.OriginalFilename, v => stored.OriginalFilename = v)
-                | Set(stored.ArtistId, found.ArtistId, v => stored.ArtistId = v));
+                | Set(stored.ArtistId, found.ArtistId, v => stored.ArtistId = v)
+                | SetFileDetails(stored, found));
 
         foreach ((string artistFolder, List<AlbumOnDisk> albums) in artists)
         {
@@ -73,7 +74,7 @@ public partial class MediaScanner
                 };
                 Album album = await albumSync.SyncAsync(foundAlbum, run).ConfigureAwait(false);
 
-                foreach ((string fileName, int trackNo, string title) in albumOnDisk.Tracks)
+                foreach ((FileInfo file, int trackNo, string title) in albumOnDisk.Tracks)
                 {
                     var foundTrack = new Track
                     {
@@ -82,7 +83,9 @@ public partial class MediaScanner
                         TrackNo = trackNo,
                         Name = title,
                         Folder = albumOnDisk.Folder,
-                        OriginalFilename = fileName,
+                        OriginalFilename = file.Name,
+                        FileSize = file.Length,
+                        FileDate = file.LastWriteTime,
                     };
                     await trackSync.SyncAsync(foundTrack, run).ConfigureAwait(false);
                 }

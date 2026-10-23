@@ -529,6 +529,10 @@ public partial class MediaScanner
             || folder.StartsWith(root.TrimEnd('\\', '/') + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Sets a field to the value found on disk; returns true if it changed.</summary>
+    /// <summary>Copies the media file's size and last-modified time (read by the scan) onto a stored track, movie or episode when they differ.</summary>
+    private static bool SetFileDetails(IMediaFile stored, IMediaFile found)
+        => Set(stored.FileSize, found.FileSize, v => stored.FileSize = v) | Set(stored.FileDate, found.FileDate, v => stored.FileDate = v);
+
     private static bool Set<TValue>(TValue current, TValue found, Action<TValue> set)
     {
         if (EqualityComparer<TValue>.Default.Equals(current, found)) return false;
@@ -537,10 +541,10 @@ public partial class MediaScanner
     }
 
     /// <summary>The folders in <paramref name="folder"/>, by name, without hidden, system and NAS housekeeping folders.</summary>
-    private static List<string> SubFolders(string folder) =>
+    internal static List<string> SubFolders(string folder) =>
         Directory.EnumerateDirectories(folder, "*", ReadFolder).Where(f => !MediaFileNames.IsIgnoredFolder(f)).Order(StringComparer.OrdinalIgnoreCase).ToList();
 
     /// <summary>The files directly in <paramref name="folder"/>, by name, with their sizes.</summary>
-    private static List<FileInfo> FilesIn(string folder) =>
+    internal static List<FileInfo> FilesIn(string folder) =>
         new DirectoryInfo(folder).EnumerateFiles("*", ReadFolder).OrderBy(f => f.Name, StringComparer.OrdinalIgnoreCase).ToList();
 }
